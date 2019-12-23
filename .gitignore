@@ -2,7 +2,6 @@ venv/**
 *.pyc
 generated_data/**
 *events.out.tfevents.*.*gi
-
 **/__pycache__/**
 /src/**/summary
 /src/stupidBaseline_1/generated_data/**
@@ -15,10 +14,3 @@ __pycache__/
 /src/**/summary_data/*
 wwf_data_v1
 **/.ipynb_checkpoints/**
-/notebooks/CaseStudies/generated_data/
-/notebooks/.ipynb_checkpoints/
-/comprex/comprexData/
-/comprex/data/
-/notebooks/CaseStudies/output/
-/src/explain_v1/output/us_import3/train_embedding_values.pkl
-/src/explain_v1/output/us_import2/train_embedding_values.pkl
