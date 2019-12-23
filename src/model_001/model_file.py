@@ -9,7 +9,9 @@ import matplotlib.pyplot as plt
 import time
 from tensorflow.python.framework.graph_util import convert_variables_to_constants
 from tensorflow.contrib.tensorboard.plugins import projector
+
 tf.random.set_random_seed(729)
+
 
 class model:
 
@@ -23,7 +25,7 @@ class model:
         self.show_figure = False
         self._model_name = MODEL_NAME
         self.num_neg_samples = 3
-        self._epsilon = 0.0001
+        self._epsilon = 0.0000001
         return
 
     def set_model_hyperparams(
@@ -52,13 +54,13 @@ class model:
             self.op_dir,
             'summary_data'
         )
+        self.num_op_channels = 4
         if not os.path.exists(self.op_dir):
             os.mkdir(self.op_dir)
         if not os.path.exists(self.summary_data_loc):
             os.mkdir(self.summary_data_loc)
 
         return
-
 
     def set_model_options(
             self,
@@ -110,13 +112,13 @@ class model:
                 self.b[l] = [None] * self.num_domains
 
                 # print("----> Layer", (l + 1))
-                if l == 0 :
+                if l == 0:
                     layer_inp_dims = self.domain_dims
                     layer_op_dims = layer_1_dims
                     layer_op_dims = self.emb_dims[0]
 
                 else:
-                    if l == 1 :
+                    if l == 1:
                         layer_inp_dims = layer_1_dims
                     else:
                         layer_inp_dims = [self.emb_dims[l - 1]] * self.num_domains
@@ -151,19 +153,18 @@ class model:
                             self.b[l][d] = z
                             self.wb_names.append(prefix + _name_b)
 
-
             self.interaction_W = {}
 
             for i in range(self.num_domains):
                 self.interaction_W[i] = {}
-                for j in range(i+1,self.num_domains):
-                    _name = 'int_W_' + str(i) + str(j)
+                for j in range(i + 1, self.num_domains):
+                    _name = 'int_W_' + str(i) + '_' + str(j)
 
                     if self.inference is True:
                         n = prefix + _name + ':0'
                         self.interaction_W[i][j] = self.restore_graph.get_tensor_by_name(n)
                     else:
-                        _shape = [self.latent_dim,1]
+                        _shape = [self.latent_dim, 1]
                         z = self.get_weight_variable(
                             _shape,
                             name=_name)
@@ -176,25 +177,27 @@ class model:
                 n = prefix + _name + ':0'
                 self.conv_kernel = self.restore_graph.get_tensor_by_name(n)
             else:
-                k = int(self.num_domains* (self.num_domains-1)/2)
-                _shape = [k, 1, 1, 1]
+                k = int(self.num_domains * (self.num_domains - 1) / 2)
+                _shape = [k, 1, 1, self.num_op_channels]
                 self.conv_kernel = self.get_weight_variable(
                     _shape,
                     name=_name
                 )
-
+                self.wb_names.append(prefix + _name)
             _name = 'W_final'
 
             if self.inference is True:
                 n = prefix + _name + ':0'
                 self.W_final = self.restore_graph.get_tensor_by_name(n)
             else:
-                k = int(self.num_domains * (self.num_domains - 1) / 2)
-                _shape = [self.latent_dim,1]
+                k = self.num_op_channels
+                k = 1
+                _shape = [ k * self.latent_dim, 1]
                 self.W_final = self.get_weight_variable(
                     _shape,
                     name=_name
                 )
+                self.wb_names.append(prefix + _name)
 
         return
 
@@ -204,37 +207,54 @@ class model:
     ):
         res = []
         for i in range(self.num_domains):
-            for j in range(i+1,self.num_domains):
+            for j in range(i + 1, self.num_domains):
                 a = _input[i]
-                a = tf.expand_dims(a,axis=-1)
+                a = tf.expand_dims(a, axis=-1)
                 b = _input[j]
-                b = tf.expand_dims(b,axis=-1)
+                b = tf.expand_dims(b, axis=-1)
 
-                print(a.shape,b.shape)
                 _w = tf.transpose(
                     self.interaction_W[i][j],
-                    perm = [1,0]
+                    perm=[1, 0]
                 )
 
                 c = tf.einsum('ijk,kl->ijl', a, _w)
-                print(c.shape)
-
                 d = tf.einsum('ijk,ikl->ijl', c, b)
-                print(d.shape)
-
                 res.append(d)
-        res = tf.stack(res,axis=1)
-        print(' Shape before conv ', res.shape)
 
+        res = tf.stack(res, axis=1)
 
         res = tf.nn.conv2d(
-            input = res,
-            filter = self.conv_kernel,
-            strides = [1,1,1,1],
-            padding = 'VALID'
+            input=res,
+            filter=self.conv_kernel,
+            strides=[1, 1, 1, 1],
+            padding='VALID'
         )
-        res = tf.squeeze(res, axis=-1)
-        res = tf.squeeze(res, axis=1)
+        print(res.shape)
+
+        self.MAX_POOL = True
+        # max pool across the channels
+        if self.MAX_POOL:
+            res = tf.reduce_max(
+                res,
+                reduction_indices=[3],
+                keep_dims=True
+            )
+
+
+        if res.get_shape()[-1] > 1 :
+            # flatten
+            _flatten_shape = res.get_shape()[-1] * res.get_shape()[-2]
+            res = tf.reshape(
+                res,
+                [-1,1,_flatten_shape]
+            )
+            res = tf.squeeze(res, axis=1)
+        else:
+            res = tf.squeeze(res, axis=-1)
+            res = tf.squeeze(res, axis=1)
+
+        res = tf.sigmoid(res)
         return res
 
     def _add_var_summaries(self):
@@ -274,16 +294,16 @@ class model:
 
                 prev = _wx_b
             x_WXb[d] = prev
-            print(x_WXb[d].shape)
 
         return x_WXb
 
-    def get_tensor_score(self, _tensor, neg_sample = False ):
-        res = tf.matmul(_tensor,self.W_final)
-        if neg_sample:
-            res = tf.math.reciprocal(res)
-        res = tf.exp(res)
+    def get_tensor_score(self, _tensor, neg_sample=False):
+        res = tf.matmul(
+            _tensor,
+            self.W_final
+        )
         res = tf.tanh(res)
+        res = (res + 1)/2
         return res
 
     def neg_sample_optimization(self):
@@ -306,8 +326,7 @@ class model:
 
         neg_res = []
         for _neg in x_neg_inp_arr:
-
-            _neg = tf.squeeze(_neg,axis=1)
+            _neg = tf.squeeze(_neg, axis=1)
             _neg = tf.split(
                 _neg,
                 num_or_size_splits=self.num_domains,
@@ -315,14 +334,47 @@ class model:
             )
             _neg = self.get_inp_embeddings(_neg)
             _neg = self.calculate_interactions(_neg)
-            _neg = self.get_tensor_score(_neg,True)
+            _neg = self.get_tensor_score(_neg, True)
             neg_res.append(_neg)
 
         neg_res = tf.stack(neg_res, axis=1)
-        neg_res = tf.log(neg_res)
-        neg_res = tf.math.reduce_mean( neg_res, axis=1 , keepdims= False)
-        print(' neg_res >> ', neg_res.shape)
+        # neg_res = tf.log(neg_res + self._epsilon)
+        neg_res = tf.math.reduce_mean(
+            neg_res, axis=1,
+            keepdims=False
+        )
         return neg_res
+
+    def set_pretrained_model_file(self, f_path):
+        self.frozen_file = f_path
+        return
+
+    def get_event_score(
+            self,
+            x
+    ):
+        self.restore_model()
+        output = []
+        bs = self.batch_size
+        num_batches = x.shape[0] // bs
+
+        with tf.Session(graph=self.restore_graph) as sess:
+            for _b in range(num_batches):
+                _x = x[_b * bs: (_b + 1) * bs]
+                if _b == num_batches - 1:
+                    _x = x[_b * bs:]
+                _output = sess.run(
+                    self.score_samples,
+                    feed_dict={
+                        self.x_pos_inp: _x,
+                    }
+                )
+
+                output.extend(_output)
+
+        res = np.array(output)
+        print('  === > ', res.shape)
+        return res
 
     def build_model(self):
         self.model_scope_name = 'model'
@@ -345,24 +397,31 @@ class model:
             x_WXb = self.get_inp_embeddings(x_pos_inp)
             _tensor = self.calculate_interactions(x_WXb)
             val1 = self.get_tensor_score(_tensor)
-            if self.inference :
+
+            self.score_samples = val1
+            if self.inference:
                 return
             else:
-                val1 = tf.log(val1 + self._epsilon)
+                # val1 = tf.log(val1 + self._epsilon)
                 val2 = self.neg_sample_optimization()
-                self.loss =  - (val1 + val2)
+                self.loss = - (val1 - val2)
 
-            self._add_var_summaries()
             self.optimizer = tf.train.AdamOptimizer(
                 learning_rate=self.learning_rate
             )
 
-            self.train_opt = self.optimizer.minimize(
-                self.loss
-            )
+            gvs = self.optimizer.compute_gradients(self.loss)
 
+            self.gradients = gvs
+
+            capped_gvs = [
+                (tf.clip_by_value(grad, -1.0, 1.0), var)
+                for grad, var in gvs if grad is not None
+            ]
+
+            self.train_opt = self.optimizer.apply_gradients(capped_gvs)
+            # self.summary = tf.summary.merge_all()
         return
-
 
     def restore_model(self):
 
@@ -441,7 +500,6 @@ class model:
 
         # print('Num batches :', num_batches)
 
-        summary_writer = tf.summary.FileWriter(self.summary_data_loc)
         step = 0
 
         '''
@@ -462,8 +520,8 @@ class model:
                 if _b == 0:
                     print(_x_pos.shape)
 
-                _, summary,  loss = self.sess.run(
-                    [self.train_opt, self.summary, self.loss],
+                _, loss = self.sess.run(
+                    [self.train_opt, self.loss],
                     feed_dict={
                         self.x_pos_inp: _x_pos,
                         self.x_neg_inp: _x_neg
@@ -473,11 +531,10 @@ class model:
                 batch_loss = np.mean(loss)
                 losses.append(batch_loss)
 
-                if _b % 100 == 0 :
+                if _b % 1000 == 0:
                     print(' batch ::', _b)
                     print(batch_loss)
 
-                summary_writer.add_summary(summary, step)
                 step += 1
 
                 if np.isnan(batch_loss):
@@ -487,7 +544,7 @@ class model:
 
             if Check_Save_Prev is True:
                 break
-            if e == self.num_epochs-1:
+            if e == self.num_epochs - 1:
                 graph_def = tf.get_default_graph().as_graph_def()
                 frozen_graph_def = convert_variables_to_constants(
                     self.sess,
@@ -517,22 +574,3 @@ class model:
                 plt.show()
             plt.close()
         return self.frozen_file
-
-
-
-
-
-obj = model('trial','save_dir','op_dir')
-
-obj.set_model_hyperparams(
-    domain_dims=[25,40,75,150],
-            emb_dims=[12],
-            use_bias=True,
-            batch_size=128,
-            num_epochs=20,
-            learning_rate=0.001,
-            num_neg_samples=5
-)
-obj.build_model()
-
-
