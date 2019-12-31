@@ -388,8 +388,9 @@ def setup_testing_data(
         col_val2id_dict
 ):
     global id_col
+    global save_dir
+
     # Replace with None if ids are not in train_set
-    print('----')
     feature_cols = list(test_df.columns)
     feature_cols.remove(id_col)
     test_df = test_df.dropna()
@@ -419,9 +420,17 @@ def setup_testing_data(
     '''
 
     def aux_validate(target_df, train_df):
-        tmp_df = pd.DataFrame(columns=list(test_df.columns))
+        tmp_df = pd.DataFrame(
+            columns=list(target_df.columns)
+        )
+        tmp_df['valid'] = tmp_df.apply(
+            ensure_NotDuplicate_against,
+            axis=1,
+            args=(train_df)
+        )
+
         for i, row in target_df.iterrows():
-            if validate(row, train_df):
+            if ensure_NotDuplicate_against(row, train_df):
                 tmp_df = tmp_df.append(row, ignore_index=True)
         return tmp_df
 
@@ -460,6 +469,19 @@ def create_train_test_sets():
     global column_value_filters
     global CONFIG
 
+    train_df_file = os.path.join(save_dir, 'train_data.csv')
+    test_df_file = os.path.join(save_dir, 'test_data.csv')
+    column_valuesId_dict_file = 'column_valuesId_dict.pkl'
+    column_valuesId_dict_path = os.path.join(save_dir, column_valuesId_dict_file)
+    # --- Later on - remove using the saved file ---- #
+    if os.path.exists(train_df_file) and os.path.exists(test_df_file):
+        train_df = pd.read_csv(train_df_file)
+        test_df = pd.read_csv(train_df_file)
+        with open(column_valuesId_dict_path, 'w') as fh:
+            col_val2id_dict = pickle.load(fh)
+
+        return train_df, test_df, col_val2id_dict
+
     # combine test data into 1 file :
     test_files = get_files(DIR, 'test')
     list_test_df = [pd.read_csv(_file,low_memory=False,usecols=use_cols) for _file in test_files]
@@ -489,10 +511,15 @@ def create_train_test_sets():
         col_val2id_dict
     )
 
-    test_df.to_csv(os.path.join(save_dir, 'test_data.csv'), index=False)
-    train_df.to_csv(os.path.join(save_dir, 'train_data.csv'), index=False)
+    test_df.to_csv(test_df_file, index=False)
+    train_df.to_csv(train_df_file, index=False)
 
-    return
+    # Save col_val2id_dict
+
+    with open(column_valuesId_dict_path,'w') as fh:
+        pickle.dump(col_val2id_dict, fh, pickle.HIGHEST_PROTOCOL)
+
+    return train_df, test_df, col_val2id_dict
 
 
 # -------------------------------#
