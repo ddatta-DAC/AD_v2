@@ -437,7 +437,7 @@ def setup_testing_data(
         return pd.DataFrame(tmp_df,copy=True)
 
 
-    num_chunks = 50
+    num_chunks = 40
     chunk_len = int(len(test_df) // num_chunks)
 
     list_df_chunks = np.split(
@@ -481,15 +481,28 @@ def create_train_test_sets():
     if os.path.exists(train_df_file) and os.path.exists(test_df_file):
         train_df = pd.read_csv(train_df_file)
         test_df = pd.read_csv(train_df_file)
-        with open(column_valuesId_dict_path, 'w') as fh:
+        with open(column_valuesId_dict_path, 'rb') as fh:
             col_val2id_dict = pickle.load(fh)
 
         return train_df, test_df, col_val2id_dict
 
+
+    train_df = clean_train_data()
+
+
+    train_df, col_val2id_dict = convert_to_ids(
+        train_df,
+        save_dir
+    )
+    train_df.to_csv(train_df_file, index=False)
+
+    '''
+         test data preprocessing
+    '''
     # combine test data into 1 file :
     test_files = get_files(DIR, 'test')
     list_test_df = [
-        pd.read_csv(_file,low_memory=False,usecols=use_cols)
+        pd.read_csv(_file, low_memory=False, usecols=use_cols)
         for _file in test_files
     ]
     list_test_df = HSCode_cleanup(list_test_df, DIR, CONFIG)
@@ -498,20 +511,10 @@ def create_train_test_sets():
     for _df in list_test_df:
         if test_df is None:
             test_df = _df
-        else :
+        else:
             test_df = test_df.append(_df)
 
     print('size of  Test set ', len(test_df))
-    train_df = clean_train_data()
-    '''
-    test data preprocessing
-    '''
-
-    train_df, col_val2id_dict = convert_to_ids(
-        train_df,
-        save_dir
-    )
-
     test_df = setup_testing_data(
         test_df,
         train_df,
@@ -523,7 +526,7 @@ def create_train_test_sets():
 
     # Save col_val2id_dict
 
-    with open(column_valuesId_dict_path,'w') as fh:
+    with open(column_valuesId_dict_path,'wb') as fh:
         pickle.dump(col_val2id_dict, fh, pickle.HIGHEST_PROTOCOL)
 
     return train_df, test_df, col_val2id_dict
