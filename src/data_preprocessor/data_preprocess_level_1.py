@@ -428,7 +428,9 @@ def setup_testing_data(
             axis=1,
             args=(train_df,)
         )
-        tmp_df['valid'] = tmp_df.loc[ tmp_df['valid']==True]
+        print(tmp_df.head(100))
+        exit(1)
+        tmp_df['valid'] = tmp_df.loc[ (tmp_df['valid']==True) ]
         del tmp_df['valid']
         return pd.DataFrame(tmp_df,copy=True)
 
@@ -443,7 +445,8 @@ def setup_testing_data(
     end_len = len(test_df) - chunk_len * (num_chunks - 1)
     list_df_chunks.append(test_df.tail(end_len))
 
-    print(' Deduplication of test set w.r.t. train :: Length of chunks ', list_df_chunks)
+    print(' Deduplication of test set w.r.t. train :: Length of chunks ',
+          [len(_) for _ in list_df_chunks])
 
     list_dedup_df = Parallel(n_jobs=num_chunks)(
         delayed(aux_validate)(target_df, train_df)
