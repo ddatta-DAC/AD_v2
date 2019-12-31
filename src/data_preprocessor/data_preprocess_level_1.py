@@ -343,7 +343,7 @@ def apply_value_filters(list_df):
     return list_df
 
 
-def validate(row, ref_df):
+def ensure_NotDuplicate_against(row, ref_df):
     global id_col
     query_str = []
     for _c, _i in row.to_dict().items():
@@ -364,7 +364,6 @@ def clean_train_data():
 
     files = get_files(DIR, 'train')
     list_df = [pd.read_csv(_file, usecols=use_cols, low_memory=False) for _file in files]
-    list_file_name = [_.split('/')[-1] for _ in files]
     list_df = HSCode_cleanup(list_df, DIR, CONFIG)
 
     list_df_1 = apply_value_filters(list_df)
@@ -393,12 +392,11 @@ def setup_testing_data(
     print('----')
     feature_cols = list(test_df.columns)
     feature_cols.remove(id_col)
+    test_df = test_df.dropna()
 
     for col in feature_cols:
         valid_items = list(col_val2id_dict[col].keys())
         test_df = test_df.loc[test_df[col].isin(valid_items)]
-
-    print(' Length of testing data', len(test_df))
 
     # First convert to to ids
     for col in feature_cols:
@@ -411,21 +409,24 @@ def setup_testing_data(
                 val2id_dict,
             )
         )
+    test_df = test_df.dropna()
+    test_df = test_df.drop_duplicates()
+    print(' Length of testing data', len(test_df))
 
     '''
-    Remove duplicates :
+    Remove duplicates w.r.t to train set:
     Paralleleize the process 
     '''
 
     def aux_validate(target_df, train_df):
         tmp_df = pd.DataFrame(columns=list(test_df.columns))
-        for i, row in test_df.iterrows():
+        for i, row in target_df.iterrows():
             if validate(row, train_df):
                 tmp_df = tmp_df.append(row, ignore_index=True)
         return tmp_df
 
-    num_chunks = 20
-    chunk_len = int(len(test_df) / (num_chunks - 1))
+    num_chunks = 5
+    chunk_len = int(len(test_df) // num_chunks)
 
     list_df_chunks = np.split(
         test_df.head(chunk_len * (num_chunks - 1)), num_chunks - 1
@@ -461,9 +462,17 @@ def create_train_test_sets():
 
     # combine test data into 1 file :
     test_files = get_files(DIR, 'test')
-    test_master_df = collate(test_files)
-    print('size of  Test set ', len(test_master_df))
+    list_test_df = [pd.read_csv(_file,low_memory=False,usecols=use_cols) for _file in test_files]
+    list_test_df = HSCode_cleanup(list_test_df, DIR, CONFIG)
 
+    test_df = None
+    for _df in list_test_df:
+        if test_df is None:
+            test_df = _df
+        else :
+            test_df = test_df.append(_df)
+
+    print('size of  Test set ', len(test_df))
     train_df = clean_train_data()
     '''
     test data preprocessing
@@ -475,7 +484,7 @@ def create_train_test_sets():
     )
 
     test_df = setup_testing_data(
-        test_master_df,
+        test_df,
         train_df,
         col_val2id_dict
     )
