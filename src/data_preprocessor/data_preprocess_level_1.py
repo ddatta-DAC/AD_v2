@@ -426,13 +426,12 @@ def setup_testing_data(
         tmp_df['valid'] = tmp_df.apply(
             ensure_NotDuplicate_against,
             axis=1,
-            args=(train_df)
+            args=(train_df,)
         )
+        tmp_df['valid'] = tmp_df.loc[ tmp_df['valid']==True]
+        del tmp_df['valid']
+        return pd.DataFrame(tmp_df,copy=True)
 
-        for i, row in target_df.iterrows():
-            if ensure_NotDuplicate_against(row, train_df):
-                tmp_df = tmp_df.append(row, ignore_index=True)
-        return tmp_df
 
     num_chunks = 5
     chunk_len = int(len(test_df) // num_chunks)
