@@ -14,3 +14,4 @@ __pycache__/
 /src/**/summary_data/*
 wwf_data_v1
 **/.ipynb_checkpoints/**
+/MetaData/.ipynb_checkpoints/
