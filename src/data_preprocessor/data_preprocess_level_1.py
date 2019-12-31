@@ -437,7 +437,7 @@ def setup_testing_data(
         return pd.DataFrame(tmp_df,copy=True)
 
 
-    num_chunks = 5
+    num_chunks = 50
     chunk_len = int(len(test_df) // num_chunks)
 
     list_df_chunks = np.split(
