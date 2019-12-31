@@ -346,6 +346,7 @@ def apply_value_filters(list_df):
 def ensure_NotDuplicate_against(row, ref_df):
     global id_col
     query_str = []
+
     for _c, _i in row.to_dict().items():
         if _c == id_col:
             continue
@@ -421,15 +422,16 @@ def setup_testing_data(
 
     def aux_validate(target_df, train_df):
         tmp_df = pd.DataFrame(
-            columns=list(target_df.columns)
+            target_df,
+            copy = True
         )
+
         tmp_df['valid'] = tmp_df.apply(
             ensure_NotDuplicate_against,
             axis=1,
             args=(train_df,)
         )
-        print(tmp_df.head(100))
-        exit(1)
+
         tmp_df['valid'] = tmp_df.loc[ (tmp_df['valid']==True) ]
         del tmp_df['valid']
         return pd.DataFrame(tmp_df,copy=True)
@@ -486,7 +488,10 @@ def create_train_test_sets():
 
     # combine test data into 1 file :
     test_files = get_files(DIR, 'test')
-    list_test_df = [pd.read_csv(_file,low_memory=False,usecols=use_cols) for _file in test_files]
+    list_test_df = [
+        pd.read_csv(_file,low_memory=False,usecols=use_cols)
+        for _file in test_files
+    ]
     list_test_df = HSCode_cleanup(list_test_df, DIR, CONFIG)
 
     test_df = None
