@@ -12,8 +12,10 @@ import math
 from collections import Counter
 sys.path.append('.')
 sys.path.append('./..')
-
-from . import clean_up_test_data
+try:
+    import clean_up_test_data
+except:
+    from . import clean_up_test_data
 
 # ===================
 
