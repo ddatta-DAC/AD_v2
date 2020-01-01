@@ -10,6 +10,10 @@ from joblib import Parallel, delayed
 import yaml
 import math
 from collections import Counter
+sys.path.append('.')
+sys.path.append('./..')
+
+from . import clean_up_test_data
 
 # ===================
 
@@ -480,7 +484,7 @@ def create_train_test_sets():
     # --- Later on - remove using the saved file ---- #
     if os.path.exists(train_df_file) and os.path.exists(test_df_file):
         train_df = pd.read_csv(train_df_file)
-        test_df = pd.read_csv(train_df_file)
+        test_df = pd.read_csv(test_df_file)
         with open(column_valuesId_dict_path, 'rb') as fh:
             col_val2id_dict = pickle.load(fh)
 
@@ -534,6 +538,26 @@ def create_train_test_sets():
 
 # -------------------------------#
 
+def clean_test_data_level2( ):
+    global save_dir
+    global CONFIG
+
+    train_df_file = os.path.join(save_dir, 'train_data.csv')
+    test_df_file = os.path.join(save_dir, 'test_data.csv')
+    train_df = pd.read_csv(train_df_file)
+    test_df = pd.read_csv(test_df_file)
+
+    test_df = clean_up_test_data.remove_order1_spurious_coocc(
+        train_df,
+        test_df,
+        id_col
+    )
+
+    test_df_file = os.path.join(save_dir, 'test_data_v1.csv')
+    test_df.to_csv(test_df_file, index=False)
+    return
+
 
 CONFIG = set_up_config()
 create_train_test_sets()
+clean_test_data_level2()
