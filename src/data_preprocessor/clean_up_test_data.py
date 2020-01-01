@@ -22,7 +22,8 @@ def create_coocc_matrix(df, col_1, col_2):
         j = row[col_2]
         coocc[i][j] = row['count']
 
-    return csr_matrix(coocc)
+    print('Col 1 & 2', col_1, col_2, coocc.shape, '>>', (count_1,count_2) )
+    return coocc
 
 
 '''
@@ -88,8 +89,9 @@ def remove_order1_spurious_coocc(
     list_df_chunks.append(test_df.tail(end_len))
 
     list_dedup_df = Parallel(n_jobs=num_chunks)(
-        delayed(aux_check)(target_df, columnWise_coOcc_array_dict, id_col)
-        for target_df in list_df_chunks
+        delayed(aux_check)(
+            target_df, columnWise_coOcc_array_dict, id_col
+        ) for target_df in list_df_chunks
     )
 
     new_test_df = None
