@@ -30,7 +30,7 @@ def create_coocc_matrix(df, col_1, col_2):
 Remove the rows in test set where any apir of entities do not co-occur in the training set.
 '''
 
-
+# Returns False if there is supurious pairwise-co-occurrence
 def aux2_check(row, columnWise_coOcc_array_dict, pair_list):
     row_dict = row.to_dict()
     for _pair in pair_list:
@@ -44,7 +44,7 @@ def aux2_check(row, columnWise_coOcc_array_dict, pair_list):
 
 
 def aux_check(df, columnWise_coOcc_array_dict, id_col):
-
+    print('In Auxillary check ...')
     columns = list(df.columns)
     columns.remove(id_col)
     pair_list = [list(sorted(_pair)) for _pair in combinations(columns, 2)]
@@ -64,6 +64,7 @@ def remove_order1_spurious_coocc(
         test_df,
         id_col='PanjivaRecordID'
 ):
+    print('In remove_order1_spurious_coocc ::')
     columns = list(train_df.columns)
     columns.remove(id_col)
     columns = list(sorted(columns))
@@ -87,12 +88,14 @@ def remove_order1_spurious_coocc(
 
     end_len = len(test_df) - chunk_len * (num_chunks - 1)
     list_df_chunks.append(test_df.tail(end_len))
+    print(' Chunk lengths ->', [len(_) for _ in list_df_chunks])
 
     list_dedup_df = Parallel(n_jobs=num_chunks)(
         delayed(aux_check)(
             target_df, columnWise_coOcc_array_dict, id_col
         ) for target_df in list_df_chunks
     )
+    print('Post cleaning chunk lengths ->', [len(_) for _ in list_dedup_df])
 
     new_test_df = None
     for _df in list_dedup_df:
