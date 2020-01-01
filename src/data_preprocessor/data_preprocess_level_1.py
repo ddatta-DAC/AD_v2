@@ -543,6 +543,7 @@ def create_train_test_sets():
 def clean_test_data_level2( ):
     global save_dir
     global CONFIG
+    global id_col
 
     train_df_file = os.path.join(save_dir, 'train_data.csv')
     test_df_file = os.path.join(save_dir, 'test_data.csv')
