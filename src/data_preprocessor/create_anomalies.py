@@ -174,13 +174,162 @@ def generate_type1_anomalies(
         else:
             anomalies_df = anomalies_df.append(_df, ignore_index=True)
 
-
     anomalies_df = anomalies_df.drop_duplicates(subset=domains)
     anomalies_df[id_col] = anomalies_df[id_col].apply(
         aux_modify_id,
-        args=('001')
+        args=('001',)
     )
 
     op_path = os.path.join(save_dir, 'anomalies_type1.csv')
     anomalies_df.to_csv(op_path, index=None)
     return anomalies_df
+
+'''
+Type 2 anomalies
+
+contextual anomaly :
+(A,B,C) -> not D  in train set
+i.e. A,B,C,D co-occur but D does not co-occur with (A,B,C) 
+'''
+def find_pattern_count(domainEntity_dict, ref_df):
+    global id_col
+    query_str = []
+
+    for _c, _i in domainEntity_dict.items():
+        query_str.append(' ' + _c + ' == ' + str(_i))
+
+    query_str = ' & '.join(query_str)
+    res_query = ref_df.query(query_str)
+    return len(res_query)
+
+
+def aux_func_type_2(
+        target_df,
+        train_df,
+        ref_df,
+        columnWise_coOccMatrix_dict,
+        id_col,
+        anom_count
+):
+    working_df = target_df.sample(anom_count)
+    domains = list(sorted(target_df.columns))
+    domains.remove(id_col)
+    # create set of entity ids for each of the domains
+    domain_entitiesSet_dict = {}
+
+    for d in domains:
+        domain_entitiesSet_dict[d] = list(set(ref_df[d]))
+
+    anomalies_df = pd.DataFrame(
+        columns= list(target_df.columns)
+    )
+    max_tries = 5
+
+    for i,row in working_df.iterrows():
+        new_row = pd.Series(row, copy=True)
+        # select 3 domains
+        while True:
+            domain_set = list(random.choice(domains, replace=False, size=4))
+            trials_1  = 0
+            excluded_domain = None
+            pos_set = None
+            candidate_dict = None
+            while trials_1 < max_tries:
+                excluded_domain = random.choice(domain_set[d], size=1)[0]
+                pos_set = list(domain_set)
+                pos_set.remove(excluded_domain)
+                #  Heuristic
+                #  Ensure that they co-occur at least 5 times.
+                min_pattern_count = 5
+                candidate_dict = {}
+                for d in domain_set:
+                    candidate_dict[d] = row[d]
+
+                if find_pattern_count(candidate_dict, train_df) >= min_pattern_count:
+                    break
+                trials_1 += 1
+            if trials_1 == max_tries:
+                continue
+            trials_2 = 0
+
+            while trials_2 < max_tries*2 :
+                candidate_entity = random.choice(domain_entitiesSet_dict[excluded_domain], size=1)[0]
+                candidate_dict[excluded_domain] = candidate_entity
+                if find_pattern_count(candidate_dict, train_df)  !=0 :
+                    trials_2+=1
+                else:
+                    break
+
+            # Ensure this does not occur in either train or test set
+            hash_val = get_hash_aux(new_row, id_col)
+            duplicate_flag = is_duplicate(
+                ref_df,
+                hash_val
+            )
+
+            if duplicate_flag == False:
+                break
+
+        anomalies_df = anomalies_df.append(new_row,ignore_index=True)
+        print(' generated anomaly type 2')
+
+    return anomalies_df
+
+
+def generate_type2_anomalies(
+        test_df,
+        train_df,
+        save_dir,
+        id_col='PanjivaRecordID',
+        num_jobs=40,
+        anom_perc=5
+):
+    domains = list(sorted(test_df.columns))
+    domains.remove(id_col)
+
+    # Create the  co-occurrence matrix using the reference data frame(training data)
+    columnWise_coOccMatrix_dict = get_coOccMatrix_dict(train_df, id_col)
+
+    ref_df = pd.DataFrame(train_df, copy=True)
+    ref_df = ref_df.append(test_df, ignore_index=True)
+    ref_df = add_hash(ref_df, id_col)
+
+    # chunk data frame :: Parallelize the process
+    chunk_len = int(len(test_df) // num_jobs)
+    list_df_chunks = np.split(
+        test_df.head(chunk_len * (num_jobs - 1)),
+        num_jobs - 1
+    )
+
+    end_len = len(test_df) - chunk_len * (num_jobs - 1)
+    list_df_chunks.append(test_df.tail(end_len))
+
+    distributed_anom_count = int(len(test_df) * anom_perc / 100 * (1 / num_jobs))
+
+    list_res_df = Parallel(n_jobs=num_jobs)(
+        delayed(aux_func_type_2)(
+            target_df,  train_df, ref_df, columnWise_coOccMatrix_dict, id_col, distributed_anom_count
+        ) for target_df in list_df_chunks
+    )
+
+
+    print('Post cleaning chunk lengths ->', [len(_) for _ in list_res_df])
+
+    anomalies_df = None
+    for _df in list_res_df:
+        if anomalies_df is None:
+            anomalies_df = _df
+        else:
+            anomalies_df = anomalies_df.append(_df, ignore_index=True)
+
+    anomalies_df = anomalies_df.drop_duplicates(subset=domains)
+    anomalies_df[id_col] = anomalies_df[id_col].apply(
+        aux_modify_id,
+        args=('001',)
+    )
+
+    op_path = os.path.join(save_dir, 'anomalies_type2.csv')
+    anomalies_df.to_csv(op_path, index=None)
+    return anomalies_df
+
+
