@@ -80,7 +80,7 @@ def aux_func_type_1(
     domain_entitiesSet_dict = {}
 
     for d in domains:
-        domain_entitiesSet_dict[d] = set(ref_df[d])
+        domain_entitiesSet_dict[d] = list(set(ref_df[d]))
 
     anomalies_df = pd.DataFrame(
         columns= list(target_df.columns)
