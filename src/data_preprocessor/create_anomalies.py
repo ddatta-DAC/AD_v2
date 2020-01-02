@@ -20,6 +20,7 @@ def get_hash_aux(row,id_col):
     row_dict = row.to_dict()
     del row_dict[id_col]
     _str = '_'.join([str(_) for _ in row_dict.values()])
+    _str = str.encode(_str)
     str_hash = hashlib.md5(_str).hexdigest()
     return str_hash
 
@@ -95,8 +96,8 @@ def aux_func_type_1(
             for d in domain_set:
                 not_satisied = True
                 while not_satisied :
-                    entity_d = random.sample(
-                        domain_entitiesSet_dict[d],size=1
+                    entity_d = random.choice(
+                        domain_entitiesSet_dict[d], size=1
                     )[0]
                     generated[d] = entity_d
 
