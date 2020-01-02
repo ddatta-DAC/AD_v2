@@ -35,7 +35,7 @@ def add_hash(df,id_col):
     )
     return df
 
-def check_duplicate(ref_df,  hash_val):
+def is_duplicate(ref_df,  hash_val):
     if len(ref_df.loc[ref_df['hash']==hash_val]) > 0 : return True
     return False
 
@@ -59,7 +59,6 @@ def get_coOccMatrix_dict(df, id_col):
 # modify the id_col
 def aux_modify_id( value , suffix ):
     return int(str(value) + str(suffix))
-
 
 '''
 Type 1 :
@@ -118,12 +117,15 @@ def aux_func_type_1(
                 new_row[d] = e
 
             hash_val = get_hash_aux(new_row, id_col)
-            is_duplicate = check_duplicate(ref_df, hash_val)
-            print (' is duplicate ?? ',is_duplicate )
-            if is_duplicate == False:
-                break
-            anomalies_df = anomalies_df.append(new_row,ignore_index=True)
-            print(' generated anomaly type 1')
+            duplicate_flag = is_duplicate(
+                ref_df,
+                hash_val
+            )
+
+            if duplicate_flag == False: break
+
+        anomalies_df = anomalies_df.append(new_row,ignore_index=True)
+        print(' generated anomaly type 1')
 
     return anomalies_df
 
