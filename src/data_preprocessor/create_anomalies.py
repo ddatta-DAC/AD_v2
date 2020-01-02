@@ -136,7 +136,7 @@ def generate_type1_anomalies(
         save_dir,
         id_col='PanjivaRecordID',
         num_jobs=40,
-        anom_perc=2
+        anom_perc=10
 ):
     domains = list(sorted(test_df.columns))
     domains.remove(id_col)
