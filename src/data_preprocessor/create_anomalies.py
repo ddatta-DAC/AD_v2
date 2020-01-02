@@ -93,34 +93,38 @@ def aux_func_type_1(
             domain_set = random.choice(domains, replace=False,  size=3)
             generated = {}
             new_row = pd.Series(row, copy=True)
-            for d in domain_set:
-                not_satisied = True
-                while not_satisied :
+            not_satisied = True
+
+            while not_satisied:
+
+                for d in domain_set:
                     entity_d = random.choice(
                         domain_entitiesSet_dict[d], size=1
                     )[0]
                     generated[d] = entity_d
 
                     # Check if selected entities pairwise co-occur
-                    if len(generated) > 2:
-                        for _pair in combinations(list(generated.keys()),2):
-                            _pair = sorted(_pair)
-                            key = '_+_'.join(_pair)
-                            e1 = generated[_pair[0]]
-                            e2 = generated[_pair[1]]
-                            not_satisied = (columnWise_coOccMatrix_dict[key][e1][e2] == 0)
-                            if not_satisied:
-                                break
+
+                for _pair in combinations(list(generated.keys()),2):
+                    _pair = sorted(_pair)
+                    key = '_+_'.join(_pair)
+                    e1 = generated[_pair[0]]
+                    e2 = generated[_pair[1]]
+                    not_satisied = (columnWise_coOccMatrix_dict[key][e1][e2] == 0)
+                    if not_satisied:
+                        break
 
             for d,e in generated.items():
                 new_row[d] = e
+
             hash_val = get_hash_aux(new_row, id_col)
             is_duplicate = check_duplicate(ref_df, hash_val)
+            print (' is duplicate ?? ',is_duplicate )
             if is_duplicate == False:
                 break
+            anomalies_df = anomalies_df.append(new_row,ignore_index=True)
+            print(' generated anomaly type 1')
 
-        anomalies_df = anomalies_df.append(new_row,ignore_index=True)
-        print(' generated anomaly type 1')
     return anomalies_df
 
 
@@ -130,7 +134,7 @@ def generate_type1_anomalies(
         save_dir,
         id_col='PanjivaRecordID',
         num_jobs=40,
-        anom_perc=10
+        anom_perc=2
 ):
     domains = list(sorted(test_df.columns))
     domains.remove(id_col)
