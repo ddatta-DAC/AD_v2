@@ -234,15 +234,16 @@ def aux_func_type_2(
             excluded_domain = None
             pos_set = None
             candidate_dict = None
+
             while trials_1 < max_tries:
-                excluded_domain = random.choice(domain_set[d], size=1)[0]
+                excluded_domain = random.choice(domain_set, size=1)[0]
                 pos_set = list(domain_set)
                 pos_set.remove(excluded_domain)
                 #  Heuristic
                 #  Ensure that they co-occur at least 5 times.
                 min_pattern_count = 5
                 candidate_dict = {}
-                for d in domain_set:
+                for d in pos_set:
                     candidate_dict[d] = row[d]
 
                 if find_pattern_count(candidate_dict, train_df) >= min_pattern_count:
@@ -251,15 +252,29 @@ def aux_func_type_2(
             if trials_1 == max_tries:
                 continue
             trials_2 = 0
+            found = False
 
-            while trials_2 < max_tries*2 :
+            while found == False and trials_2 < max_tries*3 :
+                found = False
                 candidate_entity = random.choice(domain_entitiesSet_dict[excluded_domain], size=1)[0]
                 candidate_dict[excluded_domain] = candidate_entity
-                if find_pattern_count(candidate_dict, train_df)  !=0 :
-                    trials_2+=1
-                else:
-                    break
+                if find_pattern_count(candidate_dict, train_df) ==0 :
+                    found = True
+                # Ensure this is not case of pairwise spurious co-occurrence
+                coOcc_nonZero = True
+                for entity_pair in combinations(list(candidate_dict.keys()),2):
+                    entity_pair = sorted(entity_pair)
+                    key = '_+_'.join(entity_pair)
+                    e1 = candidate_dict[entity_pair[0]]
+                    e2 = candidate_dict[entity_pair[1]]
+                    coOcc_nonZero = (columnWise_coOccMatrix_dict[key][e1][e2] > 0)
+                    if coOcc_nonZero == False:
+                        found = False
+                        break
 
+                if found == True:
+                    break
+                trials_2 += 1
             # Ensure this does not occur in either train or test set
             hash_val = get_hash_aux(new_row, id_col)
             duplicate_flag = is_duplicate(
@@ -312,7 +327,6 @@ def generate_type2_anomalies(
         ) for target_df in list_df_chunks
     )
 
-
     print('Post cleaning chunk lengths ->', [len(_) for _ in list_res_df])
 
     anomalies_df = None
@@ -325,7 +339,7 @@ def generate_type2_anomalies(
     anomalies_df = anomalies_df.drop_duplicates(subset=domains)
     anomalies_df[id_col] = anomalies_df[id_col].apply(
         aux_modify_id,
-        args=('001',)
+        args=('002',)
     )
 
     op_path = os.path.join(save_dir, 'anomalies_type2.csv')
