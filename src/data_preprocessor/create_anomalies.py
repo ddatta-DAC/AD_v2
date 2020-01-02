@@ -120,7 +120,7 @@ def aux_func_type_1(
                 break
 
         anomalies_df = anomalies_df.append(new_row,ignore_index=True)
-
+        print(' generated anomaly type 1')
     return anomalies_df
 
 
