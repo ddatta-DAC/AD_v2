@@ -17,7 +17,7 @@ except:
 # Append a hash to speed up processing
 # ==========================
 def get_hash_aux(row,id_col):
-    row_dict = row.todict()
+    row_dict = row.to_dict()
     del row_dict[id_col]
     _str = '_'.join([str(_) for _ in row_dict.values()])
     str_hash = hashlib.md5(_str).hexdigest()
