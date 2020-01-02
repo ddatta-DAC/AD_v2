@@ -16,6 +16,10 @@ try:
     import clean_up_test_data
 except:
     from . import clean_up_test_data
+try:
+    import create_anomalies
+except:
+    from . import create_anomalies
 
 # ===================
 
@@ -562,5 +566,18 @@ def clean_test_data_level2( ):
 
 
 CONFIG = set_up_config()
-create_train_test_sets()
-clean_test_data_level2()
+# create_train_test_sets()
+# clean_test_data_level2()
+
+train_df = pd.read_csv(os.path.join(save_dir, 'train_data.csv'))
+test_df = pd.read_csv(os.path.join(save_dir, 'test_data_v1.csv'))
+
+create_anomalies.generate_type1_anomalies(
+        test_df,
+        train_df,
+        save_dir,
+        id_col,
+        num_jobs=40,
+        anom_perc=10
+)
+
