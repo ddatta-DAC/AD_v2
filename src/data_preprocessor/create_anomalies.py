@@ -102,8 +102,7 @@ def aux_func_type_1(
                     )[0]
                     generated[d] = entity_d
 
-                    # Check if selected entities pairwise co-occur
-
+                # Check if selected entities pairwise co-occur
                 for _pair in combinations(list(generated.keys()),2):
                     _pair = sorted(_pair)
                     key = '_+_'.join(_pair)
@@ -203,13 +202,14 @@ def find_pattern_count(domainEntity_dict, ref_df):
     return len(res_query)
 
 
-def aux_func_type_2(
+def aux_func_type_2_3(
         target_df,
         train_df,
         ref_df,
         columnWise_coOccMatrix_dict,
         id_col,
-        anom_count
+        anom_count,
+        pattern_size
 ):
     working_df = target_df.sample(anom_count)
     domains = list(sorted(target_df.columns))
@@ -228,8 +228,9 @@ def aux_func_type_2(
     for i,row in working_df.iterrows():
         new_row = pd.Series(row, copy=True)
         # select 3 domains
+
         while True:
-            domain_set = list(random.choice(domains, replace=False, size=4))
+            domain_set = list(random.choice(domains, replace=False, size=pattern_size))
             trials_1  = 0
             excluded_domain = None
             pos_set = None
@@ -275,6 +276,7 @@ def aux_func_type_2(
                 if found == True:
                     break
                 trials_2 += 1
+
             # Ensure this does not occur in either train or test set
             hash_val = get_hash_aux(new_row, id_col)
             duplicate_flag = is_duplicate(
@@ -320,10 +322,10 @@ def generate_type2_anomalies(
     list_df_chunks.append(test_df.tail(end_len))
 
     distributed_anom_count = int(len(test_df) * anom_perc / 100 * (1 / num_jobs))
-
+    pattern_size = 4
     list_res_df = Parallel(n_jobs=num_jobs)(
-        delayed(aux_func_type_2)(
-            target_df,  train_df, ref_df, columnWise_coOccMatrix_dict, id_col, distributed_anom_count
+        delayed(aux_func_type_2_3)(
+            target_df,  train_df, ref_df, columnWise_coOccMatrix_dict, id_col, distributed_anom_count, pattern_size
         ) for target_df in list_df_chunks
     )
 
@@ -346,4 +348,59 @@ def generate_type2_anomalies(
     anomalies_df.to_csv(op_path, index=None)
     return anomalies_df
 
+
+def generate_type3_anomalies(
+        test_df,
+        train_df,
+        save_dir,
+        id_col='PanjivaRecordID',
+        num_jobs=40,
+        anom_perc=5
+):
+    domains = list(sorted(test_df.columns))
+    domains.remove(id_col)
+
+    # Create the  co-occurrence matrix using the reference data frame(training data)
+    columnWise_coOccMatrix_dict = get_coOccMatrix_dict(train_df, id_col)
+
+    ref_df = pd.DataFrame(train_df, copy=True)
+    ref_df = ref_df.append(test_df, ignore_index=True)
+    ref_df = add_hash(ref_df, id_col)
+
+    # chunk data frame :: Parallelize the process
+    chunk_len = int(len(test_df) // num_jobs)
+    list_df_chunks = np.split(
+        test_df.head(chunk_len * (num_jobs - 1)),
+        num_jobs - 1
+    )
+
+    end_len = len(test_df) - chunk_len * (num_jobs - 1)
+    list_df_chunks.append(test_df.tail(end_len))
+
+    distributed_anom_count = int(len(test_df) * anom_perc / 100 * (1 / num_jobs))
+    pattern_size = 3
+    list_res_df = Parallel(n_jobs=num_jobs)(
+        delayed(aux_func_type_2_3)(
+            target_df,  train_df, ref_df, columnWise_coOccMatrix_dict, id_col, distributed_anom_count, pattern_size
+        ) for target_df in list_df_chunks
+    )
+
+    print('Post cleaning chunk lengths ->', [len(_) for _ in list_res_df])
+
+    anomalies_df = None
+    for _df in list_res_df:
+        if anomalies_df is None:
+            anomalies_df = _df
+        else:
+            anomalies_df = anomalies_df.append(_df, ignore_index=True)
+
+    anomalies_df = anomalies_df.drop_duplicates(subset=domains)
+    anomalies_df[id_col] = anomalies_df[id_col].apply(
+        aux_modify_id,
+        args=('003',)
+    )
+
+    op_path = os.path.join(save_dir, 'anomalies_type3.csv')
+    anomalies_df.to_csv(op_path, index=None)
+    return anomalies_df
 
