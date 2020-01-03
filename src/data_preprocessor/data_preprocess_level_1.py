@@ -572,14 +572,14 @@ CONFIG = set_up_config()
 train_df = pd.read_csv(os.path.join(save_dir, CONFIG['train_data_file']))
 test_df = pd.read_csv(os.path.join(save_dir, CONFIG['test_data_file_v1']))
 
-create_anomalies.generate_type1_anomalies(
-        test_df,
-        train_df,
-        save_dir,
-        id_col,
-        num_jobs=40,
-        anom_perc=10
-)
+# create_anomalies.generate_type1_anomalies(
+#         test_df,
+#         train_df,
+#         save_dir,
+#         id_col,
+#         num_jobs=40,
+#         anom_perc=10
+# )
 
 
 create_anomalies.generate_type2_anomalies(

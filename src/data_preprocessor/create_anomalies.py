@@ -7,6 +7,7 @@ from itertools import combinations
 from joblib import Parallel, delayed
 from numpy import random
 import hashlib
+
 try:
     import clean_up_test_data
 except:
@@ -16,7 +17,7 @@ except:
 # ==========================
 # Append a hash to speed up processing
 # ==========================
-def get_hash_aux(row,id_col):
+def get_hash_aux(row, id_col):
     row_dict = row.to_dict()
     del row_dict[id_col]
     _str = '_'.join([str(_) for _ in row_dict.values()])
@@ -25,8 +26,7 @@ def get_hash_aux(row,id_col):
     return str_hash
 
 
-def add_hash(df,id_col):
-
+def add_hash(df, id_col):
     df['hash'] = df.apply(
         get_hash_aux,
         axis=1,
@@ -34,9 +34,14 @@ def add_hash(df,id_col):
     )
     return df
 
-def is_duplicate(ref_df,  hash_val):
-    if len(ref_df.loc[ref_df['hash']==hash_val]) > 0 : return True
+
+def is_duplicate(ref_df, hash_val):
+    if len(ref_df.loc[ref_df['hash'] == hash_val]) > 0: return True
     return False
+
+# modify the id_col
+def aux_modify_id(value, suffix):
+    return int(str(value) + str(suffix))
 
 
 def get_coOccMatrix_dict(df, id_col):
@@ -55,14 +60,13 @@ def get_coOccMatrix_dict(df, id_col):
 
     return columnWise_coOccMatrix_dict
 
-# modify the id_col
-def aux_modify_id( value , suffix ):
-    return int(str(value) + str(suffix))
+
 
 '''
 Type 1 :
 set of 3 entities which pairwise do not co-occur, and not present in test or train set
 '''
+
 
 def aux_func_type_1(
         target_df,
@@ -81,17 +85,17 @@ def aux_func_type_1(
         domain_entitiesSet_dict[d] = list(set(ref_df[d]))
 
     anomalies_df = pd.DataFrame(
-        columns= list(target_df.columns)
+        columns=list(target_df.columns)
     )
 
-    for i,row in working_df.iterrows():
+    for i, row in working_df.iterrows():
         new_row = None
         # generate
         not_found = True
 
         while not_found:
 
-            domain_set = random.choice(domains, replace=False,  size=3)
+            domain_set = random.choice(domains, replace=False, size=3)
             generated = {}
             new_row = pd.Series(row, copy=True)
             not_satisied = True
@@ -105,7 +109,7 @@ def aux_func_type_1(
                     generated[d] = entity_d
 
                 # Check if selected entities pairwise co-occur
-                for _pair in combinations(list(generated.keys()),2):
+                for _pair in combinations(list(generated.keys()), 2):
                     _pair = sorted(_pair)
                     key = '_+_'.join(_pair)
                     e1 = generated[_pair[0]]
@@ -115,7 +119,7 @@ def aux_func_type_1(
                         not_satisied = True
                         break
 
-            for d,e in generated.items():
+            for d, e in generated.items():
                 new_row[d] = e
 
             hash_val = get_hash_aux(new_row, id_col)
@@ -128,7 +132,7 @@ def aux_func_type_1(
                 not_found = False
                 break
 
-        anomalies_df = anomalies_df.append(new_row,ignore_index=True)
+        anomalies_df = anomalies_df.append(new_row, ignore_index=True)
         print(' generated anomaly type 1')
 
     return anomalies_df
@@ -148,8 +152,8 @@ def generate_type1_anomalies(
     # Create the  co-occurrence matrix using the reference data frame(training data)
     columnWise_coOccMatrix_dict = get_coOccMatrix_dict(train_df, id_col)
 
-    ref_df = pd.DataFrame(train_df,copy=True)
-    ref_df = ref_df.append(test_df,ignore_index=True)
+    ref_df = pd.DataFrame(train_df, copy=True)
+    ref_df = ref_df.append(test_df, ignore_index=True)
     ref_df = add_hash(ref_df, id_col)
 
     # chunk data frame :: Parallelize the process
@@ -188,6 +192,7 @@ def generate_type1_anomalies(
     anomalies_df.to_csv(op_path, index=None)
     return anomalies_df
 
+
 '''
 Type 2 anomalies
 
@@ -195,6 +200,8 @@ contextual anomaly :
 (A,B,C) -> not D  in train set
 i.e. A,B,C,D co-occur but D does not co-occur with (A,B,C) 
 '''
+
+
 def find_pattern_count(domainEntity_dict, ref_df):
     global id_col
     query_str = []
@@ -226,19 +233,19 @@ def aux_func_type_2_3(
         domain_entitiesSet_dict[d] = list(set(ref_df[d]))
 
     anomalies_df = pd.DataFrame(
-        columns= list(target_df.columns)
+        columns=list(target_df.columns)
     )
     max_tries = 5
     max_iterations = 100
 
-    for i,row in working_df.iterrows():
+    for i, row in working_df.iterrows():
         new_row = pd.Series(row, copy=True)
         # select 3 domains
 
         iterations = 0
         while iterations < max_iterations:
             domain_set = list(random.choice(domains, replace=False, size=pattern_size))
-            trials_1  = 0
+            trials_1 = 0
             excluded_domain = None
             pos_set = None
             candidate_dict = None
@@ -262,15 +269,15 @@ def aux_func_type_2_3(
             trials_2 = 0
             found = False
 
-            while found == False and trials_2 < max_tries*3 :
+            while found == False and trials_2 < max_tries * 3:
                 found = False
                 candidate_entity = random.choice(domain_entitiesSet_dict[excluded_domain], size=1)[0]
                 candidate_dict[excluded_domain] = candidate_entity
-                if find_pattern_count(candidate_dict, train_df) ==0 :
+                if find_pattern_count(candidate_dict, train_df) == 0:
                     found = True
                 # Ensure this is not case of pairwise spurious co-occurrence
                 coOcc_nonZero = True
-                for entity_pair in combinations(list(candidate_dict.keys()),2):
+                for entity_pair in combinations(list(candidate_dict.keys()), 2):
                     entity_pair = sorted(entity_pair)
                     key = '_+_'.join(entity_pair)
                     e1 = candidate_dict[entity_pair[0]]
@@ -292,12 +299,12 @@ def aux_func_type_2_3(
             )
 
             if duplicate_flag == False:
-               break
+                break
             iterations += 1
             if iterations == max_iterations:
                 print('!! Max iteration reached ... skipping this row !!')
 
-        anomalies_df = anomalies_df.append(new_row,ignore_index=True)
+        anomalies_df = anomalies_df.append(new_row, ignore_index=True)
         print(' generated anomaly type 2 or 3')
 
     return anomalies_df
@@ -311,7 +318,7 @@ def generate_type2_anomalies(
         num_jobs=40,
         anom_perc=5
 ):
-    print (" :: Generation of anaomalies type 2")
+    print(" :: Generation of anaomalies type 2")
     domains = list(sorted(test_df.columns))
     domains.remove(id_col)
 
@@ -336,7 +343,7 @@ def generate_type2_anomalies(
     pattern_size = 4
     list_res_df = Parallel(n_jobs=num_jobs)(
         delayed(aux_func_type_2_3)(
-            target_df,  train_df, ref_df, columnWise_coOccMatrix_dict, id_col, distributed_anom_count, pattern_size
+            target_df, train_df, ref_df, columnWise_coOccMatrix_dict, id_col, distributed_anom_count, pattern_size
         ) for target_df in list_df_chunks
     )
 
@@ -393,7 +400,7 @@ def generate_type3_anomalies(
     pattern_size = 3
     list_res_df = Parallel(n_jobs=num_jobs)(
         delayed(aux_func_type_2_3)(
-            target_df,  train_df, ref_df, columnWise_coOccMatrix_dict, id_col, distributed_anom_count, pattern_size
+            target_df, train_df, ref_df, columnWise_coOccMatrix_dict, id_col, distributed_anom_count, pattern_size
         ) for target_df in list_df_chunks
     )
 
@@ -415,4 +422,3 @@ def generate_type3_anomalies(
     op_path = os.path.join(save_dir, 'anomalies_type3.csv')
     anomalies_df.to_csv(op_path, index=None)
     return anomalies_df
-
