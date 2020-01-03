@@ -8,26 +8,17 @@ from itertools import combinations
 from joblib import Parallel, delayed
 
 
-def create_coocc_matrix(df, col_1, col_2):
-    set_elements_1 = set(list(df[col_1]))
-    set_elements_2 = set(list(df[col_2]))
-    count_1 = len(set_elements_1)
-    count_2 = len(set_elements_2)
-    coocc = np.zeros([count_1, count_2])
-    df = df[[col_1, col_2]]
-    new_df = df.groupby([col_1, col_2]).size().reset_index(name='count')
 
-    for _, row in new_df.iterrows():
-        i = row[col_1]
-        j = row[col_2]
-        coocc[i][j] = row['count']
+try:
+    from . import utils_createAnomalies as utils_local
 
-    print('Col 1 & 2', col_1, col_2, coocc.shape, '>>', (count_1,count_2) )
-    return coocc
+except:
+    import utils_createAnomalies as utils_local
 
 
 '''
-Remove the rows in test set where any apir of entities do not co-occur in the training set.
+Remove the rows in test set where any pair of entities do not co-occur in the training set.
+AKA remove trivial spurious co-occurrence
 '''
 
 # Returns False if there is supurious pairwise-co-occurrence
@@ -65,30 +56,15 @@ def remove_order1_spurious_coocc(
         id_col='PanjivaRecordID'
 ):
     print('In remove_order1_spurious_coocc ::')
-    columns = list(train_df.columns)
-    columns.remove(id_col)
-    columns = list(sorted(columns))
-    columnWise_coOcc_array_dict = {}
-
-    for i in range(len(columns)):
-        for j in range(i + 1, len(columns)):
-            col_1 = columns[i]
-            col_2 = columns[j]
-            key = col_1 + '_+_' + col_2
-            res = create_coocc_matrix(train_df, col_1, col_2)
-            columnWise_coOcc_array_dict[key] = res
-
-    num_chunks = 40
-    chunk_len = int(len(test_df) // num_chunks)
-
-    list_df_chunks = np.split(
-        test_df.head(chunk_len * (num_chunks - 1)),
-        num_chunks - 1
+    columnWise_coOcc_array_dict = utils_local.get_coOccMatrix_dict(
+        train_df,
+        id_col
     )
-
-    end_len = len(test_df) - chunk_len * (num_chunks - 1)
-    list_df_chunks.append(test_df.tail(end_len))
-    print(' Chunk lengths ->', [len(_) for _ in list_df_chunks])
+    num_chunks = 40
+    list_df_chunks = utils_local.chunk_df(
+        test_df,
+        num_chunks
+    )
 
     list_dedup_df = Parallel(n_jobs=num_chunks)(
         delayed(aux_check)(

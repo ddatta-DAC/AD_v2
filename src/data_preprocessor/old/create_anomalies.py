@@ -57,7 +57,6 @@ def get_coOccMatrix_dict(df, id_col):
             key = col_1 + '_+_' + col_2
             res = clean_up_test_data.create_coocc_matrix(df, col_1, col_2)
             columnWise_coOccMatrix_dict[key] = res
-
     return columnWise_coOccMatrix_dict
 
 
