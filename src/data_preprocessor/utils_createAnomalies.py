@@ -144,3 +144,15 @@ def dedup_list_dictionaries(list_domEntDictionaries):
             set_hash_values = set_hash_values.union(hash_val)
 
     return result
+
+def query_df(
+            df,
+            domainEntity_dict
+        ):
+
+    query_str = []
+    for _c, _i in domainEntity_dict.items():
+        query_str.append(' ' + _c + ' == ' + str(_i))
+    query_str = ' & '.join(query_str)
+    res_query = df.query(query_str)
+    return res_query
