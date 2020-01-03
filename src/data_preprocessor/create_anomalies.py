@@ -27,7 +27,6 @@ def get_hash_aux(row,id_col):
 
 def add_hash(df,id_col):
 
-    df['hash'] = None
     df['hash'] = df.apply(
         get_hash_aux,
         axis=1,

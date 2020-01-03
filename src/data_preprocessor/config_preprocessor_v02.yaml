@@ -1,6 +1,8 @@
 'save_dir': './../../generated_data_v1'
 'DIR': 'china_export'
 'cleaned_csv_subdir' : 'cleaned_csv'
+'train_data' : 'test_data_v1.csv'
+'test_data_file_v1' : 'test_data_v1.csv'
 'hscode_filter_file_loc' : './../../MetaData'
 'hscode_filter_file_pattern' : '_hs_codes.txt' 
 'china_import':

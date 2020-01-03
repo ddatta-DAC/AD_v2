@@ -560,7 +560,7 @@ def clean_test_data_level2( ):
         id_col
     )
 
-    test_df_file = os.path.join(save_dir, 'test_data_v1.csv')
+    test_df_file = os.path.join(save_dir, CONFIG['test_data_file_v1'])
     test_df.to_csv(test_df_file, index=False)
     return
 
@@ -569,8 +569,8 @@ CONFIG = set_up_config()
 # create_train_test_sets()
 # clean_test_data_level2()
 
-train_df = pd.read_csv(os.path.join(save_dir, 'train_data.csv'))
-test_df = pd.read_csv(os.path.join(save_dir, 'test_data_v1.csv'))
+train_df = pd.read_csv(os.path.join(save_dir, CONFIG['train_data_file']))
+test_df = pd.read_csv(os.path.join(save_dir, CONFIG['test_data_file_v1']))
 
 create_anomalies.generate_type1_anomalies(
         test_df,
