@@ -61,7 +61,7 @@ def aux_modify_id( value , suffix ):
 
 '''
 Type 1 :
-set of 3 entities which pairwise co-occur, but not present in test or train set
+set of 3 entities which pairwise do not co-occur, and not present in test or train set
 '''
 
 def aux_func_type_1(
@@ -87,7 +87,10 @@ def aux_func_type_1(
     for i,row in working_df.iterrows():
         new_row = None
         # generate
-        while True:
+        not_found = True
+
+        while not_found:
+
             domain_set = random.choice(domains, replace=False,  size=3)
             generated = {}
             new_row = pd.Series(row, copy=True)
@@ -107,8 +110,9 @@ def aux_func_type_1(
                     key = '_+_'.join(_pair)
                     e1 = generated[_pair[0]]
                     e2 = generated[_pair[1]]
-                    not_satisied = (columnWise_coOccMatrix_dict[key][e1][e2] == 0)
-                    if not_satisied:
+                    is_zero = (columnWise_coOccMatrix_dict[key][e1][e2] == 0)
+                    if is_zero == False:
+                        not_satisied = True
                         break
 
             for d,e in generated.items():
@@ -120,7 +124,9 @@ def aux_func_type_1(
                 hash_val
             )
 
-            if duplicate_flag == False: break
+            if duplicate_flag == False:
+                not_found = False
+                break
 
         anomalies_df = anomalies_df.append(new_row,ignore_index=True)
         print(' generated anomaly type 1')
@@ -223,12 +229,14 @@ def aux_func_type_2_3(
         columns= list(target_df.columns)
     )
     max_tries = 5
+    max_iterations = 100
 
     for i,row in working_df.iterrows():
         new_row = pd.Series(row, copy=True)
         # select 3 domains
 
-        while True:
+        iterations = 0
+        while iterations < max_iterations:
             domain_set = list(random.choice(domains, replace=False, size=pattern_size))
             trials_1  = 0
             excluded_domain = None
@@ -284,10 +292,13 @@ def aux_func_type_2_3(
             )
 
             if duplicate_flag == False:
-                break
+               break
+            iterations += 1
+            if iterations == max_iterations:
+                print('!! Max iteration reached ... skipping this row !!')
 
         anomalies_df = anomalies_df.append(new_row,ignore_index=True)
-        print(' generated anomaly type 2')
+        print(' generated anomaly type 2 or 3')
 
     return anomalies_df
 
@@ -300,6 +311,7 @@ def generate_type2_anomalies(
         num_jobs=40,
         anom_perc=5
 ):
+    print (" :: Generation of anaomalies type 2")
     domains = list(sorted(test_df.columns))
     domains.remove(id_col)
 
@@ -356,6 +368,7 @@ def generate_type3_anomalies(
         num_jobs=40,
         anom_perc=5
 ):
+    print(" :: Generation of anaomalies type 3")
     domains = list(sorted(test_df.columns))
     domains.remove(id_col)
 
