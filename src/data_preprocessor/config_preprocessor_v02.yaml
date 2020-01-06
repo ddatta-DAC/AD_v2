@@ -37,12 +37,12 @@
     - 'TradeType'
     - 'TransportMethod'
     - 'HSCode'
-    
   'num_neg_samples': 15
   'column_value_filters': False
   'num_neg_samples_ape': 3
   'low_freq_bound': 5
-  
+  'company_domain_columns':
+    - 'ShipperPanjivaID'
 'us_import':
   'use_cols':
     - 'PanjivaRecordID'
