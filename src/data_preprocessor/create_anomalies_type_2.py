@@ -52,7 +52,8 @@ def find_conflicting_patterns_aux_1(
         domain_entitiesSet_dict[d] = list(set(train_df[d]))
 
     cur_count = 0
-    while cur_count < count:
+    while cur_count <= count:
+        cur_count+=1
         domain_set = np.random.choice(
             domains,
             size=pattern_size,
@@ -106,6 +107,7 @@ def find_conflicting_patterns_aux_1(
         results.append(
             candidate_dict
         )
+        print('Generated:: ', candidate_dict)
     return results
 
 
