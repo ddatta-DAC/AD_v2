@@ -10,6 +10,10 @@ from joblib import Parallel, delayed
 import yaml
 import math
 
+try:
+    from . import utils_createAnomalies as utils_local
+except:
+    import utils_createAnomalies as utils_local
 
 CONFIG_FILE = 'config_preprocessor_v02.yaml'
 id_col = 'PanjivaRecordID'
@@ -22,7 +26,7 @@ freq_bound = None
 column_value_filters = None
 num_neg_samples_v1 = None
 save_dir = None
-
+DIR = None
 
 def set_up_config():
     global CONFIG_FILE
@@ -48,12 +52,11 @@ def set_up_config():
     use_cols = CONFIG[DIR]['use_cols']
     freq_bound = CONFIG[DIR]['low_freq_bound']
     num_neg_samples_ape = CONFIG[DIR]['num_neg_samples_ape']
-    freq_bound = CONFIG[DIR]['low_freq_bound']
+
     column_value_filters = CONFIG[DIR]['column_value_filters']
     num_neg_samples_v1 = CONFIG[DIR]['num_neg_samples_v1']
 
     return
-
 
 
 
@@ -242,11 +245,6 @@ def create_ape_model_data():
         index_col=None
     )
 
-    test_df = pd.read_csv(
-        test_data_file,
-        index_col=None
-    )
-
     neg_samples_df = pd.read_csv(
         train_neg_data_file,
         index_col=None
@@ -325,3 +323,182 @@ def create_ape_model_data():
         )
 
     return
+
+
+
+'''
+Negative sample generation for the new  model
+based on the concept 1 - feature bagging
+'''
+
+
+def get_neg_sample_v1(
+        _k,
+        ref_df,
+        column_valid_values,
+        orig_row,
+        feature_cols_id
+):
+    global id_col
+    global ns_id_col
+
+    Pid_val = orig_row[id_col]
+    num_features = len(feature_cols_id)
+    num_randomizations = random.randint(1, int(num_features / 2))
+
+    # iterate while a real noise is not generated
+    while True:
+        target_cols = [feature_cols_id[_]
+                       for _ in random.sample(
+                list(feature_cols_id.keys()),
+                k=num_randomizations
+            )
+                       ]
+        c_vals = {}
+        for _tc in target_cols:
+            c_vals[_tc] = random.sample(column_valid_values[_tc], 1)[0]
+
+        new_row = pd.Series(orig_row, copy=True)
+        for _col, _item_id in c_vals.items():
+            new_row[_col] = _item_id
+
+        _hash = utils_local.get_hash_aux(new_row, id_col)
+        if not utils_local.is_duplicate(new_row, ref_df):
+            new_row[ns_id_col] = int(str(Pid_val) + '01' + str(_k))
+            break
+
+    return new_row
+
+
+def create_negative_samples_v1_aux(
+        idx,
+        df_chunk,
+        feature_cols,
+        ref_df,
+        column_valid_values,
+        save_dir
+):
+    global ns_id_col
+    global id_col
+    global num_neg_samples_v1
+
+    ns_id_col = 'NegSampleID'
+    feature_cols_id = {
+        e[0]: e[1]
+        for e in enumerate(feature_cols)
+    }
+
+    new_df = pd.DataFrame(
+        columns=list(ref_df.columns)
+    )
+
+    new_df[ns_id_col] = 0
+    for i, row in df_chunk.iterrows():
+
+        for _k in range(num_neg_samples_v1):
+            _res = get_neg_sample_v1(
+                _k, ref_df, column_valid_values, row, feature_cols_id
+            )
+            new_df = new_df.append(
+                _res,
+                ignore_index=True
+            )
+
+    if not os.path.exists(os.path.join(save_dir, 'tmp')):
+        os.mkdir(os.path.join(save_dir, 'tmp'))
+    f_name = os.path.join(save_dir, 'tmp', 'tmp_df_' + str(idx) + '.csv')
+    new_df.to_csv(
+        f_name,
+        index=None
+    )
+    return f_name
+
+
+def create_negative_samples_v1():
+    global DIR
+    global save_dir
+    global id_col
+    global ns_id_col
+    global num_neg_samples_v1
+
+    num_chunks = 40
+    train_data_file = os.path.join(save_dir, 'train_data.csv')
+
+    train_df = pd.read_csv(
+        train_data_file,
+        index_col=None
+    )
+
+    '''
+    Randomly generate samples
+    choose 15 negative samples per training instance
+    For negative samples pick m entities & replace it it randomly 
+    m randomly between (1, d/2)
+    Validate if generated negative sample is not part of the test or training set
+    '''
+
+    ref_df = pd.DataFrame(
+        train_df,
+        copy=True
+    )
+
+    feature_cols = list(train_df.columns)
+    feature_cols.remove(id_col)
+    feature_cols_id = {
+        e[0]: e[1]
+        for e in enumerate(feature_cols)
+    }
+
+    # get the domain dimensions
+    with open(
+            os.path.join(save_dir, 'domain_dims.pkl'), 'rb'
+    ) as fh:
+        domain_dims = pickle.load(fh)
+
+        # Store what are valid values for each columns
+    column_valid_values = {}
+    for _fc_name in feature_cols:
+        column_valid_values[_fc_name] = list(set(list(ref_df[_fc_name])))
+
+    chunk_len = int(len(train_df) / (num_chunks - 1))
+
+    list_df_chunks = np.split(
+        train_df.head(
+            chunk_len * (num_chunks - 1)
+        ), num_chunks - 1
+    )
+
+    end_len = len(train_df) - chunk_len * (num_chunks - 1)
+    list_df_chunks.append(train_df.tail(end_len))
+    for _l in range(len(list_df_chunks)):
+        print(len(list_df_chunks[_l]), _l)
+
+    results = []
+
+    results = Parallel(n_jobs=10)(
+        delayed
+        (create_negative_samples_v1_aux)(
+            _i,
+            list_df_chunks[_i],
+            feature_cols,
+            ref_df,
+            column_valid_values,
+            save_dir
+        )
+        for _i in range(len(list_df_chunks))
+    )
+
+    new_df = None
+    for _f in results:
+        _df = pd.read_csv(_f, index_col=None)
+
+        if new_df is None:
+            new_df = _df
+        else:
+            new_df = new_df.append(_df, ignore_index=True)
+        print(' >> ', len(new_df))
+
+    new_df.to_csv(os.path.join(save_dir, 'negative_samples_v1.csv'), index=False)
+    return new_df
+
+
