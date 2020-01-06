@@ -136,21 +136,26 @@ def generate_anomalies_type_2_aux_2(
         test_df,
         cand
     )
+
     match_df = match_df.sample(int(1.1 * pattern_duplicate_count))
     new_df = pd.DataFrame(columns=list(train_df.columns))
+
     for _, row in match_df.iterrows():
         row_copy = pd.Series(row, copy=True)
         for d, e in pattern.items():
             row_copy[d] = e
 
         new_df = new_df.append(
-            row_copy, ignore_index=True
+            row_copy,
+            ignore_index=True
         )
+
     pattern_idx_str = '002' + str()
     new_df[id_col] = new_df.apply(
         utils_local.aux_modify_id,
         args=(pattern_idx_str,)
     )
+
     return new_df
 
 # ========== #
