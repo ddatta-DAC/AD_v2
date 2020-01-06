@@ -49,7 +49,6 @@ def aux_func_type_1(
         not_found = True
 
         while not_found:
-
             domain_set = random.choice(domains, replace=False, size=3)
             generated = {}
             new_row = pd.Series(row, copy=True)
@@ -84,10 +83,13 @@ def aux_func_type_1(
             )
 
             if duplicate_flag == False:
-                not_found = False
+                print('Generated :: ', new_row[id_col] )
                 break
 
-        anomalies_df = anomalies_df.append(new_row, ignore_index=True)
+        anomalies_df = anomalies_df.append(
+            new_row,
+            ignore_index=True
+        )
         print(' generated anomaly type 1')
 
     return anomalies_df
@@ -106,21 +108,22 @@ def generate_anomalies_type1(
 
     # Create the co-occurrence matrix using the reference data frame(training data)
     columnWise_coOccMatrix_dict = utils_local.get_coOccMatrix_dict(train_df, id_col)
-
     ref_df = pd.DataFrame(train_df, copy=True)
     ref_df = ref_df.append(test_df, ignore_index=True)
     ref_df = utils_local.add_hash(ref_df, id_col)
 
     # chunk data frame :: Parallelize the process
-
     list_df_chunks = utils_local.chunk_df(test_df, num_jobs)
-
     print(' Chunk lengths ->', [len(_) for _ in list_df_chunks])
     distributed_anom_count = int(len(test_df) * anom_perc / 100 * (1 / num_jobs))
 
     list_res_df = Parallel(n_jobs=num_jobs)(
         delayed(aux_func_type_1)(
-            target_df, ref_df, columnWise_coOccMatrix_dict, id_col, distributed_anom_count
+            target_df,
+            ref_df,
+            columnWise_coOccMatrix_dict,
+            id_col,
+            distributed_anom_count
         ) for target_df in list_df_chunks
     )
     print('Post cleaning chunk lengths ->', [len(_) for _ in list_res_df])
