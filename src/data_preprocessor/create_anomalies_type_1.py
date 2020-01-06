@@ -93,7 +93,7 @@ def aux_func_type_1(
     return anomalies_df
 
 
-def generate_type1_anomalies(
+def generate_anomalies_type1(
         test_df,
         train_df,
         save_dir,
@@ -104,7 +104,7 @@ def generate_type1_anomalies(
     domains = list(sorted(test_df.columns))
     domains.remove(id_col)
 
-    # Create the  co-occurrence matrix using the reference data frame(training data)
+    # Create the co-occurrence matrix using the reference data frame(training data)
     columnWise_coOccMatrix_dict = utils_local.get_coOccMatrix_dict(train_df, id_col)
 
     ref_df = pd.DataFrame(train_df, copy=True)
