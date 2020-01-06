@@ -138,7 +138,7 @@ def dedup_list_dictionaries(list_domEntDictionaries):
         hash_input = ''
         for k in keys:
             hash_input = hash_input + str(k) + '_' + str(_dict[k])
-        hash_val = str.encode(hashlib.md5(hash_input).hexdigest())
+        hash_val = str(hashlib.md5(str.encode(hash_input)).hexdigest())
         if hash_val not in set_hash_values:
             result.append(_dict)
             set_hash_values = set_hash_values.union(hash_val)

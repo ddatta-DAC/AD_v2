@@ -109,7 +109,6 @@ def find_conflicting_patterns_aux_1(
             )
             print('Generated:: ', candidate_dict)
 
-
     return results
 
 

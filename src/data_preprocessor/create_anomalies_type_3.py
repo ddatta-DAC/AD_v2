@@ -161,7 +161,7 @@ def generate_anomalies_type3(
     columnPair_coOccMatrix_dict = utils_local.get_coOccMatrix_dict(train_df, id_col)
 
     company_domain_candidates = {}
-    req_count = int(len(test_df) * (anom_perc / 100) / duplicate_count * (1 / len(company_domains)))
+    req_count = int(len(test_df) * (anom_perc / 100) / cluster_count * (1 / len(company_domains)))
 
     anomalies_df = None
 
