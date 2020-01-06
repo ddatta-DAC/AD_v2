@@ -103,11 +103,13 @@ def find_conflicting_patterns_aux_1(
                         condition_satisfied = True
                 # ====
                 _tries2 += 1
+            print("Tries 1 ", _tries1, " Tries 2 ", _tries2)
+            results.append(
+                candidate_dict
+            )
+            print('Generated:: ', candidate_dict)
 
-        results.append(
-            candidate_dict
-        )
-        print('Generated:: ', candidate_dict)
+
     return results
 
 
