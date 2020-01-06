@@ -59,14 +59,14 @@ test_df = pd.read_csv(os.path.join(save_dir, CONFIG['test_data_file_v1']))
 
 
 
-create_anomalies_type_1.generate_anomalies_type1(
-    test_df,
-    train_df,
-    save_dir,
-    id_col='PanjivaRecordID',
-    num_jobs=40,
-    anom_perc=10
-)
+# create_anomalies_type_1.generate_anomalies_type1(
+#     test_df,
+#     train_df,
+#     save_dir,
+#     id_col='PanjivaRecordID',
+#     num_jobs=40,
+#     anom_perc=10
+# )
 
 create_anomalies_type_2.generate_anomalies_type_2(
     train_df,
