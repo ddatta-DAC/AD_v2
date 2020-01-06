@@ -38,7 +38,7 @@ def find_conflicting_patterns_aux_1(
         train_df,
         dict_coOccMatrix,
         id_col,
-        pattern_size=3,
+        pattern_size,
         count=100,
         min_normal_pattern_count=5
 ):
@@ -173,7 +173,6 @@ def generate_anomalies_type_2(
     list_results = Parallel(n_jobs=num_jobs)(
         delayed(find_conflicting_patterns_aux_1)(
             train_df,
-            test_df,
             dict_coOccMatrix,
             id_col,
             pattern_size=pattern_size,

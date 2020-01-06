@@ -5,7 +5,7 @@ import os
 import sys
 import glob
 import pickle
-
+from itertools import combinations
 '''
 Append a hash to speed up processing
 '''
@@ -156,3 +156,18 @@ def query_df(
     query_str = ' & '.join(query_str)
     res_query = df.query(query_str)
     return res_query
+
+
+def check_nonZeroCoOccurrence(
+        dict_domain_entities,
+        dict_coOccMatrix
+):
+    domains = sorted(list(dict_domain_entities.keys()))
+    for d_pair in combinations(domains, 2):
+        d_pair = sorted(d_pair)
+        key = '_+_'.join(d_pair)
+        e1 = dict_domain_entities[d_pair[0]]
+        e2 = dict_domain_entities[d_pair[1]]
+        if dict_coOccMatrix[key][e1][e2] == 0:
+            return False
+    return True

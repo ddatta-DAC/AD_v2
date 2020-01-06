@@ -47,6 +47,7 @@ def aux_func_type_1(
         new_row = None
         # generate
         not_found = True
+        tries_1 = 0
 
         while not_found:
             domain_set = random.choice(domains, replace=False, size=3)
@@ -72,7 +73,11 @@ def aux_func_type_1(
                     if is_zero == False:
                         not_satisied = True
                         break
+                    else:
+                        not_satisied = False
 
+                tries_1 +=1
+            print('Tries :: ',tries_1)
             for d, e in generated.items():
                 new_row[d] = e
 
@@ -116,7 +121,7 @@ def generate_anomalies_type1(
     list_df_chunks = utils_local.chunk_df(test_df, num_jobs)
     print(' Chunk lengths ->', [len(_) for _ in list_df_chunks])
     distributed_anom_count = int(len(test_df) * anom_perc / 100 * (1 / num_jobs))
-
+    print('Anomalies generation per job :: ',distributed_anom_count )
     list_res_df = Parallel(n_jobs=num_jobs)(
         delayed(aux_func_type_1)(
             target_df,
