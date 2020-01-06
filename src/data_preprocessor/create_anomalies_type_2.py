@@ -29,26 +29,6 @@ except:
     import utils_createAnomalies as utils_local
 
 
-
-
-
-def get_coOccMatrix_dict(df, id_col):
-    columns = list(df.columns)
-    columns.remove(id_col)
-    columns = list(sorted(columns))
-    columnWise_coOccMatrix_dict = {}
-
-    for i in range(len(columns)):
-        for j in range(i + 1, len(columns)):
-            col_1 = columns[i]
-            col_2 = columns[j]
-            key = col_1 + '_+_' + col_2
-            res = utils_local.create_coocc_matrix(df, col_1, col_2)
-            columnWise_coOccMatrix_dict[key] = res
-
-    return columnWise_coOccMatrix_dict
-
-
 def check_nonZeroCoOccurrence(
         dict_domain_entities,
         dict_coOccMatrix
@@ -64,31 +44,43 @@ def check_nonZeroCoOccurrence(
     return True
 
 
+'''
+Find patterns ::
+{ A,B } !-> { C } 
+'''
+
 def find_conflicting_patterns_aux_1(
         train_df,
         dict_coOccMatrix,
         id_col,
-        pattern_size=4,
-        count=100
+        pattern_size=3,
+        count=100,
+        min_normal_pattern_count = 5
 ):
     results = []
     domains = list(sorted(train_df.columns))
     domains.remove(id_col)
+
     # create set of entity ids for each of the domains
     domain_entitiesSet_dict = {}
-    min_pattern_count = 5
     for d in domains:
         domain_entitiesSet_dict[d] = list(set(train_df[d]))
 
     cur_count = 0
     while cur_count < count:
-        domain_set = np.random.choice(domains, size=pattern_size, replace=False)
+        domain_set = np.random.choice(
+            domains,
+            size=pattern_size,
+            replace=False
+        )
         excluded_domain = np.random.choice(domain_set, size=1)[0]
         pos_set = list(domain_set)
         pos_set.remove(excluded_domain)
         candidate_dict = {}
 
         _tries1 = 0
+
+        #  Find { E_d1, E_d2, ... E_d3 } such that they co-occur pairwise
         while True:
             for d in pos_set:
                 # sample entity
@@ -98,13 +90,19 @@ def find_conflicting_patterns_aux_1(
                 break
             _tries1 += 1
 
-        if utils_local.find_pattern_count(candidate_dict, train_df) >= min_pattern_count:
+        # ======
+        # Find patterns with a minimum "support"
+        # ======
+        if utils_local.find_pattern_count(candidate_dict, train_df) >= min_normal_pattern_count :
             _tries2 = 0
+            max_tries = 1000
             condition_satisfied = False
-            while not condition_satisfied:
+            cur_domain = excluded_domain
+
+            while not condition_satisfied and _tries2 < max_tries:
                 # Select an entity
-                cand_e = np.random.choice(domain_entitiesSet_dict[excluded_domain], size=1)[0]
-                candidate_dict[excluded_domain] = cand_e
+                cand_e = np.random.choice(domain_entitiesSet_dict[cur_domain], size=1)[0]
+                candidate_dict[cur_domain] = cand_e
                 # ====
                 # Ensure that new candidate has non-zero co-occurrence with others
                 for dpair in combinations(list(candidate_dict.keys()), 2):
@@ -128,7 +126,7 @@ def find_conflicting_patterns_aux_1(
 
 # ========== #
 
-def generate_anomalies_type_4(
+def generate_anomalies_type_2(
         train_df,
         test_df,
         dict_coOccMatrix,
@@ -136,7 +134,7 @@ def generate_anomalies_type_4(
         pattern_size=4,
         reqd_anom_perc=10,
         num_jobs=40,
-        pattern_duplicates=100
+        pattern_duplicate_count=100
 ):
     # =====================
     # Over estimating a bit, so that overlaps can be compensated for
@@ -145,7 +143,12 @@ def generate_anomalies_type_4(
 
     list_results = Parallel(n_jobs=num_jobs)(
         delayed(find_conflicting_patterns_aux_1)(
-            train_df, test_df, dict_coOccMatrix, id_col, pattern_size=4, count=dist_pattern_count
+            train_df,
+            test_df,
+            dict_coOccMatrix,
+            id_col,
+            pattern_size=pattern_size,
+            count=dist_pattern_count
         ) for _ in range(num_jobs)
     )
     results= []
@@ -156,20 +159,20 @@ def generate_anomalies_type_4(
     patterns = utils_local.dedup_list_dictionaries(
         results
     )
-
+    result_df = pd.DataFrame(columns=list(train_df.columns))
     # ===================
     # For each pattern create k samples ,
     # where k = pattern_duplicates
     # ===================
 
     for pattern in patterns:
-
+        # ========
         # select 2 (partial) domains
+        # ========
         _domains_set = np.random.choice(list(pattern.keys()),replace=False,size=2)
         cand = {}
         for d in _domains_set:
             cand [d] = pattern[d]
-
 
         # ===
         # Find k records with partial match with pattern
@@ -178,20 +181,26 @@ def generate_anomalies_type_4(
             test_df,
             cand
         )
-        match_df = match_df.sample( int( 1.1 * pattern_duplicates) )
-        new_df = pd.DataFrame(columns= list())
+        match_df = match_df.sample( int( 1.1 * pattern_duplicate_count) )
+
         for _, row in match_df.iterrows():
             row_copy = pd.Series(row,copy=True)
             for d,e in pattern.items():
                 row_copy[d] =  e
 
-            new_df = new_df.append(
+            result_df = result_df.append(
                 row_copy, ignore_index=True
             )
-    return
+
+    result_df[id_col] = result_df.apply(
+        utils_local.aux_modify_id,
+        args=('002',)
+    )
+
+    return result_df
 
 
-
+# ========================
 # CONFIG = set_up_config()
 # train_df = pd.read_csv(os.path.join(save_dir, CONFIG['train_data_file']))
 # dict_coOccMatrix = get_coOccMatrix_dict(train_df, id_col)
