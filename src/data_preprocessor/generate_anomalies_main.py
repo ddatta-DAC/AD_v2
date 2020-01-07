@@ -75,7 +75,7 @@ create_anomalies_type_2.generate_anomalies_type_2(
     test_df,
     save_dir,
     id_col='PanjivaRecordID',
-    pattern_size=4,
+    pattern_size=3,
     reqd_anom_perc=10,
     num_jobs=40,
     min_normal_pattern_count= contextual_pattern_support,
