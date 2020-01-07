@@ -39,8 +39,8 @@ def find_conflicting_patterns_aux_1(
         dict_coOccMatrix,
         id_col,
         pattern_size,
-        count=100,
-        min_normal_pattern_count=5
+        count,
+        min_normal_pattern_count
 ):
     results = []
     domains = list(sorted(train_df.columns))
@@ -107,7 +107,7 @@ def find_conflicting_patterns_aux_1(
             results.append(
                 candidate_dict
             )
-            print('Generated:: ', candidate_dict)
+            # print('Generated:: ', candidate_dict)
 
     return results
 
@@ -153,7 +153,10 @@ def generate_anomalies_type_2_aux_2(
             ignore_index=True
         )
 
-    pattern_idx_str = '002' + str(p_idx)
+    pattern_idx_str = "0020" + str(p_idx)
+
+    print(pattern_idx_str)
+
     new_df[id_col] = new_df.apply(
         utils_local.aux_modify_id,
         args=(pattern_idx_str,)
@@ -177,7 +180,7 @@ def generate_anomalies_type_2(
     # =====================
     # Over estimating a bit, so that overlaps can be compensated for
     # =====================
-    dist_pattern_count = int(1.2 * len(test_df) * (reqd_anom_perc / 100) / 100)
+    distributed_pattern_count = int(1.25 * len(test_df) * (reqd_anom_perc / 100) / pattern_duplicate_count)
     dict_coOccMatrix = utils_local.get_coOccMatrix_dict(
         train_df,
         id_col
@@ -188,7 +191,7 @@ def generate_anomalies_type_2(
             dict_coOccMatrix,
             id_col,
             pattern_size=pattern_size,
-            count=dist_pattern_count,
+            count=distributed_pattern_count,
             min_normal_pattern_count = min_normal_pattern_count
         ) for _ in range(num_jobs)
     )
