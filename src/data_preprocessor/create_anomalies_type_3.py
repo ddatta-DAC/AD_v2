@@ -59,7 +59,7 @@ def generate_anomalies_type3_aux2(
     # Select 2 entities that do not co-occur with this entity(company)
     possible_domains = list(domain_entitiesSet_dict.keys())
     possible_domains.remove(fixed_domain)
-    sampled_domains = np.random.sample(
+    sampled_domains = np.random.choice(
         possible_domains,
         size=2,
         replace=False
@@ -71,7 +71,7 @@ def generate_anomalies_type3_aux2(
     for sd in sampled_domains:
         found = False
         while not found:
-            se = np.random.sample(
+            se = np.random.choice(
                 domain_entitiesSet_dict[sd],
                 size=1,
                 replace=False
