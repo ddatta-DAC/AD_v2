@@ -53,7 +53,8 @@ def generate_anomalies_type3_aux2(
         domainEntity_dict
     )
     # We want duplicates of anomalous patterns
-    match_df.sample(cluster_count)
+    ns = min(cluster_count,len(match_df))
+    match_df = match_df.sample(cluster_count)
 
     # Select 2 entities that do not co-occur with this entity(company)
     possible_domains = list(domain_entitiesSet_dict.keys())
@@ -110,8 +111,8 @@ def generate_anomalies_type3_aux1(
     entity_samples,
     domain_entitiesSet_dict,
     columnPair_coOccMatrix_dict,
-    num_jobs = 40,
-    cluster_count = 100
+    num_jobs ,
+    cluster_count
     ):
 
     pattern_idx_list = list(range(pattern_idx_start, len(entity_samples)))
@@ -158,7 +159,10 @@ def generate_anomalies_type3(
     for d in domains:
         domain_entitiesSet_dict[d] = list(set(train_df[d]))
     # Create the co-occurrence matrix using the reference data frame(training data)
-    columnPair_coOccMatrix_dict = utils_local.get_coOccMatrix_dict(train_df, id_col)
+    columnPair_coOccMatrix_dict = utils_local.get_coOccMatrix_dict(
+        train_df,
+        id_col
+    )
 
     company_domain_candidates = {}
     req_count = int(len(test_df) * (anom_perc / 100) / cluster_count * (1 / len(company_domains)))
