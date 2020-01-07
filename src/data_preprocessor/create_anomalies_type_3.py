@@ -54,7 +54,7 @@ def generate_anomalies_type3_aux2(
     )
     # We want duplicates of anomalous patterns
     ns = min(cluster_count,len(match_df))
-    match_df = match_df.sample(cluster_count)
+    match_df = match_df.sample(ns)
 
     # Select 2 entities that do not co-occur with this entity(company)
     possible_domains = list(domain_entitiesSet_dict.keys())
