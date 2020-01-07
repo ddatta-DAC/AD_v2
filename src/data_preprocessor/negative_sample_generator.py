@@ -163,7 +163,7 @@ def create_negative_samples_ape():
     global CONFIG
     num_chunks = 40
 
-    train_data_file = os.path.join(save_dir, CONFIG['train_data_file.csv'])
+    train_data_file = os.path.join(save_dir, CONFIG['train_data_file'])
 
     train_df = pd.read_csv(
         train_data_file,
