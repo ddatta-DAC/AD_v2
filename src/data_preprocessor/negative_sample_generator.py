@@ -56,7 +56,7 @@ def set_up_config():
     num_neg_samples_ape = CONFIG[DIR]['num_neg_samples_ape']
 
     column_value_filters = CONFIG[DIR]['column_value_filters']
-    num_neg_samples_v1 = CONFIG[DIR]['num_neg_samples_v1']
+    num_neg_samples_v1 = CONFIG[DIR]['num_neg_samples']
 
     return
 
