@@ -70,17 +70,17 @@ test_df = pd.read_csv(os.path.join(save_dir, CONFIG['test_data_file_v1']))
 #     anom_perc=10
 # )
 
-create_anomalies_type_2.generate_anomalies_type_2(
-    train_df,
-    test_df,
-    save_dir,
-    id_col='PanjivaRecordID',
-    pattern_size=3,
-    reqd_anom_perc=10,
-    num_jobs=40,
-    min_normal_pattern_count= contextual_pattern_support,
-    pattern_duplicate_count=100
-)
+# create_anomalies_type_2.generate_anomalies_type_2(
+#     train_df,
+#     test_df,
+#     save_dir,
+#     id_col='PanjivaRecordID',
+#     pattern_size=3,
+#     reqd_anom_perc=10,
+#     num_jobs=40,
+#     min_normal_pattern_count= contextual_pattern_support,
+#     pattern_duplicate_count=100
+# )
 
 create_anomalies_type_3.generate_anomalies_type3(
     test_df,
