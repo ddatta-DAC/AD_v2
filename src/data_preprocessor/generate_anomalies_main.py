@@ -89,6 +89,6 @@ create_anomalies_type_3.generate_anomalies_type3(
     id_col='PanjivaRecordID',
     company_domains=company_domain_columns,
     num_jobs=40,
-    anom_perc=10,
+    anom_perc=100,
     cluster_count=100
 )
