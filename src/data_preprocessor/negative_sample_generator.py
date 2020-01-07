@@ -87,7 +87,7 @@ def get_neg_sample_ape(
         # Check is not a duplicate of something in training
         new_row_hash = utils_local.get_hash_aux(new_row, id_col)
 
-        if not utils_local.is_duplicate(new_row_hash, ref_df):
+        if not utils_local.is_duplicate( ref_df, new_row_hash):
 
             new_row[ns_id_col] = int('10' + str(_k) + str(column_id) + str(Pid_val) + '01')
             new_row[term_4_col] = np.log(P_A[column_id][_random])
@@ -381,7 +381,7 @@ def get_neg_sample_v1(
             new_row[_col] = _item_id
 
         _hash = utils_local.get_hash_aux(new_row, id_col)
-        if not utils_local.is_duplicate(new_row, ref_df):
+        if not utils_local.is_duplicate( ref_df, _hash):
             new_row[ns_id_col] = int(str(Pid_val) + '01' + str(_k))
             break
 
