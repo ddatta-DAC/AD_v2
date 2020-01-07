@@ -72,7 +72,7 @@ def generate_anomalies_type3_aux2(
         found = False
         while not found:
             se = np.random.sample(
-                domain_entitiesSet_dict,
+                domain_entitiesSet_dict[sd],
                 size=1,
                 replace=False
             )[0]
