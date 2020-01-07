@@ -157,7 +157,7 @@ def generate_anomalies_type_2_aux_2(
 
     print(pattern_idx_str)
 
-    new_df[id_col] = new_df.apply(
+    new_df[id_col] = new_df[id_col].apply(
         utils_local.aux_modify_id,
         args=(pattern_idx_str,)
     )

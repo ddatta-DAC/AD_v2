@@ -93,7 +93,7 @@ def generate_anomalies_type3_aux2(
         new_df = new_df.append(copy_row, ignore_index=True)
 
     _pattern_identifier_str = '0030'+ str(p_idx)
-    new_df[id_col] = new_df.apply(
+    new_df[id_col] = new_df[id_col].apply(
         utils_local.aux_modify_id,
         args=(_pattern_identifier_str,)
     )
