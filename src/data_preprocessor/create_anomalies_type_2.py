@@ -116,15 +116,18 @@ def generate_anomalies_type_2_aux_2(
         train_df,
         test_df,
         id_col,
+        p_idx,
         pattern,
         pattern_duplicate_count
 ):
     # ========
     # select 2 (partial) domains
     # ========
+
     _domains_set = np.random.choice(
         list(pattern.keys()), replace=False, size=2
     )
+
     cand = {}
     for d in _domains_set:
         cand[d] = pattern[d]
@@ -136,8 +139,8 @@ def generate_anomalies_type_2_aux_2(
         test_df,
         cand
     )
-
-    match_df = match_df.sample(int(1.1 * pattern_duplicate_count))
+    ns = min(len(match_df),pattern_duplicate_count)
+    match_df = match_df.sample(ns)
     new_df = pd.DataFrame(columns=list(train_df.columns))
 
     for _, row in match_df.iterrows():
@@ -150,7 +153,7 @@ def generate_anomalies_type_2_aux_2(
             ignore_index=True
         )
 
-    pattern_idx_str = '002' + str()
+    pattern_idx_str = '002' + str(p_idx)
     new_df[id_col] = new_df.apply(
         utils_local.aux_modify_id,
         args=(pattern_idx_str,)
@@ -211,6 +214,7 @@ def generate_anomalies_type_2(
             train_df,
             test_df,
             id_col,
+            p_idx,
             pattern,
             pattern_duplicate_count
         ) for p_idx, pattern in zip(pattern_idx , patterns)
