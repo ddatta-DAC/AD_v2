@@ -76,7 +76,7 @@ create_anomalies_type_2.generate_anomalies_type_2(
     save_dir,
     id_col=id_col,
     pattern_size=3,
-    reqd_anom_perc=25,
+    reqd_anom_perc=100,
     num_jobs=20,
     min_normal_pattern_count= contextual_pattern_support,
     pattern_duplicate_count=100
@@ -89,6 +89,6 @@ create_anomalies_type_3.generate_anomalies_type3(
     id_col=id_col,
     company_domains=company_domain_columns,
     num_jobs=20,
-    anom_perc=25,
+    anom_perc=100,
     cluster_count=100
 )

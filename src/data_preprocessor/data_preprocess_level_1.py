@@ -26,8 +26,6 @@ except:
 CONFIG_FILE = 'config_preprocessor_v02.yaml'
 id_col = 'PanjivaRecordID'
 ns_id_col = 'NegSampleID'
-term_2_col = 'term_2'
-term_4_col = 'term_4'
 num_neg_samples_ape = None
 use_cols = None
 freq_bound = None
@@ -290,8 +288,16 @@ def HSCode_cleanup(list_df, DIR, config):
 
     # ----- #
     # Expert curated HS codes
-    hs_code_filter_file = os.path.join(config['hscode_filter_file_loc'], DIR + config['hscode_filter_file_pattern'])
-    tmp = pd.read_csv(hs_code_filter_file, index_col=None, header=None)
+    hs_code_filter_file = os.path.join(
+        config['hscode_filter_file_loc'],
+        DIR + config['hscode_filter_file_pattern']
+    )
+
+    tmp = pd.read_csv(
+        hs_code_filter_file,
+        index_col=None,
+        header=None
+    )
     target_codes = list(tmp[0])
 
     def hsc_proc(_code):
