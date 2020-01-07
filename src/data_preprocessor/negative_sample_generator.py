@@ -523,7 +523,7 @@ def create_negative_samples_v1():
 
 # ======================================= #
 
-CONFIG = set_up_config()
+set_up_config()
 
 create_negative_samples_ape()
 create_ape_model_data()
