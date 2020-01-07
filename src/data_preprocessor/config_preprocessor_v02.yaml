@@ -43,6 +43,7 @@
   'low_freq_bound': 5
   'company_domain_columns':
     - 'ShipperPanjivaID'
+  'contextual_pattern_support' : 10
 'us_import':
   'use_cols':
     - 'PanjivaRecordID'

@@ -171,6 +171,7 @@ def generate_anomalies_type_2(
         pattern_size=4,
         reqd_anom_perc=10,
         num_jobs=40,
+        min_normal_pattern_count=5,
         pattern_duplicate_count=100
 ):
     # =====================
@@ -187,7 +188,8 @@ def generate_anomalies_type_2(
             dict_coOccMatrix,
             id_col,
             pattern_size=pattern_size,
-            count=dist_pattern_count
+            count=dist_pattern_count,
+            min_normal_pattern_count = min_normal_pattern_count
         ) for _ in range(num_jobs)
     )
     results = []

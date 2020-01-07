@@ -28,7 +28,7 @@ num_neg_samples_ape = None
 use_cols = None
 save_dir = None
 company_domain_columns = None
-
+contextual_pattern_support = None
 
 def set_up_config():
     global CONFIG_FILE
@@ -36,6 +36,7 @@ def set_up_config():
     global DIR
     global save_dir
     global company_domain_columns
+    global contextual_pattern_support
 
     with open(CONFIG_FILE) as f:
         CONFIG = yaml.safe_load(f)
@@ -50,6 +51,7 @@ def set_up_config():
 
     use_cols = CONFIG[DIR]['use_cols']
     company_domain_columns = CONFIG[DIR]['company_domain_columns']
+    contextual_pattern_support = CONFIG[DIR]['contextual_pattern_support']
     return CONFIG
 
 
@@ -76,6 +78,7 @@ create_anomalies_type_2.generate_anomalies_type_2(
     pattern_size=4,
     reqd_anom_perc=10,
     num_jobs=40,
+    min_normal_pattern_count= contextual_pattern_support,
     pattern_duplicate_count=100
 )
 
