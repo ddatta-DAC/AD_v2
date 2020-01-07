@@ -27,9 +27,11 @@ column_value_filters = None
 num_neg_samples_v1 = None
 save_dir = None
 DIR = None
+CONFIG = None
 
 def set_up_config():
     global CONFIG_FILE
+    global CONFIG
     global use_cols
     global freq_bound
     global num_neg_samples_ape
@@ -59,13 +61,21 @@ def set_up_config():
     return
 
 
-
-def get_neg_sample_ape(_k, column_id, column_name, ref_df, column_valid_values, orig_row, P_A, feature_cols_id):
+def get_neg_sample_ape(
+        _k,
+        column_id,
+        column_name,
+        ref_df, column_valid_values, orig_row, P_A, feature_cols_id):
     global id_col
     global ns_id_col
     global term_4_col
     global term_2_col
 
+    ref_df = pd.DataFrame(ref_df,copy=True)
+    ref_df = utils_local.add_hash(
+        ref_df,
+        id_col
+    )
 
     Pid_val = orig_row[id_col]
     while True:
@@ -74,7 +84,10 @@ def get_neg_sample_ape(_k, column_id, column_name, ref_df, column_valid_values, 
             column_valid_values[column_name], 1
         )[0]
         new_row[column_name] = _random
-        if validate(new_row, ref_df):
+        # Check is not a duplicate of something in training
+        new_row_hash = utils_local.get_hash_aux(new_row, id_col)
+
+        if not utils_local.is_duplicate(new_row_hash, ref_df):
 
             new_row[ns_id_col] = int('10' + str(_k) + str(column_id) + str(Pid_val) + '01')
             new_row[term_4_col] = np.log(P_A[column_id][_random])
@@ -88,7 +101,14 @@ def get_neg_sample_ape(_k, column_id, column_name, ref_df, column_valid_values, 
 
 
 def create_negative_samples_ape_aux(
-        idx, df_chunk, feature_cols, ref_df, column_valid_values, save_dir, P_A):
+        idx,
+        df_chunk,
+        feature_cols,
+        ref_df,
+        column_valid_values,
+        save_dir,
+        P_A
+    ):
     global ns_id_col
     global term_4_col
     global term_2_col
@@ -96,9 +116,9 @@ def create_negative_samples_ape_aux(
     global num_neg_samples_ape
 
     ns_id_col = 'NegSampleID'
-
     term_2_col = 'term_2'
     term_4_col = 'term_4'
+
     feature_cols_id = {
         e[0]: e[1]
         for e in enumerate(feature_cols)
@@ -140,10 +160,10 @@ def create_negative_samples_ape():
     global id_col
     global ns_id_col
     global num_neg_samples_ape
-
+    global CONFIG
     num_chunks = 40
 
-    train_data_file = os.path.join(save_dir, 'train_data.csv')
+    train_data_file = os.path.join(save_dir, CONFIG['train_data_file.csv'])
 
     train_df = pd.read_csv(
         train_data_file,
@@ -192,23 +212,22 @@ def create_negative_samples_ape():
             set(list(ref_df[_fc_name]))
         )
 
-    chunk_len = int(len(train_df) / (num_chunks - 1))
-
-    list_df_chunks = np.split(
-        train_df.head(
-            chunk_len * (num_chunks - 1)
-        ), num_chunks - 1
+    list_df_chunks = utils_local.chunk_df(
+        train_df,
+        num_chunks
     )
 
-    end_len = len(train_df) - chunk_len * (num_chunks - 1)
-    list_df_chunks.append(train_df.tail(end_len))
-
-    for _l in range(len(list_df_chunks)):
-        print(' Length of chunk ', _l, ' :: ', len(list_df_chunks[_l]))
 
     results = Parallel(n_jobs=num_chunks)(
         delayed(create_negative_samples_ape_aux)(
-            _i, list_df_chunks[_i], feature_cols, ref_df, column_valid_values, save_dir, P_A)
+            _i,
+            list_df_chunks[_i],
+            feature_cols,
+            ref_df,
+            column_valid_values,
+            save_dir,
+            P_A
+        )
         for _i in range(len(list_df_chunks))
     )
 
@@ -235,7 +254,6 @@ def create_ape_model_data():
     global num_neg_samples_ape
 
     train_pos_data_file = os.path.join(save_dir, 'train_data.csv')
-    test_data_file = os.path.join(save_dir, 'test_data_v1.csv')
     train_neg_data_file = os.path.join(save_dir, 'negative_samples_ape.csv')
 
     # ------------------- #
@@ -502,3 +520,10 @@ def create_negative_samples_v1():
     return new_df
 
 
+
+# ======================================= #
+
+CONFIG = set_up_config()
+
+create_negative_samples_ape()
+create_ape_model_data()
