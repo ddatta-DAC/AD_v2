@@ -1,0 +1,96 @@
+'DATA_DIR': '../../generated_data'
+'_DIR' : 'china_export'
+'OP_DIR' : 'output'
+'SAVE_DIR' : 'save_dir'
+'MODEL_NAME' : 'model_v1_2'
+'eval_type' : 1
+'log_file' : 'main.log'
+'num_jobs' : 1
+'china_import':
+  'learning_rate' : 0.0005
+  'use_pretrained' : False
+  'show_loss_figure' : False
+  'save_loss_figure' : False
+  'use_bias' : True
+  'saved_model_file' : False
+  'num_epochs' : 25
+  'op_dims' : 12
+  'batchsize': 128
+  'num_neg_samples' : 15
+'peru_export':
+  'learning_rate' : 0.0005
+  'use_pretrained' : True
+  'show_loss_figure' : False
+  'save_loss_figure' : False
+  'use_bias' : True
+  'saved_model_file' : 'frozen_model_v1_210_1565126816.pb'
+  'num_epochs' : 25
+  'op_dims' : 10
+  'batchsize': 128
+  'num_neg_samples' : 15
+'us_import':
+  'learning_rate' : 0.0005
+  'use_pretrained' : False
+  'show_loss_figure' : False
+  'save_loss_figure' : False
+  'use_bias' : True
+  'saved_model_file' : False
+  'num_epochs' : 25
+  'op_dims' : 12
+  'batchsize': 128
+  'num_neg_samples' : 15
+'china_export':
+  'learning_rate' : 0.0005
+  'use_pretrained' : True
+  'show_loss_figure' : False
+  'save_loss_figure' : False
+  'use_bias' : True
+  'saved_model_file' : 'frozen_model_v1_216_1577133792.pb'
+  'num_epochs' : 8
+  'op_dims' : 16
+  'batchsize': 256
+  'num_neg_samples' : 15
+'peru_export2':
+  'learning_rate' : 0.00005
+  'use_pretrained' : True
+  'show_loss_figure' : False
+  'save_loss_figure' : False
+  'use_bias' : True
+  'saved_model_file' : 'frozen_model_v1_212_1566006965.pb'
+  'num_epochs' : 25
+  'op_dims' : 12
+  'batchsize': 64
+  'num_neg_samples' : 15
+'china_import2':
+  'learning_rate' : 0.0005
+  'use_pretrained' : True
+  'show_loss_figure' : False
+  'save_loss_figure' : False
+  'use_bias' : True
+  'saved_model_file' : 'frozen_model_v1_212_1566001021.pb'
+  'num_epochs' : 25
+  'op_dims' : 12
+  'batchsize': 128
+  'num_neg_samples' : 15
+'us_import2':
+  'learning_rate' : 0.0005
+  'use_pretrained' : True
+  'show_loss_figure' : False
+  'save_loss_figure' : False
+  'use_bias' : True
+  'saved_model_file' : 'frozen_model_v1_214_1566057286.pb'
+  'num_epochs' : 25
+  'op_dims' : 14
+  'batchsize': 128
+  'num_neg_samples' : 15
+'us_import3':
+  'learning_rate' : 0.0005
+  'use_pretrained' : False
+  'show_loss_figure' : False
+  'save_loss_figure' : False
+  'use_bias' : True
+  'saved_model_file' : False
+  'num_epochs' : 25
+  'op_dims' : 12
+  'batchsize': 128
+  'num_neg_samples' : 15

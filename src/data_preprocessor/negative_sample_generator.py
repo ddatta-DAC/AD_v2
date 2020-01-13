@@ -78,7 +78,7 @@ def get_neg_sample_ape(
     )
 
     Pid_val = orig_row[id_col]
-
+    check_duplicate = False
     while True:
         new_row = pd.Series(orig_row, copy=True)
         _random = random.sample(
@@ -86,7 +86,7 @@ def get_neg_sample_ape(
         )[0]
         new_row[column_name] = _random
         # Check is not a duplicate of something in training
-        check_duplicate = False
+
         new_row_hash = utils_local.get_hash_aux(new_row, id_col)
         if check_duplicate and utils_local.is_duplicate( ref_df, new_row_hash):
             continue
@@ -99,6 +99,7 @@ def get_neg_sample_ape(
             _tmp += math.log(_val, math.e)
         _tmp /= len(feature_cols_id)
         new_row[term_2_col] = _tmp
+        print(' generated new row  ::  Pid_val :: get_neg_sample_ape ')
         return new_row
 
 
@@ -116,7 +117,7 @@ def create_negative_samples_ape_aux(
     global term_2_col
     global id_col
     global num_neg_samples_ape
-
+    print(' IN ::  create_negative_samples_ape_aux ')
     ns_id_col = 'NegSampleID'
     term_2_col = 'term_2'
     term_4_col = 'term_4'
