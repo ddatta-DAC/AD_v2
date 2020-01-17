@@ -15,3 +15,7 @@ __pycache__/
 wwf_data_v1
 **/.ipynb_checkpoints/**
 /MetaData/.ipynb_checkpoints/
+/generated_data_v1/
+/generated_data_v0/
+/Data_Raw/
+/src/model_002/model_files/
