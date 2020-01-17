@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import os
 import yaml
+import click
 
 # ----------------------------------- #
 
@@ -159,3 +160,8 @@ create_ape_model_data(
     id_col= id_col,
     ns_id_col = ns_id_col
 )
+
+# ========================================================= #
+
+@click.command()
+@click.option('--DIR', type=click.Choice(['us_import1', 'us_import3', 'china_export', 'china_import'], default = None, case_sensitive=False))
