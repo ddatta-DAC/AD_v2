@@ -2,9 +2,60 @@ import pickle
 import pandas as pd
 import numpy as np
 import os
+import yaml
+import click
 
 # ----------------------------------- #
 
+CONFIG_FILE = 'config_preprocessor_v02.yaml'
+id_col = 'PanjivaRecordID'
+ns_id_col = 'NegSampleID'
+term_2_col = 'term_2'
+term_4_col = 'term_4'
+num_neg_samples_ape = None
+use_cols = None
+freq_bound = None
+column_value_filters = None
+num_neg_samples_v1 = None
+save_dir = None
+DIR = None
+CONFIG = None
+
+
+
+# =========================================== #
+def set_up_config():
+    global CONFIG_FILE
+    global CONFIG
+    global use_cols
+    global freq_bound
+    global num_neg_samples_ape
+    global DIR
+    global save_dir
+    global column_value_filters
+    global num_neg_samples_v1
+
+    with open(CONFIG_FILE) as f:
+        CONFIG = yaml.safe_load(f)
+
+    DIR = CONFIG['DIR']
+    save_dir = os.path.join(
+        CONFIG['save_dir'],
+        DIR
+    )
+    if not os.path.exists(save_dir):
+        os.mkdir(save_dir)
+
+    use_cols = CONFIG[DIR]['use_cols']
+    freq_bound = CONFIG[DIR]['low_freq_bound']
+    num_neg_samples_ape = CONFIG[DIR]['num_neg_samples_ape']
+
+    column_value_filters = CONFIG[DIR]['column_value_filters']
+    num_neg_samples_v1 = CONFIG[DIR]['num_neg_samples']
+
+    return
+
+# =========================================== #
 
 def create_ape_model_data(
     term_2_col,
@@ -84,16 +135,16 @@ def create_ape_model_data(
     print(term_2.shape, term_4.shape)
 
     # Save files
-    f_path = os.path.join(save_dir, 'matrix_train_positive.pkl')
+    f_path = os.path.join(save_dir, 'matrix_train_positive.npy')
     np.save(f_path, matrix_pos)
 
-    f_path = os.path.join(save_dir,'ape_negative_samples.pkl')
+    f_path = os.path.join(save_dir,'ape_negative_samples.npy')
     np.save(f_path , matrix_neg)
 
-    f_path = os.path.join(save_dir, 'ape_term_2.pkl')
+    f_path = os.path.join(save_dir, 'ape_term_2.npy')
     np.save(f_path, term_2)
 
-    f_path = os.path.join(save_dir, 'ape_term_4.pkl')
+    f_path = os.path.join(save_dir, 'ape_term_4.npy')
     np.save(f_path, term_4)
 
     f_path = os.path.join(save_dir, 'matrix_test_positive.npy')
@@ -102,4 +153,15 @@ def create_ape_model_data(
 
 
 
+create_ape_model_data(
+    term_2_col = term_2_col,
+    term_4_col = term_4_col,
+    save_dir = save_dir,
+    id_col= id_col,
+    ns_id_col = ns_id_col
+)
 
+# ========================================================= #
+
+@click.command()
+@click.option('--DIR', type=click.Choice(['us_import1', 'us_import3', 'china_export', 'china_import'], default = None, case_sensitive=False))
