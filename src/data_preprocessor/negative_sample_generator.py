@@ -99,12 +99,9 @@ def get_neg_sample_ape(
             _tmp += math.log(_val, math.e)
         _tmp /= len(feature_cols_id)
         new_row[term_2_col] = _tmp
-<<<<<<< HEAD
         print(" generated new row  ::  Pid_val :: {} get_neg_sample_ape ".format(Pid_val))
-=======
-        print(' generated new row  ::  Pid_val :: get_neg_sample_ape ')
->>>>>>> 8b2390dba445a99093d4a405b98e1d9a08e99555
-        return new_row
+
+
 
 
 def create_negative_samples_ape_aux(
