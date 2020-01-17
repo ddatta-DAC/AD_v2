@@ -66,8 +66,8 @@ create_anomalies_type_1.generate_anomalies_type1(
     train_df,
     save_dir,
     id_col=id_col,
-    num_jobs=20,
-    anom_perc=25
+    num_jobs=80,
+    anom_perc=35
 )
 
 create_anomalies_type_2.generate_anomalies_type_2(
@@ -76,8 +76,8 @@ create_anomalies_type_2.generate_anomalies_type_2(
     save_dir,
     id_col=id_col,
     pattern_size=3,
-    reqd_anom_perc=100,
-    num_jobs=20,
+    reqd_anom_perc=50,
+    num_jobs=80,
     min_normal_pattern_count= contextual_pattern_support,
     pattern_duplicate_count=100
 )
@@ -88,7 +88,7 @@ create_anomalies_type_3.generate_anomalies_type3(
     save_dir,
     id_col=id_col,
     company_domains=company_domain_columns,
-    num_jobs=20,
-    anom_perc=100,
+    num_jobs=80,
+    anom_perc=50,
     cluster_count=100
 )

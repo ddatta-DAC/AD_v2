@@ -16,10 +16,10 @@ try:
     import clean_up_test_data
 except:
     from . import clean_up_test_data
-# try:
-#     import create_anomalies
-# except:
-#     from . import create_anomalies
+try:
+    import create_anomalies
+except:
+    from . import create_anomalies
 
 # ===================
 
@@ -54,9 +54,9 @@ def get_regex(_type):
 
     if DIR == 'china_export':
         if _type == 'train':
-            return '*0[2-3]*2016*.csv'
+            return '*0[1-4]*2016*.csv'
         if _type == 'test':
-            return '*0[4]*2016*.csv'
+            return '*0[5-6]*2016*.csv'
 
     return '*.csv'
 
@@ -494,7 +494,7 @@ def create_train_test_sets():
     column_valuesId_dict_file = 'column_valuesId_dict.pkl'
     column_valuesId_dict_path = os.path.join(save_dir, column_valuesId_dict_file)
     # --- Later on - remove using the saved file ---- #
-    if os.path.exists(train_df_file) and os.path.exists(test_df_file) and False:
+    if os.path.exists(train_df_file) and os.path.exists(test_df_file):
         train_df = pd.read_csv(train_df_file)
         test_df = pd.read_csv(test_df_file)
         with open(column_valuesId_dict_path, 'rb') as fh:
@@ -511,9 +511,6 @@ def create_train_test_sets():
         save_dir
     )
     train_df.to_csv(train_df_file, index=False)
-
-    print('Length of train data ',len(train_df))
-
 
     '''
          test data preprocessing
@@ -569,14 +566,14 @@ def clean_test_data_level2( ):
         id_col
     )
 
-    test_df_file = os.path.join(save_dir, CONFIG['test_data_file'])
+    test_df_file = os.path.join(save_dir, CONFIG['test_data_file_v1'])
     test_df.to_csv(test_df_file, index=False)
     return
 
 
 CONFIG = set_up_config()
-create_train_test_sets()
-clean_test_data_level2()
+# create_train_test_sets()
+# clean_test_data_level2()
 
 train_df = pd.read_csv(os.path.join(save_dir, CONFIG['train_data_file']))
 test_df = pd.read_csv(os.path.join(save_dir, CONFIG['test_data_file_v1']))
@@ -591,23 +588,23 @@ test_df = pd.read_csv(os.path.join(save_dir, CONFIG['test_data_file_v1']))
 # )
 
 
-# create_anomalies.generate_type2_anomalies(
-#         test_df,
-#         train_df,
-#         save_dir,
-#         id_col,
-#         num_jobs=40,
-#         anom_perc=10
-# )
-#
-#
-# create_anomalies.generate_type3_anomalies(
-#         test_df,
-#         train_df,
-#         save_dir,
-#         id_col,
-#         num_jobs=40,
-#         anom_perc=10
-# )
+create_anomalies.generate_type2_anomalies(
+        test_df,
+        train_df,
+        save_dir,
+        id_col,
+        num_jobs=40,
+        anom_perc=10
+)
+
+
+create_anomalies.generate_type3_anomalies(
+        test_df,
+        train_df,
+        save_dir,
+        id_col,
+        num_jobs=40,
+        anom_perc=10
+)
 
 

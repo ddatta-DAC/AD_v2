@@ -78,6 +78,7 @@ def get_neg_sample_ape(
     )
 
     Pid_val = orig_row[id_col]
+    check_duplicate = False
     while True:
         new_row = pd.Series(orig_row, copy=True)
         _random = random.sample(
@@ -85,19 +86,21 @@ def get_neg_sample_ape(
         )[0]
         new_row[column_name] = _random
         # Check is not a duplicate of something in training
+
         new_row_hash = utils_local.get_hash_aux(new_row, id_col)
+        if check_duplicate and utils_local.is_duplicate( ref_df, new_row_hash):
+            continue
 
-        if not utils_local.is_duplicate(new_row_hash, ref_df):
-
-            new_row[ns_id_col] = int('10' + str(_k) + str(column_id) + str(Pid_val) + '01')
-            new_row[term_4_col] = np.log(P_A[column_id][_random])
-            _tmp = 0
-            for _fci, _fcn in feature_cols_id.items():
-                _val = P_A[_fci][orig_row[_fcn]]
-                _tmp += math.log(_val, math.e)
-            _tmp /= len(feature_cols_id)
-            new_row[term_2_col] = _tmp
-            return new_row
+        new_row[ns_id_col] = int('10' + str(_k) + str(column_id) + str(Pid_val) + '01')
+        new_row[term_4_col] = np.log(P_A[column_id][_random])
+        _tmp = 0
+        for _fci, _fcn in feature_cols_id.items():
+            _val = P_A[_fci][orig_row[_fcn]]
+            _tmp += math.log(_val, math.e)
+        _tmp /= len(feature_cols_id)
+        new_row[term_2_col] = _tmp
+        print(" generated new row  ::  Pid_val :: {} get_neg_sample_ape ".format(Pid_val))
+        return new_row
 
 
 def create_negative_samples_ape_aux(
@@ -114,7 +117,7 @@ def create_negative_samples_ape_aux(
     global term_2_col
     global id_col
     global num_neg_samples_ape
-
+    print(' IN ::  create_negative_samples_ape_aux ')
     ns_id_col = 'NegSampleID'
     term_2_col = 'term_2'
     term_4_col = 'term_4'
@@ -162,8 +165,7 @@ def create_negative_samples_ape():
     global num_neg_samples_ape
     global CONFIG
     num_chunks = 40
-
-    train_data_file = os.path.join(save_dir, CONFIG['train_data_file.csv'])
+    train_data_file = os.path.join(save_dir, CONFIG['train_data_file'])
 
     train_df = pd.read_csv(
         train_data_file,
@@ -176,6 +178,7 @@ def create_negative_samples_ape():
     For negative samples pick one entity & replace it it randomly 
     Validate if generated negative sample is not part of the test or training set
     '''
+
     ref_df = pd.DataFrame(
         train_df,
         copy=True
@@ -381,7 +384,7 @@ def get_neg_sample_v1(
             new_row[_col] = _item_id
 
         _hash = utils_local.get_hash_aux(new_row, id_col)
-        if not utils_local.is_duplicate(new_row, ref_df):
+        if not utils_local.is_duplicate( ref_df, _hash):
             new_row[ns_id_col] = int(str(Pid_val) + '01' + str(_k))
             break
 
@@ -523,7 +526,7 @@ def create_negative_samples_v1():
 
 # ======================================= #
 
-CONFIG = set_up_config()
+set_up_config()
 
 create_negative_samples_ape()
 create_ape_model_data()
