@@ -42,8 +42,8 @@ def set_up_config(_DIR):
 
     with open(CONFIG_FILE) as f:
         CONFIG = yaml.safe_load(f)
+    if _DIR is None: DIR = CONFIG['DIR']
 
-    DIR = CONFIG['DIR']
     save_dir = os.path.join(
         CONFIG['save_dir'],
         DIR
