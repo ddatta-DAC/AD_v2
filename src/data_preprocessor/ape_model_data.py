@@ -28,7 +28,7 @@ DIR = None
 CONFIG = None
 
 
-def set_up_config():
+def set_up_config(_DIR):
     global CONFIG_FILE
     global CONFIG
     global use_cols
@@ -42,7 +42,7 @@ def set_up_config():
     with open(CONFIG_FILE) as f:
         CONFIG = yaml.safe_load(f)
 
-    DIR = CONFIG['DIR']
+    DIR = _DIR
     save_dir = os.path.join(
         CONFIG['save_dir'],
         DIR
@@ -68,6 +68,8 @@ def create_ape_model_data(
     id_col,
     ns_id_col
 ):
+    print('hello ')
+    return
 
     train_pos_data_file = os.path.join(save_dir, 'train_data.csv')
     train_neg_data_file = os.path.join(save_dir, 'negative_samples_ape_1.csv')
@@ -157,6 +159,15 @@ def create_ape_model_data(
 
 
 
+
+
+# ========================================================= #
+
+@click.command()
+@click.option("--DIR", default = None, type=click.Choice(['us_import1', 'us_import2', 'china_export1', 'china_import1'], case_sensitive=False) )
+def run_setup(DIR):
+    set_up_config(DIR)
+
 create_ape_model_data(
     term_2_col = term_2_col,
     term_4_col = term_4_col,
@@ -164,8 +175,3 @@ create_ape_model_data(
     id_col= id_col,
     ns_id_col = ns_id_col
 )
-
-# ========================================================= #
-
-@click.command()
-@click.option("--DIR", type=click.Choice(['us_import1', 'us_import2', 'china_export', 'china_import'], default = None, case_sensitive=False))

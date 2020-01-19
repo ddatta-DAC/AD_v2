@@ -4,7 +4,8 @@
 'train_data_file' : 'train_data.csv'
 'test_data_file' : 'test_data.csv'
 'hscode_filter_file_loc' : './../../MetaData'
-'hscode_filter_file_pattern' : '_hs_codes.txt' 
+'hscode_filter_file_pattern' : '_hs_codes.txt'
+'id_col' : 'PanjivaRecordID'
 'china_import':
   'use_cols':
     - 'PanjivaRecordID'
