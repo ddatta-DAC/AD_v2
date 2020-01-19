@@ -1,11 +1,12 @@
 import pandas as pd
 import sys
 import os
+import yaml
+import argparse
 import numpy as np
 import pickle
 from itertools import combinations
 from joblib import Parallel, delayed
-import yaml
 
 sys.path.append('./')
 sys.path.append('./..')
@@ -30,7 +31,8 @@ save_dir = None
 company_domain_columns = None
 contextual_pattern_support = None
 
-def set_up_config():
+
+def set_up_config(_DIR):
     global CONFIG_FILE
     global use_cols
     global DIR
@@ -55,11 +57,22 @@ def set_up_config():
     return CONFIG
 
 
-CONFIG = set_up_config()
+# ===================================================== #
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '--DIR', choices=['us_import1', 'us_import2', 'china_export1', 'china_import1'],
+    default=None
+)
+
+args = parser.parse_args()
+DIR = args.DIR
+CONFIG = set_up_config(args.DIR)
+
 train_df = pd.read_csv(os.path.join(save_dir, CONFIG['train_data_file']))
 test_df = pd.read_csv(os.path.join(save_dir, CONFIG['test_data_file_v1']))
 
-
+# ===================================================== #
 
 create_anomalies_type_1.generate_anomalies_type1(
     test_df,
@@ -78,7 +91,7 @@ create_anomalies_type_2.generate_anomalies_type_2(
     pattern_size=3,
     reqd_anom_perc=100,
     num_jobs=40,
-    min_normal_pattern_count= contextual_pattern_support,
+    min_normal_pattern_count=contextual_pattern_support,
     pattern_duplicate_count=20
 )
 
@@ -92,4 +105,3 @@ create_anomalies_type_3.generate_anomalies_type3(
     anom_perc=100,
     cluster_count=20
 )
-
