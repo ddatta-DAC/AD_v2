@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 import os
 import yaml
-import click
+import argparse
 
 # ----------------------------------- #
 
@@ -158,15 +158,16 @@ def create_ape_model_data(
 
 
 
-
-
-
 # ========================================================= #
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '--DIR', choices=['us_import1', 'us_import2', 'china_export1', 'china_import1'],
+    default=None
+)
+args = parser.parse_args()
+DIR = args.DIR
 
-@click.command()
-@click.option("--DIR", default = None, type=click.Choice(['us_import1', 'us_import2', 'china_export1', 'china_import1'], case_sensitive=False) )
-def run_setup(DIR):
-    set_up_config(DIR)
+set_up_config(DIR)
 
 create_ape_model_data(
     term_2_col = term_2_col,
