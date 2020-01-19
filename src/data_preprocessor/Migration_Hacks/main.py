@@ -50,9 +50,13 @@ def exec():
     global save_dir
     global id_col
     global DIR
+    try:
+        train_df = pd.read_csv(os.path.join(data_dir, CONFIG['train_data_file']), index_col=0 ,low_memory=False)
+        test_df = pd.read_csv(os.path.join(data_dir, CONFIG['test_data_file']), index_col=0,low_memory=False)
+    except:
+        train_df = pd.read_csv(os.path.join(data_dir, CONFIG['train_data_file']), low_memory=False)
+        test_df = pd.read_csv(os.path.join(data_dir, CONFIG['test_data_file']), low_memory=False)
 
-    train_df = pd.read_csv(os.path.join(data_dir, CONFIG['train_data_file']),low_memory=False)
-    test_df = pd.read_csv(os.path.join(data_dir, CONFIG['test_data_file']),low_memory=False)
 
     clean_up_test_data.remove_order1_spurious_coocc(
         train_df,
