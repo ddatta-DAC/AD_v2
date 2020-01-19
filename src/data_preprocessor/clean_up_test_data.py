@@ -77,10 +77,10 @@ try:
 except:
     import utils_createAnomalies as utils_local
 
-
 '''
 
 '''
+
 
 # Returns False if there is supurious pairwise-co-occurrence
 def aux2_check(row, columnWise_coOcc_array_dict, pair_list):
@@ -110,9 +110,11 @@ def aux_check(df, columnWise_coOcc_array_dict, id_col):
     del res_df['valid']
     return res_df
 
+
 '''
 This function removes the row with spurious pairwise co-occurrences
 '''
+
 
 def remove_order1_spurious_coocc(
         train_df,
@@ -147,17 +149,20 @@ def remove_order1_spurious_coocc(
     print(' After deduplication :: ', len(new_test_df))
     return new_test_df
 
+
 '''
 Main function
 Inputs: 
 Train_df
 Test_df
 '''
+
+
 def remove_order1_spurious_coocc(
         train_df,
         test_df,
         id_col='PanjivaRecordID',
-        num_jobs = 10
+        num_jobs=10
 ):
     print('In remove_order1_spurious_coocc ::')
     columnWise_coOcc_array_dict = utils_local.get_coOccMatrix_dict(
