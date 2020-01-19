@@ -153,7 +153,6 @@ def convert_to_ids(
         vals = list(set(df[col]))
 
         # ----
-        #
         #   0 : item1 ,
         #   1 : item2 ,
         #   ...
@@ -164,7 +163,6 @@ def convert_to_ids(
         }
 
         # ----
-        #
         #   item1 : 0 ,
         #   item2 : 0 ,
         #   ...
@@ -249,7 +247,6 @@ def collate(file_list):
 '''
 Remove the rows with entities that have very low frequency.
 '''
-
 
 def remove_low_frequency_values(df):
     global id_col

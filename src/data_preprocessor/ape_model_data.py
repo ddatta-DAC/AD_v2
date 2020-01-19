@@ -1,3 +1,9 @@
+'''
+# =========================================== #
+# Generates the model data for APE
+# =========================================== #
+'''
+
 import pickle
 import pandas as pd
 import numpy as np
@@ -22,8 +28,6 @@ DIR = None
 CONFIG = None
 
 
-
-# =========================================== #
 def set_up_config():
     global CONFIG_FILE
     global CONFIG
@@ -164,4 +168,4 @@ create_ape_model_data(
 # ========================================================= #
 
 @click.command()
-@click.option('--DIR', type=click.Choice(['us_import1', 'us_import3', 'china_export', 'china_import'], default = None, case_sensitive=False))
+@click.option("--DIR", type=click.Choice(['us_import1', 'us_import2', 'china_export', 'china_import'], default = None, case_sensitive=False))

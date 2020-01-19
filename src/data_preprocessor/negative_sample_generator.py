@@ -102,8 +102,6 @@ def get_neg_sample_ape(
         print(" generated new row  ::  Pid_val :: {} get_neg_sample_ape ".format(Pid_val))
 
 
-
-
 def create_negative_samples_ape_aux(
         idx,
         df_chunk,
