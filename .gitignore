@@ -1,6 +1,9 @@
 venv/**
 *.pyc
 generated_data/**
+/generated_data_v1_old/
+/generated_data_v1/**
+/generated_data_v0/**
 *events.out.tfevents.*.*gi
 **/__pycache__/**
 /src/**/summary
