@@ -156,14 +156,15 @@ Test_df
 def remove_order1_spurious_coocc(
         train_df,
         test_df,
-        id_col='PanjivaRecordID'
+        id_col='PanjivaRecordID',
+        num_jobs = 10
 ):
     print('In remove_order1_spurious_coocc ::')
     columnWise_coOcc_array_dict = utils_local.get_coOccMatrix_dict(
         train_df,
         id_col
     )
-    num_chunks = 40
+    num_chunks = num_jobs
     list_df_chunks = utils_local.chunk_df(
         test_df,
         num_chunks

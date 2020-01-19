@@ -6,7 +6,9 @@
 'hscode_filter_file_loc' : './../../MetaData'
 'hscode_filter_file_pattern' : '_hs_codes.txt'
 'id_col' : 'PanjivaRecordID'
-'china_import':
+'num_jobs' : 40
+
+'china_import1':
   'use_cols':
     - 'PanjivaRecordID'
     - 'ConsigneePanjivaID'
@@ -25,7 +27,9 @@
       - 'Countries (reg.) un-known'
   'num_neg_samples_ape': 3
   'low_freq_bound': 5
-'china_export':
+  'contextual_pattern_support' : 10
+
+'china_export1':
   'use_cols':
     - 'PanjivaRecordID'
     - 'AdminRegion'
@@ -56,12 +60,13 @@
      - 'PortOfUnlading'
      - 'PortOfLading'
      - 'Carrier'
-   'num_neg_samples_v1': 15
+   'num_neg_samples': 15
    'column_value_filters':
      'Carrier':
         - '(Usa))'
    'num_neg_samples_ape': 3
    'low_freq_bound': 4
+   'contextual_pattern_support' : 10
 
 'us_import2':
   'use_cols':
@@ -74,7 +79,7 @@
     - 'PortOfUnlading'
     - 'PortOfLading'
     - 'Carrier'
-  'num_neg_samples_v1': 15
+  'num_neg_samples': 15
   'column_value_filters':
     'Carrier':
       - '(Usa))'

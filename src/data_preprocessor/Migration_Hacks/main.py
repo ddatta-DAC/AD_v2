@@ -38,8 +38,8 @@ def set_up_config(_DIR):
     DIR = _DIR
     if DIR is None:
         DIR = CONFIG[DIR]
-    data_dir = os.path.join(CONFIG['save_dir'],DIR)
-    save_dir = os.path.join(CONFIG['save_dir'],DIR)
+    data_dir = os.path.join('..', CONFIG['save_dir'],DIR)
+    save_dir = os.path.join('..', CONFIG['save_dir'],DIR)
     id_col = CONFIG['id_col']
     return
 
@@ -53,10 +53,12 @@ def exec():
 
     train_df = pd.read_csv(os.path.join(data_dir, CONFIG['train_data_file']),low_memory=False)
     test_df = pd.read_csv(os.path.join(data_dir, CONFIG['test_data_file']),low_memory=False)
+
     clean_up_test_data.remove_order1_spurious_coocc(
         train_df,
         test_df,
-        id_col
+        id_col,
+        CONFIG['num_jobs']
     )
     test_df_file = os.path.join(save_dir, CONFIG['test_data_file'])
     test_df.to_csv(test_df_file, index=False)

@@ -164,9 +164,9 @@ parser.add_argument(
     '--DIR', choices=['us_import1', 'us_import2', 'china_export1', 'china_import1'],
     default=None
 )
+
 args = parser.parse_args()
 DIR = args.DIR
-
 set_up_config(DIR)
 
 create_ape_model_data(
