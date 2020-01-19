@@ -50,13 +50,9 @@ def exec():
     global save_dir
     global id_col
     global DIR
-    try:
-        train_df = pd.read_csv(os.path.join(data_dir, CONFIG['train_data_file']), index_col=0 ,low_memory=False)
-        test_df = pd.read_csv(os.path.join(data_dir, CONFIG['test_data_file']), index_col=0,low_memory=False)
-    except:
-        train_df = pd.read_csv(os.path.join(data_dir, CONFIG['train_data_file']), low_memory=False)
-        test_df = pd.read_csv(os.path.join(data_dir, CONFIG['test_data_file']), low_memory=False)
 
+    train_df = pd.read_csv(os.path.join(data_dir, CONFIG['train_data_file']), low_memory=False)
+    test_df = pd.read_csv(os.path.join(data_dir, CONFIG['test_data_file']), low_memory=False)
 
     clean_up_test_data.remove_order1_spurious_coocc(
         train_df,
@@ -64,7 +60,8 @@ def exec():
         id_col,
         CONFIG['num_jobs']
     )
-    test_df_file = os.path.join(save_dir, CONFIG['test_data_file'])
+
+    test_df_file = os.path.join(save_dir, CONFIG['test_data_file_v1'])
     test_df.to_csv(test_df_file, index=False)
     return
 
@@ -75,6 +72,7 @@ parser.add_argument(
     '--DIR', choices=['us_import1', 'us_import2', 'china_export1', 'china_import1'],
     default=None
 )
+
 args = parser.parse_args()
 DIR = args.DIR
 
