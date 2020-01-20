@@ -65,13 +65,12 @@ def set_up_config(_DIR):
     return
 
 
-
 # =========================================== #
 # create .npy pickles for test data
 # =========================================== #
 def create_base_test_matrices(
-    save_dir,
-    id_col,
+        save_dir,
+        id_col,
 ):
     test_data_file = os.path.join(save_dir, 'test_data.csv')
     test_df = pd.read_csv(
@@ -80,7 +79,7 @@ def create_base_test_matrices(
     )
 
     # Read in domain_dims, domains are sorted
-    with open(os.path.join(save_dir,'domain_dims.pkl'),'rb') as fh:
+    with open(os.path.join(save_dir, 'domain_dims.pkl'), 'rb') as fh:
         domain_dims = pickle.load(fh)
     domains = list(domain_dims.keys())
 
@@ -90,7 +89,7 @@ def create_base_test_matrices(
     test_x = test_df.values
     # test_matrix_x_positive.npy
     fpath = os.path.join(save_dir, 'test_matrix_x_positive.npy')
-    np.save(fpath , test_x)
+    np.save(fpath, test_x)
 
     fpath = os.path.join(save_dir, 'test_idList.npy')
     np.save(fpath, test_idList)
@@ -103,14 +102,14 @@ def create_base_test_matrices(
 # =========================================== #
 
 def create_base_anomaly_matrices(
-    save_dir,
-    id_col,
+        save_dir,
+        id_col
 ):
     # ------------------------
     # find the anomaly files !
     # ------------------------
 
-    csv_file_list = sorted(glob.glob(os.path.join(save_dir,'anomalies_type**.csv')))
+    csv_file_list = sorted(glob.glob(os.path.join(save_dir, 'anomalies_type**.csv')))
 
     for _file in csv_file_list:
         _df = pd.read_csv(
@@ -124,25 +123,25 @@ def create_base_anomaly_matrices(
 
         x = _df.values
 
-        fpath = 'matrix_anomaly_x_type' + str(anomaly_type) + '.npy'
+        fpath = os.path.join(save_dir, 'matrix_anomaly_x_type' + str(anomaly_type) + '.npy')
         np.save(fpath, x)
-        fpath = 'matrix_anomaly_idList_type' + str(anomaly_type) + '.npy'
+        fpath = os.path.join(save_dir, 'matrix_anomaly_idList_type' + str(anomaly_type) + '.npy')
         np.save(fpath, id_list)
 
     return
+
 
 # =========================================== #
 # APE specific stuff
 # =========================================== #
 
 def create_ape_model_data(
-    term_2_col,
-    term_4_col,
-    save_dir,
-    id_col,
-    ns_id_col
+        term_2_col,
+        term_4_col,
+        save_dir,
+        id_col,
+        ns_id_col
 ):
-
     train_neg_data_file = os.path.join(save_dir, 'negative_samples_ape_1.csv')
     train_pos_data_file = os.path.join(save_dir, 'train_data.csv')
 
@@ -200,7 +199,7 @@ def create_ape_model_data(
     term_2 = np.array(term_2)
     term_4 = np.array(term_4)
 
-    print('Shapes : matrix_pos ' , matrix_pos.shape, ' matrix_neg ', matrix_neg.shape)
+    print('Shapes : matrix_pos ', matrix_pos.shape, ' matrix_neg ', matrix_neg.shape)
     print('term 2', term_2.shape, 'term 4', term_4.shape)
 
     # Save files
@@ -208,7 +207,7 @@ def create_ape_model_data(
     np.save(f_path, matrix_pos)
 
     f_path = os.path.join(save_dir, 'negative_samples_ape.npy')
-    np.save(f_path , matrix_neg)
+    np.save(f_path, matrix_neg)
 
     f_path = os.path.join(save_dir, 'ape_term_2.npy')
     np.save(f_path, term_2)
@@ -218,19 +217,18 @@ def create_ape_model_data(
 
     return
 
+
 # =========================================== #
 # General model stuff
 # meant for mead, but can be used elsewhere
 # =========================================== #
 
 
-
 def create_mead_model_data(
-    save_dir,
-    id_col,
-    ns_id_col
+        save_dir,
+        id_col,
+        ns_id_col
 ):
-
     train_pos_data_file = os.path.join(save_dir, 'train_data.csv')
     train_neg_data_file = os.path.join(save_dir, 'negative_samples_v1.csv')
 
@@ -302,15 +300,15 @@ create_base_test_matrices(
 
 create_base_anomaly_matrices(
     save_dir,
-    id_col,
+    id_col
 )
 
 create_ape_model_data(
-    term_2_col = term_2_col,
-    term_4_col = term_4_col,
-    save_dir = save_dir,
-    id_col= id_col,
-    ns_id_col = ns_id_col
+    term_2_col=term_2_col,
+    term_4_col=term_4_col,
+    save_dir=save_dir,
+    id_col=id_col,
+    ns_id_col=ns_id_col
 )
 
 create_mead_model_data(
