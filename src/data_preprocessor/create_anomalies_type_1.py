@@ -1,12 +1,12 @@
+'''
+Type 1 anomaly : No clusters
+'''
 import pandas as pd
 import sys
 import os
-import numpy as np
-import pickle
 from itertools import combinations
 from joblib import Parallel, delayed
 from numpy import random
-import hashlib
 sys.path.append('./')
 
 try:
@@ -22,7 +22,6 @@ Type 1 :
 set of 3 entities which pairwise do not co-occur, and not present in test or train set
 '''
 
-
 def aux_func_type_1(
         target_df,
         ref_df,
@@ -30,6 +29,7 @@ def aux_func_type_1(
         id_col,
         anom_count
 ):
+    # Sample required number of rows, anom_count
     working_df = target_df.sample(anom_count)
     domains = list(sorted(target_df.columns))
     domains.remove(id_col)
@@ -113,15 +113,18 @@ def generate_anomalies_type1(
 
     # Create the co-occurrence matrix using the reference data frame(training data)
     columnWise_coOccMatrix_dict = utils_local.get_coOccMatrix_dict(train_df, id_col)
+    # Ref df is just to remove duplicates
     ref_df = pd.DataFrame(train_df, copy=True)
     ref_df = ref_df.append(test_df, ignore_index=True)
     ref_df = utils_local.add_hash(ref_df, id_col)
 
     # chunk data frame :: Parallelize the process
     list_df_chunks = utils_local.chunk_df(test_df, num_jobs)
+
     print(' Chunk lengths ->', [len(_) for _ in list_df_chunks])
     distributed_anom_count = int(len(test_df) * anom_perc / 100 * (1 / num_jobs))
     print('Anomalies generation per job :: ',distributed_anom_count )
+
     list_res_df = Parallel(n_jobs=num_jobs)(
         delayed(aux_func_type_1)(
             target_df,
@@ -131,7 +134,7 @@ def generate_anomalies_type1(
             distributed_anom_count
         ) for target_df in list_df_chunks
     )
-    print('Post cleaning chunk lengths ->', [len(_) for _ in list_res_df])
+    print('Resulting anomaly chunk lengths ->', [len(_) for _ in list_res_df])
 
     anomalies_df = None
     for _df in list_res_df:

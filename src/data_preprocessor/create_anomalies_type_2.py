@@ -172,19 +172,23 @@ def generate_anomalies_type_2(
         save_dir,
         id_col='PanjivaRecordID',
         pattern_size=4,
-        reqd_anom_perc=10,
+        reqd_anom_perc=50,
         num_jobs=40,
         min_normal_pattern_count=5,
         pattern_duplicate_count=100
 ):
     # =====================
     # Over estimating a bit, so that overlaps can be compensated for
+    # distributed_pattern_count * cluster_size = total anomaly count
     # =====================
-    distributed_pattern_count = int(1.25 * len(test_df) * (reqd_anom_perc / 100) / pattern_duplicate_count)
+    distributed_pattern_count = int(1.05 * len(test_df) * (reqd_anom_perc / 100) / pattern_duplicate_count)
+
     dict_coOccMatrix = utils_local.get_coOccMatrix_dict(
         train_df,
         id_col
     )
+
+    # List of patterns that are conflicting
     list_results = Parallel(n_jobs=num_jobs)(
         delayed(find_conflicting_patterns_aux_1)(
             train_df,
@@ -195,6 +199,7 @@ def generate_anomalies_type_2(
             min_normal_pattern_count = min_normal_pattern_count
         ) for _ in range(num_jobs)
     )
+
     results = []
     for item in list_results:
         results.extend(item)
@@ -213,7 +218,6 @@ def generate_anomalies_type_2(
     # ===================
 
     pattern_idx = list(range(len(patterns)))
-
     res_df_list = Parallel(n_jobs=num_jobs)(
         delayed(generate_anomalies_type_2_aux_2)(
             train_df,
@@ -233,7 +237,7 @@ def generate_anomalies_type_2(
         else:
             anomalies_df = anomalies_df.append(_df, ignore_index=True)
 
-    op_path = os.path.join(save_dir, 'anomalies_type3.csv')
+    op_path = os.path.join(save_dir, 'anomalies_type2.csv')
     result_df.to_csv(op_path, index=None)
     return result_df
 
