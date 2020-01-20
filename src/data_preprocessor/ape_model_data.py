@@ -10,6 +10,8 @@ import numpy as np
 import os
 import yaml
 import argparse
+import re
+import glob
 
 # ----------------------------------- #
 
@@ -42,7 +44,11 @@ def set_up_config(_DIR):
     with open(CONFIG_FILE) as f:
         CONFIG = yaml.safe_load(f)
 
-    DIR = _DIR
+    if _DIR is None:
+        DIR = CONFIG['DIR']
+    else:
+        DIR = _DIR
+
     save_dir = os.path.join(
         CONFIG['save_dir'],
         DIR
@@ -56,9 +62,77 @@ def set_up_config(_DIR):
 
     column_value_filters = CONFIG[DIR]['column_value_filters']
     num_neg_samples_v1 = CONFIG[DIR]['num_neg_samples']
+    return
+
+
+
+# =========================================== #
+# create .npy pickles for test data
+# =========================================== #
+def create_base_test_matrices(
+    save_dir,
+    id_col,
+):
+    test_data_file = os.path.join(save_dir, 'test_data.csv')
+    test_df = pd.read_csv(
+        test_data_file,
+        index_col=None
+    )
+
+    # Read in domain_dims, domains are sorted
+    with open(os.path.join(save_dir,'domain_dims.pkl'),'rb') as fh:
+        domain_dims = pickle.load(fh)
+    domains = list(domain_dims.keys())
+
+    test_idList = list(test_df[id_col])
+    del test_df[id_col]
+
+    test_x = test_df.values
+    # test_matrix_x_positive.npy
+    fpath = os.path.join(save_dir, 'test_matrix_x_positive.npy')
+    np.save(fpath , test_x)
+
+    fpath = os.path.join(save_dir, 'test_idList.npy')
+    np.save(fpath, test_idList)
 
     return
 
+
+# =========================================== #
+# create .npy pickles for anomalies data
+# =========================================== #
+
+def create_base_anomaly_matrices(
+    save_dir,
+    id_col,
+):
+    # ------------------------
+    # find the anomaly files !
+    # ------------------------
+
+    csv_file_list = sorted(glob.glob(os.path.join(save_dir,'anomalies_type**.csv')))
+
+    for _file in csv_file_list:
+        _df = pd.read_csv(
+            _file,
+            index_col=None
+        )
+        anomaly_type = int(re.findall(r'\d+', _file)[-1])
+
+        id_list = list(_df[id_col])
+        del _df[id_col]
+
+        x = _df.values
+
+        fpath = 'matrix_anomaly_x_type' + str(anomaly_type) + '.npy'
+        np.save(fpath, x)
+        fpath = 'matrix_anomaly_idList_type' + str(anomaly_type) + '.npy'
+        np.save(fpath, id_list)
+
+    return
+
+# =========================================== #
+# APE specific stuff
 # =========================================== #
 
 def create_ape_model_data(
@@ -68,22 +142,12 @@ def create_ape_model_data(
     id_col,
     ns_id_col
 ):
-    print('hello ')
-    return
 
-    train_pos_data_file = os.path.join(save_dir, 'train_data.csv')
     train_neg_data_file = os.path.join(save_dir, 'negative_samples_ape_1.csv')
-    test_data_file = os.path.join(save_dir, 'test_data.csv')
-
-    # ------------------- #
+    train_pos_data_file = os.path.join(save_dir, 'train_data.csv')
 
     train_pos_df = pd.read_csv(
         train_pos_data_file,
-        index_col=None
-    )
-
-    test_df = pd.read_csv(
-        test_data_file,
         index_col=None
     )
 
@@ -91,19 +155,18 @@ def create_ape_model_data(
         train_neg_data_file,
         index_col=None
     )
-
-    feature_cols = list(train_pos_df.columns)
-    feature_cols.remove(id_col)
-
-    matrix_test = test_df.values
-
     matrix_pos = []
     matrix_neg = []
 
+    # ------------------- #
+    with open(os.path.join(save_dir, 'domain_dims.pkl'), 'rb') as fh:
+        domain_dims = pickle.load(fh)
+    domains = list(domain_dims.keys())
+
     term_2 = []
     term_4 = []
-
     index = 0
+
     for i, row in train_pos_df.iterrows():
         _tmp = pd.DataFrame(
             neg_samples_df.loc[neg_samples_df[id_col] == row[id_col]],
@@ -137,14 +200,14 @@ def create_ape_model_data(
     term_2 = np.array(term_2)
     term_4 = np.array(term_4)
 
-    print(matrix_pos.shape, matrix_neg.shape)
-    print(term_2.shape, term_4.shape)
+    print('Shapes : matrix_pos ' , matrix_pos.shape, ' matrix_neg ', matrix_neg.shape)
+    print('term 2', term_2.shape, 'term 4', term_4.shape)
 
     # Save files
-    f_path = os.path.join(save_dir, 'matrix_train_positive.npy')
+    f_path = os.path.join(save_dir, 'train_matrix_x_positive.npy')
     np.save(f_path, matrix_pos)
 
-    f_path = os.path.join(save_dir,'ape_negative_samples.npy')
+    f_path = os.path.join(save_dir, 'negative_samples_ape.npy')
     np.save(f_path , matrix_neg)
 
     f_path = os.path.join(save_dir, 'ape_term_2.npy')
@@ -153,9 +216,72 @@ def create_ape_model_data(
     f_path = os.path.join(save_dir, 'ape_term_4.npy')
     np.save(f_path, term_4)
 
-    f_path = os.path.join(save_dir, 'matrix_test_positive.npy')
-    np.save(f_path , matrix_test)
+    return
 
+# =========================================== #
+# General model stuff
+# meant for mead, but can be used elsewhere
+# =========================================== #
+
+
+
+def create_mead_model_data(
+    save_dir,
+    id_col,
+    ns_id_col
+):
+
+    train_pos_data_file = os.path.join(save_dir, 'train_data.csv')
+    train_neg_data_file = os.path.join(save_dir, 'negative_samples_v1.csv')
+
+    # ------------------- #
+
+    train_pos_df = pd.read_csv(
+        train_pos_data_file,
+        index_col=None
+    )
+
+    neg_samples_df = pd.read_csv(
+        train_neg_data_file,
+        index_col=None
+    )
+
+    feature_cols = list(train_pos_df.columns)
+    feature_cols.remove(id_col)
+
+    matrix_pos = []
+    matrix_neg = []
+
+    index = 0
+    for i, row in train_pos_df.iterrows():
+        _row = pd.Series(row, copy=True)
+        _tmp = pd.DataFrame(
+            neg_samples_df.loc[neg_samples_df[id_col] == row[id_col]],
+            copy=True
+        )
+
+        del _tmp[ns_id_col]
+        del _tmp[id_col]
+        del _row[id_col]
+
+        vals_n = np.array(_tmp.values)
+        vals_p = list(_row.values)
+        matrix_neg.append(vals_n)
+        matrix_pos.append(vals_p)
+
+        index += 1
+
+    matrix_pos = np.array(matrix_pos)
+    matrix_neg = np.array(matrix_neg)
+
+    print(matrix_pos.shape, matrix_neg.shape)
+
+    # Save files
+    f_path = os.path.join(save_dir, 'train_matrix_x_positive.npy')
+    np.save(f_path, matrix_pos)
+
+    f_path = os.path.join(save_dir, 'negative_samples_mead.npy')
+    np.save(f_path, matrix_neg)
 
 
 # ========================================================= #
@@ -169,10 +295,26 @@ args = parser.parse_args()
 DIR = args.DIR
 set_up_config(DIR)
 
+create_base_test_matrices(
+    save_dir,
+    id_col,
+)
+
+create_base_anomaly_matrices(
+    save_dir,
+    id_col,
+)
+
 create_ape_model_data(
     term_2_col = term_2_col,
     term_4_col = term_4_col,
     save_dir = save_dir,
     id_col= id_col,
     ns_id_col = ns_id_col
+)
+
+create_mead_model_data(
+    save_dir=save_dir,
+    id_col=id_col,
+    ns_id_col=ns_id_col
 )
