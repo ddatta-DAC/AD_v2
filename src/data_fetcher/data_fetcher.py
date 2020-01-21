@@ -106,13 +106,13 @@ def get_data_APE(
         DIR,
         anomaly_type=1
 ):
-    train_x_pos, test_x, test_idList = get_data_base_x( DATA_DIR,DIR)
+    train_x_pos, test_x, test_idList = get_data_base_x(DATA_DIR,DIR)
     train_x_neg = None
     try:
         train_x_neg_file = os.path.join(
             DATA_DIR,
             DIR,
-            'negative_samples_ape.pkl'
+            'negative_samples_ape.npy'
         )
         with open(train_x_neg_file, 'rb') as fh:
             train_x_neg = np.load(fh)
@@ -133,18 +133,18 @@ def get_data_APE(
     )
 
     with open(APE_term_2_file, 'rb') as fh:
-        APE_term_2 = pickle.load(fh)
+        APE_term_2 = np.load(fh)
         APE_term_2 = np.reshape(APE_term_2, [APE_term_2.shape[0], 1])
 
     with open(APE_term_4_file, 'rb') as fh:
-        APE_term_4 = pickle.load(fh)
+        APE_term_4 = np.load(fh)
         APE_term_4 = np.reshape(
             APE_term_4,
             [APE_term_4.shape[0], APE_term_4.shape[1], 1]
         )
 
     anomaly_x, anomaly_idList = get_anomaly_data(DATA_DIR, DIR, anomaly_type)
-    return  train_x_pos, train_x_neg, APE_term_2, APE_term_4, test_x ,test_idList,  anomaly_x, anomaly_idList
+    return train_x_pos, train_x_neg, APE_term_2, APE_term_4, test_x ,test_idList,  anomaly_x, anomaly_idList
 
 # ========================================= #
 # Data fetcher for other models

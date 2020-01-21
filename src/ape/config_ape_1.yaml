@@ -1,51 +1,30 @@
-'DATA_DIR': '../../generated_data'
-'_DIR' : 'us_import2'
+'DATA_DIR': '../../generated_data_v1'
+'DIR' : 'us_import1'
 'OP_DIR' : 'output'
 'SAVE_DIR' : 'save_dir'
 'MODEL_NAME': 'model_ape'
 'log_file': 'trainusimport2.log'
-'china_import':
+'china_import1':
   'embed_size': 10
   'num_epochs': 10
   'batch_size': 128
   'use_pretrained': False
   'learning_rate': 0.001
   'saved_model_file' : False
-'peru_export':
-  'embed_size': 8
-  'num_epochs': 10
-  'batch_size': 128
-  'saved_model_file': 'model_ape_8_k_21_frozen.pb'
-  'use_pretrained': True
-  'learning_rate': 0.001
-'us_import':
-  'embed_size': 10
-  'num_epochs': 10
-  'batch_size': 128
-  'saved_model_file' : 'model_ape_10_k_27_frozen.pb'
-  'use_pretrained': False
-  'learning_rate': 0.001
-'china_export':
+'china_export1':
   'embed_size': 12
   'num_epochs': 12
   'batch_size': 128
   'saved_model_file' : 'model_ape_12_k_24_frozen.pb'
   'use_pretrained': True
   'learning_rate': 0.001
-'china_import2':
-  'embed_size': 10
-  'num_epochs': 10
+'us_import1':
+  'embed_size': 12
+  'num_epochs': 12
   'batch_size': 128
+  'saved_model_file' : 'model_ape_12_k_24_frozen.pb'
   'use_pretrained': False
-  'learning_rate': 0.001
-  'saved_model_file' : False
-'peru_export2':
-  'embed_size': 8
-  'num_epochs': 10
-  'batch_size': 128
-  'saved_model_file': 'model_ape_8_k_21_frozen.pb'
-  'use_pretrained': False
-  'learning_rate': 0.001
+  'learning_rate': 0.0001
 'us_import2':
   'embed_size': 16
   'num_epochs': 12
@@ -53,10 +32,3 @@
   'saved_model_file' : 'model_ape_12_k_24_frozen.pb'
   'use_pretrained': False
   'learning_rate': 0.0005
-'us_import3':
-  'embed_size': 12
-  'num_epochs': 12
-  'batch_size': 128
-  'saved_model_file' : 'model_ape_12_k_24_frozen.pb'
-  'use_pretrained': False
-  'learning_rate': 0.0001

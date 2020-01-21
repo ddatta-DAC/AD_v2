@@ -73,9 +73,9 @@ __version__ = "6.0"
 
 def get_domain_arity():
     global DATA_DIR
-    global _DIR
+    global DIR
 
-    f = os.path.join(DATA_DIR, _DIR, 'domain_dims.pkl')
+    f = os.path.join(DATA_DIR, DIR, 'domain_dims.pkl')
 
     with open(f, 'rb') as fh:
         dd = pickle.load(fh)
@@ -108,7 +108,7 @@ with open(CONFIG_FILE) as f:
 def setup():
 
     global SAVE_DIR
-    global _DIR
+    global DIR
     global config
     global OP_DIR
     global MODEL_NAME
@@ -117,13 +117,13 @@ def setup():
     global cur_path
     global logger
     SAVE_DIR = config['SAVE_DIR']
-    if _DIR is None:
-        _DIR = config['_DIR']
+    if DIR is None:
+        DIR = config['DIR']
     OP_DIR = config['OP_DIR']
     DATA_DIR = config['DATA_DIR']
     if not os.path.exists(SAVE_DIR):
         os.mkdir(SAVE_DIR)
-    SAVE_DIR = os.path.join(SAVE_DIR, _DIR)
+    SAVE_DIR = os.path.join(SAVE_DIR, DIR)
 
     print(OP_DIR)
     print(SAVE_DIR)
@@ -133,8 +133,8 @@ def setup():
     if not os.path.exists(OP_DIR):
         os.mkdir(OP_DIR)
 
-    OP_DIR = os.path.join(OP_DIR, _DIR)
-    tf_model_ape_1._DIR = _DIR
+    OP_DIR = os.path.join(OP_DIR, DIR)
+    tf_model_ape_1._DIR = DIR
 
     tf_model_ape_1.OP_DIR = OP_DIR
     if not os.path.exists(OP_DIR):
@@ -164,7 +164,7 @@ def setup():
 
 # --------------------------- #
 def main():
-    global _DIR
+    global DIR
     global OP_DIR
     global SAVE_DIR
     global DATA_DIR
@@ -173,18 +173,20 @@ def main():
 
     if not os.path.exists(SAVE_DIR):
         os.mkdir(SAVE_DIR)
-        if os.path.exists(os.path.join(SAVE_DIR, _DIR)):
-            os.mkdir(os.path.join(SAVE_DIR, _DIR))
+        if os.path.exists(os.path.join(SAVE_DIR, DIR)):
+            os.mkdir(os.path.join(SAVE_DIR, DIR))
 
     checkpoint_dir = os.path.join(SAVE_DIR)
     print(' > ', os.getcwd())
 
-    train_x_pos, train_x_neg, APE_term_2, APE_term_4, test_pos, test_anomaly, domain_dims = data_fetcher.get_data_v1(
+    train_x_pos, train_x_neg, APE_term_2, APE_term_4, _, _,  _,_ = data_fetcher.get_data_APE(
         DATA_DIR,
-        _DIR
+        DIR
     )
+    print(train_x_neg.shape, APE_term_2.shape, APE_term_4.shape)
+    return
 
-
+    domain_dims = data_fetcher.get_domain_dims(DATA_DIR, DIR)
     neg_samples = train_x_neg.shape[1]
     start_time = time.time()
     num_domains = len(domain_dims)
@@ -195,24 +197,23 @@ def main():
 
     model_obj = tf_model_ape_1.model_ape_1(MODEL_NAME)
 
-
     model_obj.set_model_params(
         num_entities=num_domains,
         inp_dims=inp_dims,
         neg_samples=neg_samples,
-        batch_size=config[_DIR]['batch_size'],
-        num_epochs=config[_DIR]['num_epochs'],
-        lr=config[_DIR]['learning_rate'],
+        batch_size=config[DIR]['batch_size'],
+        num_epochs=config[DIR]['num_epochs'],
+        lr=config[DIR]['learning_rate'],
         chkpt_dir=checkpoint_dir
     )
 
-    _emb_size = int(config[_DIR]['embed_size'])
+    _emb_size = int(config[DIR]['embed_size'])
     model_obj.set_hyper_parameters(
         emb_dims=[_emb_size],
         use_bias=[True, False]
     )
 
-    _use_pretrained = config[_DIR]['use_pretrained']
+    _use_pretrained = config[DIR]['use_pretrained']
 
     if _use_pretrained is False:
         model_obj.build_model()
@@ -222,8 +223,6 @@ def main():
             APE_term_2,
             APE_term_4
         )
-
-
 
     # test for c = 1, 2, 3
 
@@ -242,12 +241,11 @@ def main():
     bounds.append(min(training_noise_scores))
     bounds.append(max(training_pos_scores))
 
-    for c in range(1,3+1):
-
-        _, _, _, _, test_pos, test_anomaly, _ = data_fetcher.get_data_v1(
+    for anomaly_type in range(1,3+1):
+        _, _, _, _, test_x, test_idList, anomaly_x, anomaly_idList = data_fetcher.get_data_APE(
             DATA_DIR,
-            _DIR,
-            c = c
+            DIR,
+            anomaly_type
         )
 
         '''
@@ -256,15 +254,15 @@ def main():
         Maintain order
         '''
 
-        test_normal_ids = test_pos[0]
-        test_anomaly_ids = test_anomaly[0]
+        test_normal_ids = test_idList
+        test_anomaly_ids = anomaly_idList
         test_ids = list(np.hstack(
             [test_normal_ids,
              test_anomaly_ids]
         ))
         print (' Len of test_ids ', len(test_ids))
-        test_normal_data = test_pos[1]
-        test_anomaly_data = test_anomaly[1]
+        test_normal_data = test_x
+        test_anomaly_data = anomaly_x
         test_data_x = np.vstack([
             test_normal_data,
             test_anomaly_data
@@ -356,9 +354,9 @@ def main():
 parser = argparse.ArgumentParser(description='APE on wwf data')
 parser.add_argument('-d','--dir', help='Which data to run. give dir name [ us_import, peru_export, china_export ]', required=True)
 args = vars(parser.parse_args())
-
+DIR = None
 if 'dir' in args.keys() :
     print(' >>> ', args['dir'])
-    _DIR = str(args['dir']).strip("'")
+    DIR = str(args['dir']).strip("'")
 
 main()

@@ -237,7 +237,7 @@ def create_mead_model_data(
 
     neg_samples_df = pd.read_csv(
         train_neg_data_file,
-        index_col=None
+        index_col=0
     )
 
     feature_cols = list(train_pos_df.columns)
