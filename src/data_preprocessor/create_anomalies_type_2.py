@@ -40,7 +40,7 @@ def find_conflicting_patterns_aux_1(
         id_col,
         pattern_size,
         count,
-        min_normal_pattern_count
+        support_count
 ):
     results = []
     domains = list(sorted(train_df.columns))
@@ -51,59 +51,61 @@ def find_conflicting_patterns_aux_1(
     for d in domains:
         domain_entitiesSet_dict[d] = list(set(train_df[d]))
 
-    cur_count = 0
-    while cur_count <= count:
-        cur_count+=1
+    for cur_count in range(count):
         domain_set = np.random.choice(
             domains,
             size=pattern_size,
             replace=False
         )
+        # set aside 1 domain(entity)
         excluded_domain = np.random.choice(domain_set, size=1)[0]
         pos_set = list(domain_set)
         pos_set.remove(excluded_domain)
         candidate_dict = {}
 
-        _tries1 = 0
-
-        #  Find { E_d1, E_d2, ... E_d3 } such that they co-occur pairwise
+        _tries1 = 0  # Keep track of counts
+        # -------------------
+        # 1. Find { E_d1, E_d2, ... E_d3 } such that they co-occur pairwise
+        # 2. Find patterns with a minimum "support"
+        # -------------------
         while True:
-            for d in pos_set:
-                # sample entity
+            for d in pos_set:   # sample entity
                 candidate_dict[d] = np.random.choice(domain_entitiesSet_dict[d], size=1)[0]
 
-            if utils_local.check_nonZeroCoOccurrence(candidate_dict, dict_coOccMatrix) == True:
-                break
+            if utils_local.check_nonZeroCoOccurrence(candidate_dict, dict_coOccMatrix)  and \
+                utils_local.find_pattern_count(candidate_dict, train_df) >= support_count:
+                break # Found
             _tries1 += 1
 
-        # ======
-        # Find patterns with a minimum "support"
-        # ======
-        if utils_local.find_pattern_count(candidate_dict, train_df) >= min_normal_pattern_count:
-            _tries2 = 0
-            max_tries = 1000
-            condition_satisfied = False
-            cur_domain = excluded_domain
+        # ------------------------
+        # Note :: candidate_dict should now have (ps-1) <domain:entity> where these entities co-occur
+        # ------------------------
 
-            while not condition_satisfied and _tries2 < max_tries:
-                # Select an entity
-                cand_e = np.random.choice(domain_entitiesSet_dict[cur_domain], size=1)[0]
-                candidate_dict[cur_domain] = cand_e
-                # ====
-                # Ensure that new candidate has non-zero co-occurrence with others
-                for dpair in combinations(list(candidate_dict.keys()), 2):
-                    subSet_dict = {}
-                    subSet_dict[dpair[0]] = candidate_dict[dpair[0]]
-                    subSet_dict[dpair[1]] = candidate_dict[dpair[1]]
+        max_tries = 1000
+        condition_satisfied = False
+        cur_domain = excluded_domain
+        _tries2 = 0
+        while not condition_satisfied and _tries2 < max_tries:
+            # Select an entity
+            cand_e = np.random.choice(domain_entitiesSet_dict[cur_domain], size=1)[0]
+            candidate_dict[cur_domain] = cand_e
+            # ====
+            # Ensure that new candidate has non-zero co-occurrence with others
+            for dpair in combinations(list(candidate_dict.keys()), 2):
+                subSet_dict = {}
+                subSet_dict[dpair[0]] = candidate_dict[dpair[0]]
+                subSet_dict[dpair[1]] = candidate_dict[dpair[1]]
 
-                    if not utils_local.check_nonZeroCoOccurrence(subSet_dict, dict_coOccMatrix):
-                        condition_satisfied = False
-                        break
-                    else:
-                        condition_satisfied = True
-                # ====
-                _tries2 += 1
-            print("Tries 1 ", _tries1, " Tries 2 ", _tries2)
+                if not utils_local.check_nonZeroCoOccurrence(subSet_dict, dict_coOccMatrix):
+                    condition_satisfied = False
+                    break
+                else:
+                    condition_satisfied = True
+
+            _tries2 += 1
+            # ====
+        print("Tries 1 ", _tries1, " Tries 2 ", _tries2)
+        if len(candidate_dict) == pattern_size:
             results.append(
                 candidate_dict
             )
@@ -112,6 +114,10 @@ def find_conflicting_patterns_aux_1(
     return results
 
 
+# ====================================
+# p_idx : index of the pattern
+# pattern : set of items that do not co-occur
+# ====================================
 def generate_anomalies_type_2_aux_2(
         train_df,
         test_df,
@@ -139,7 +145,8 @@ def generate_anomalies_type_2_aux_2(
         test_df,
         cand
     )
-    ns = min(len(match_df),pattern_duplicate_count)
+    # upper bound on cluster size
+    ns = min(len(match_df), pattern_duplicate_count)
     match_df = match_df.sample(ns)
     new_df = pd.DataFrame(columns=list(train_df.columns))
 
@@ -164,6 +171,7 @@ def generate_anomalies_type_2_aux_2(
 
     return new_df
 
+
 # ========== #
 
 def generate_anomalies_type_2(
@@ -187,6 +195,7 @@ def generate_anomalies_type_2(
         train_df,
         id_col
     )
+
     # =========================
     # List of patterns that are conflicting
     # =========================
@@ -198,23 +207,21 @@ def generate_anomalies_type_2(
             id_col,
             pattern_size=pattern_size,
             count=distributed_pattern_count,
-            min_normal_pattern_count = min_normal_pattern_count
+            support_count=min_normal_pattern_count
         ) for _ in range(num_jobs)
     )
-
+    # Flatten out list to single level
     results = []
     for item in list_results:
         results.extend(item)
 
-    # Remove duplicate 'spurious' patterns generated by the previous call
+    # Remove duplicates in 'spurious' patterns generated by the previous call
     patterns = utils_local.dedup_list_dictionaries(
         results
     )
 
-    print(' Percentage of anomalies :: ', len(patterns) / len(test_df))
+    print(' Percentage of anomalies :: ', len(patterns) / len(test_df) * 100)
     result_df = pd.DataFrame(columns=list(train_df.columns))
-
-    return
 
     # ===================
     # For each pattern create k samples ,
@@ -230,9 +237,9 @@ def generate_anomalies_type_2(
             p_idx,
             pattern,
             pattern_duplicate_count
-        ) for p_idx, pattern in zip(pattern_idx , patterns)
+        ) for p_idx, pattern in zip(pattern_idx, patterns)
     )
-
+    return
     # Join the results
     anomalies_df = None
     for _df in res_df_list:
@@ -246,4 +253,3 @@ def generate_anomalies_type_2(
     return result_df
 
 # ========================
-

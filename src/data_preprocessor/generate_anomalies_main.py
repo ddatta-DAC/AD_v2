@@ -69,8 +69,8 @@ args = parser.parse_args()
 DIR = args.DIR
 CONFIG = set_up_config(args.DIR)
 
-train_df = pd.read_csv(os.path.join(save_dir, CONFIG['train_data_file']))
-test_df = pd.read_csv(os.path.join(save_dir, CONFIG['test_data_file_v1']))
+train_df = pd.read_csv(os.path.join(save_dir, CONFIG['train_data_file']),index_col=None)
+test_df = pd.read_csv(os.path.join(save_dir, CONFIG['test_data_file_v1']),index_col=None)
 
 # ===================================================== #
 
@@ -89,7 +89,7 @@ create_anomalies_type_2.generate_anomalies_type_2(
     save_dir,
     id_col=id_col,
     pattern_size=3,
-    reqd_anom_perc=2,
+    reqd_anom_perc=10,
     num_jobs=6,
     min_normal_pattern_count=contextual_pattern_support,
     pattern_duplicate_count=20
