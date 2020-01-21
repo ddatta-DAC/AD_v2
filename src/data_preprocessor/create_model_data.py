@@ -146,22 +146,18 @@ def create_ape_model_data(
     train_pos_data_file = os.path.join(save_dir, 'train_data.csv')
 
     train_pos_df = pd.read_csv(
-        train_pos_data_file,
-        index_col=None
+        train_pos_data_file
     )
 
     neg_samples_df = pd.read_csv(
         train_neg_data_file,
-        index_col=None
+        index_col=0
     )
-    matrix_pos = []
-    matrix_neg = []
 
     # ------------------- #
-    with open(os.path.join(save_dir, 'domain_dims.pkl'), 'rb') as fh:
-        domain_dims = pickle.load(fh)
-    domains = list(domain_dims.keys())
 
+    matrix_pos = []
+    matrix_neg = []
     term_2 = []
     term_4 = []
     index = 0
@@ -182,8 +178,8 @@ def create_ape_model_data(
         del row[id_col]
 
         vals_n = np.array(_tmp.values)
-        vals_p = list(row.values)
-
+        vals_n = vals_n.astype('int32')
+        vals_p = list(row.values.astype('int32'))
         matrix_neg.append(vals_n)
         matrix_pos.append(vals_p)
         term_2.append(_term_2)
