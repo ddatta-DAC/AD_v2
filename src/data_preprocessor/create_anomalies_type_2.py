@@ -187,8 +187,10 @@ def generate_anomalies_type_2(
         train_df,
         id_col
     )
-
+    # =========================
     # List of patterns that are conflicting
+    # =========================
+
     list_results = Parallel(n_jobs=num_jobs)(
         delayed(find_conflicting_patterns_aux_1)(
             train_df,
@@ -211,6 +213,8 @@ def generate_anomalies_type_2(
 
     print(' Percentage of anomalies :: ', len(patterns) / len(test_df))
     result_df = pd.DataFrame(columns=list(train_df.columns))
+
+    return
 
     # ===================
     # For each pattern create k samples ,
