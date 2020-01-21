@@ -184,7 +184,7 @@ def main():
         DIR
     )
     print(train_x_neg.shape, APE_term_2.shape, APE_term_4.shape)
-    return
+
 
     domain_dims = data_fetcher.get_domain_dims(DATA_DIR, DIR)
     neg_samples = train_x_neg.shape[1]
@@ -315,7 +315,7 @@ def main():
         logger.info(recall_str)
 
         _auc = auc(recall, precison)
-        logger.info('c=' + str(c))
+        logger.info('c=' + str(anomaly_type))
         logger.info('AUC')
         logger.info(str(_auc))
 
