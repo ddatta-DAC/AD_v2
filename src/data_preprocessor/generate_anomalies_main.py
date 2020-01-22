@@ -79,14 +79,14 @@ num_jobs = CONFIG['num_jobs']
 import multiprocessing as mp
 num_jobs = min(mp.cpu_count(),num_jobs)
 
-create_anomalies_type_1.generate_anomalies_type1(
-    test_df,
-    train_df,
-    save_dir,
-    id_col=id_col,
-    num_jobs=num_jobs,
-    anom_perc=100
-)
+# create_anomalies_type_1.generate_anomalies_type1(
+#     test_df,
+#     train_df,
+#     save_dir,
+#     id_col=id_col,
+#     num_jobs=num_jobs,
+#     anom_perc=100
+# )
 
 create_anomalies_type_2_v2.generate_anomalies_type_2(
     train_df,
@@ -97,16 +97,16 @@ create_anomalies_type_2_v2.generate_anomalies_type_2(
     reqd_anom_perc=100,
     num_jobs=num_jobs,
     pattern_min_support=contextual_pattern_support,
-    pattern_cluster_count=20
+    pattern_cluster_size=20
 )
 
-create_anomalies_type_3.generate_anomalies_type3(
-    test_df,
-    train_df,
-    save_dir,
-    id_col=id_col,
-    company_domains=company_domain_columns,
-    num_jobs=num_jobs,
-    anom_perc=100,
-    cluster_count=20
-)
+# create_anomalies_type_3.generate_anomalies_type3(
+#     test_df,
+#     train_df,
+#     save_dir,
+#     id_col=id_col,
+#     company_domains=company_domain_columns,
+#     num_jobs=num_jobs,
+#     anom_perc=100,
+#     cluster_count=20
+# )

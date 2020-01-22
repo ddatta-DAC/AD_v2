@@ -37,7 +37,8 @@ def find_conflicting_patterns_aux_1(
         dict_coOccMatrix,
         id_col,
         reqd_pattern_count,
-        company_domain
+        company_domain,
+        pattern_cluster_size
 ):
     results = []
     domains = list(sorted(train_df.columns))
@@ -51,20 +52,21 @@ def find_conflicting_patterns_aux_1(
     # -------------
 
     for cur_count in range(reqd_pattern_count):
-        pick_from = list(domains)
 
+        pick_from = list(domains)
         # select the next domain
         domain_1 = company_domain
         pick_from.remove(domain_1)
+        e1 = np.random.choice(domain_entitiesSet_dict[domain_1], size=1)[0]
+
         domain_2 = np.random.choice(pick_from, size=1, replace=False)[0]
         pick_from.remove(domain_2)
-
-        e1 = np.random.choice(domain_entitiesSet_dict[domain_1], size=1)[0]
         candidate_dict = None
-        max_trials_1 = 200
-        max_trials_2 = 1000
+        max_trials_1 = 256
+        max_trials_2 = 1600
         trials_1 = 0
         found = False
+
         while trials_1 <= max_trials_1:
             trials_1 += 1
             # select an entity from domain2
@@ -75,9 +77,14 @@ def find_conflicting_patterns_aux_1(
             }
             if not utils_local.check_nonZeroCoOccurrence(tmp_dict, dict_coOccMatrix):
                 continue
+
+            if len(utils_local.query_df(train_df,tmp_dict)) < 0.75 * pattern_cluster_size:
+                continue
+            # --------------------------------------
             # find the 3rd domain and entity
             # such that (a,b , C) do not co-occur
             # but a,c, b,c co-occur
+            # --------------------------------------
             trials_2 = 0
 
             domain_3 = np.random.choice(pick_from, size=1, replace=False)[0]
@@ -96,6 +103,7 @@ def find_conflicting_patterns_aux_1(
                     domain_3: e3
                 }
                 cond1 = utils_local.check_nonZeroCoOccurrence(tmp_dict, dict_coOccMatrix)
+
                 if not cond1:
                     continue
 
@@ -119,6 +127,7 @@ def find_conflicting_patterns_aux_1(
             if found: break
 
         if candidate_dict is not None:
+            print(candidate_dict)
             results.append(candidate_dict)
 
     return results
@@ -139,17 +148,13 @@ def generate_anomalies_type_2_aux_2(
     # ========
     # select first 2 domains domains
     # ========
-    antecedent  = list(pattern.keys())
-
-    _domains_set = np.random.choice(
-        list(pattern.keys()), replace=False, size=2
-    )
-
+    antecedent  = list(pattern.keys())[:-1]
     cand = { d: pattern[d] for d in antecedent}
 
     # ===
     # Find k records with partial match with pattern
     # ===
+
     match_df = utils_local.query_df(test_df,cand)
     # search in train if no patterns in test set
     if len(match_df) < int( pattern_cluster_size):
@@ -181,13 +186,13 @@ def generate_anomalies_type_2(
         reqd_anom_perc=50,
         num_jobs=40,
         pattern_min_support=5,
-        pattern_cluster_count=100
+        pattern_cluster_size=100
 ):
     # =====================
     # Over estimating a bit, so that overlaps can be compensated for
     # distributed_pattern_count * cluster_size = total anomaly count
     # =====================
-    distributed_pattern_count = int(1.10 * len(test_df) * (reqd_anom_perc / 100) / pattern_cluster_count )
+    distributed_pattern_count = int(1.25 * len(test_df) * (reqd_anom_perc / 100) / pattern_cluster_size )
     distributed_pattern_count = int(distributed_pattern_count/num_jobs)
     print('>>>', len(test_df))
     print('>>>', distributed_pattern_count)
@@ -207,7 +212,8 @@ def generate_anomalies_type_2(
             dict_coOccMatrix,
             id_col,
             reqd_pattern_count=distributed_pattern_count,
-            company_domain=company_domain
+            company_domain=company_domain,
+            pattern_cluster_size = pattern_cluster_size
         ) for _ in range(num_jobs)
     )
     # Flatten out list to single level
@@ -219,8 +225,9 @@ def generate_anomalies_type_2(
     patterns = utils_local.dedup_list_dictionaries(
         results
     )
-
-    print(' Percentage of anomalies :: ', len(patterns)*pattern_cluster_count / len(test_df) * 100)
+    print('[Number of patterns] :: ', len(patterns))
+    _prc = len(patterns)*pattern_cluster_size / len(test_df) * 100
+    print('[Projected] Percentage of anomalies :: ', _prc)
     # ===================
     # For each pattern create k samples ,
     # where k = pattern_duplicates
@@ -234,11 +241,12 @@ def generate_anomalies_type_2(
             id_col,
             p_idx,
             pattern,
-            pattern_cluster_count
+            pattern_cluster_size
         ) for p_idx, pattern in zip(pattern_idx, patterns)
     )
 
     # Join the results
+
     anomalies_df = None
     for _df in res_df_list:
         if anomalies_df is None:
@@ -246,7 +254,7 @@ def generate_anomalies_type_2(
         else:
             anomalies_df = anomalies_df.append(_df, ignore_index=True)
 
-    print(len(anomalies_df), len(test_df))
+    print('>>>  Type 2 anomalies count ', len(anomalies_df), len(test_df))
     op_path = os.path.join(save_dir, 'anomalies_type2.csv')
     anomalies_df.to_csv(op_path, index=None)
     return anomalies_df
