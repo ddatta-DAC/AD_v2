@@ -146,12 +146,13 @@ def create_ape_model_data(
     train_pos_data_file = os.path.join(save_dir, 'train_data.csv')
 
     train_pos_df = pd.read_csv(
-        train_pos_data_file
+        train_pos_data_file,
+        index_col=None
     )
 
     neg_samples_df = pd.read_csv(
         train_neg_data_file,
-        index_col=0
+        index_col=None
     )
 
     # ------------------- #
@@ -237,7 +238,7 @@ def create_mead_model_data(
 
     neg_samples_df = pd.read_csv(
         train_neg_data_file,
-        index_col=0
+        index_col=None
     )
 
     feature_cols = list(train_pos_df.columns)
