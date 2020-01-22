@@ -116,7 +116,6 @@ def find_conflicting_patterns_aux_1(
                 break
             _tries2 += 1
 
-
         # ====
         print("Tries 1 ", _tries1, " Tries 2 ", _tries2)
 
