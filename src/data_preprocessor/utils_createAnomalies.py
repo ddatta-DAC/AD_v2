@@ -51,8 +51,7 @@ Modify the id_col
 
 def aux_modify_id(value_id_col, suffix):
     r = str(value_id_col) + str(suffix)
-    print(r)
-    return int(str(value_id_col) + str(suffix))
+    return int(r)
 
 
 '''

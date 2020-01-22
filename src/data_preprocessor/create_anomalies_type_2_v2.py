@@ -50,7 +50,7 @@ def find_conflicting_patterns_aux_1(
     for d in domains:
         domain_entitiesSet_dict[d] = list(set(train_df[d]))
     # -------------
-
+    fail_count = 0
     for cur_count in range(reqd_pattern_count):
 
         pick_from = list(domains)
@@ -62,7 +62,7 @@ def find_conflicting_patterns_aux_1(
         domain_2 = np.random.choice(pick_from, size=1, replace=False)[0]
         pick_from.remove(domain_2)
         candidate_dict = None
-        max_trials_1 = 256
+        max_trials_1 = 1000
         max_trials_2 = 1600
         trials_1 = 0
         found = False
@@ -127,8 +127,11 @@ def find_conflicting_patterns_aux_1(
             if found: break
 
         if candidate_dict is not None:
-            print(candidate_dict)
             results.append(candidate_dict)
+        else:
+            fail_count +=1
+
+    print('find_conflicting_patterns_aux_1 :: ', reqd_pattern_count, len(results), 'fails:: ',fail_count )
 
     return results
 
@@ -192,7 +195,7 @@ def generate_anomalies_type_2(
     # Over estimating a bit, so that overlaps can be compensated for
     # distributed_pattern_count * cluster_size = total anomaly count
     # =====================
-    distributed_pattern_count = int(1.25 * len(test_df) * (reqd_anom_perc / 100) / pattern_cluster_size )
+    distributed_pattern_count = int(1.5 * len(test_df) * (reqd_anom_perc / 100) / pattern_cluster_size )
     distributed_pattern_count = int(distributed_pattern_count/num_jobs)
     print('>>>', len(test_df))
     print('>>>', distributed_pattern_count)
