@@ -63,7 +63,7 @@ def find_conflicting_patterns_aux_1(
         pick_from.remove(domain_2)
         candidate_dict = None
         max_trials_1 = 1000
-        max_trials_2 = 1600
+        max_trials_2 = 5000
         trials_1 = 0
         found = False
 
@@ -195,7 +195,7 @@ def generate_anomalies_type_2(
     # Over estimating a bit, so that overlaps can be compensated for
     # distributed_pattern_count * cluster_size = total anomaly count
     # =====================
-    distributed_pattern_count = int(1.5 * len(test_df) * (reqd_anom_perc / 100) / pattern_cluster_size )
+    distributed_pattern_count = int(2.5 * len(test_df) * (reqd_anom_perc / 100) / pattern_cluster_size )
     distributed_pattern_count = int(distributed_pattern_count/num_jobs)
     print('>>>', len(test_df))
     print('>>>', distributed_pattern_count)
@@ -257,9 +257,14 @@ def generate_anomalies_type_2(
         else:
             anomalies_df = anomalies_df.append(_df, ignore_index=True)
 
+    # --------
+    if len(anomalies_df) > len(test_df):
+        anomalies_df = anomalies_df.head(len(test_df))
+
     print('>>>  Type 2 anomalies count ', len(anomalies_df), len(test_df))
     op_path = os.path.join(save_dir, 'anomalies_type2.csv')
     anomalies_df.to_csv(op_path, index=None)
+
     return anomalies_df
 
 # ========================
