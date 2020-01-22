@@ -75,14 +75,18 @@ test_df = pd.read_csv(os.path.join(save_dir, CONFIG['test_data_file_v1']),index_
 
 # ===================================================== #
 
-# create_anomalies_type_1.generate_anomalies_type1(
-#     test_df,
-#     train_df,
-#     save_dir,
-#     id_col=id_col,
-#     num_jobs=80,
-#     anom_perc=100
-# )
+num_jobs = CONFIG['num_jobs']
+import _multiprocessing as mp
+num_jobs = min(mp.cpu_count(),num_jobs)
+
+create_anomalies_type_1.generate_anomalies_type1(
+    test_df,
+    train_df,
+    save_dir,
+    id_col=id_col,
+    num_jobs=num_jobs,
+    anom_perc=100
+)
 
 create_anomalies_type_2_v2.generate_anomalies_type_2(
     train_df,
@@ -90,19 +94,19 @@ create_anomalies_type_2_v2.generate_anomalies_type_2(
     save_dir,
     id_col=id_col,
     company_domain = CONFIG[DIR]['company_domain_columns'][0],
-    reqd_anom_perc=2,
-    num_jobs=6,
+    reqd_anom_perc=100,
+    num_jobs=num_jobs,
     pattern_min_support=contextual_pattern_support,
     pattern_cluster_count=20
 )
 
-# create_anomalies_type_3.generate_anomalies_type3(
-#     test_df,
-#     train_df,
-#     save_dir,
-#     id_col=id_col,
-#     company_domains=company_domain_columns,
-#     num_jobs=40,
-#     anom_perc=100,
-#     cluster_count=20
-# )
+create_anomalies_type_3.generate_anomalies_type3(
+    test_df,
+    train_df,
+    save_dir,
+    id_col=id_col,
+    company_domains=company_domain_columns,
+    num_jobs=num_jobs,
+    anom_perc=100,
+    cluster_count=20
+)
