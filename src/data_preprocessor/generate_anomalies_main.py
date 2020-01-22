@@ -13,11 +13,11 @@ sys.path.append('./..')
 
 try:
     import create_anomalies_type_1
-    import create_anomalies_type_2
+    import create_anomalies_type_2_v2
     import create_anomalies_type_3
 except:
     from . import create_anomalies_type_1
-    from . import create_anomalies_type_2
+    from . import create_anomalies_type_2_v2
     from . import create_anomalies_type_3
 
 # ===================
@@ -30,7 +30,7 @@ use_cols = None
 save_dir = None
 company_domain_columns = None
 contextual_pattern_support = None
-
+CONFIG = None
 
 def set_up_config(_DIR):
     global CONFIG_FILE
@@ -39,6 +39,7 @@ def set_up_config(_DIR):
     global save_dir
     global company_domain_columns
     global contextual_pattern_support
+    global CONFIG
 
     with open(CONFIG_FILE) as f:
         CONFIG = yaml.safe_load(f)
@@ -54,7 +55,7 @@ def set_up_config(_DIR):
     use_cols = CONFIG[DIR]['use_cols']
     company_domain_columns = CONFIG[DIR]['company_domain_columns']
     contextual_pattern_support = CONFIG[DIR]['contextual_pattern_support']
-    return CONFIG
+    return
 
 
 # ===================================================== #
@@ -67,7 +68,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 DIR = args.DIR
-CONFIG = set_up_config(args.DIR)
+set_up_config(args.DIR)
 
 train_df = pd.read_csv(os.path.join(save_dir, CONFIG['train_data_file']),index_col=None)
 test_df = pd.read_csv(os.path.join(save_dir, CONFIG['test_data_file_v1']),index_col=None)
@@ -83,16 +84,16 @@ test_df = pd.read_csv(os.path.join(save_dir, CONFIG['test_data_file_v1']),index_
 #     anom_perc=100
 # )
 
-create_anomalies_type_2.generate_anomalies_type_2(
+create_anomalies_type_2_v2.generate_anomalies_type_2(
     train_df,
     test_df,
     save_dir,
     id_col=id_col,
-    pattern_size=3,
-    reqd_anom_perc=10,
+    company_domain = CONFIG[DIR]['company_domain_columns'][0],
+    reqd_anom_perc=2,
     num_jobs=6,
-    min_normal_pattern_count=contextual_pattern_support,
-    pattern_duplicate_count=20
+    pattern_min_support=contextual_pattern_support,
+    pattern_cluster_count=20
 )
 
 # create_anomalies_type_3.generate_anomalies_type3(

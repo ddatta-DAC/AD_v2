@@ -11,10 +11,7 @@ import os
 import sys
 import pandas as pd
 import numpy as np
-import sklearn
-import glob
-import pickle
-import random
+from _collections import OrderedDict
 from joblib import Parallel, delayed
 import yaml
 import math
@@ -33,38 +30,46 @@ Find patterns ::
 { A,B } !-> { C } 
 '''
 
-
 def find_conflicting_patterns_aux_1(
         train_df,
         dict_coOccMatrix,
         id_col,
         pattern_size,
-        count,
-        support_count
+        reqd_pattern_count,
+        support_count,
+        company_domain
 ):
     results = []
     domains = list(sorted(train_df.columns))
     domains.remove(id_col)
 
+    # -------------
     # create set of entity ids for each of the domains
     domain_entitiesSet_dict = {}
     for d in domains:
         domain_entitiesSet_dict[d] = list(set(train_df[d]))
+    # -------------
 
-    for cur_count in range(count):
-        domain_set = np.random.choice(
-            domains,
-            size=pattern_size,
+    for cur_count in range(reqd_pattern_count):
+        domain_set = [company_domain]
+        pick_from = list(domains)
+        pick_from.remove(company_domain)
+        _domain_set = list(np.random.choice(
+            pick_from,
+            size=pattern_size-1,
             replace=False
-        )
+        ))
         # set aside 1 domain(entity)
-        excluded_domain = np.random.choice(domain_set, size=1)[0]
-        pos_set = list(domain_set)
-        pos_set.remove(excluded_domain)
-        candidate_dict = {}
+        excluded_domain = np.random.choice(_domain_set, size=1)[0]
+        _domain_set.remove(excluded_domain)
+        pos_set = list(_domain_set)
+        pos_set.append(company_domain)
+
+        candidate_dict = OrderedDict({})
 
         _tries1 = 0  # Keep track of counts
         # -------------------
+        # Two conditions to be met
         # 1. Find { E_d1, E_d2, ... E_d3 } such that they co-occur pairwise
         # 2. Find patterns with a minimum "support"
         # -------------------
@@ -73,7 +78,7 @@ def find_conflicting_patterns_aux_1(
                 candidate_dict[d] = np.random.choice(domain_entitiesSet_dict[d], size=1)[0]
 
             if utils_local.check_nonZeroCoOccurrence(candidate_dict, dict_coOccMatrix)  and \
-                utils_local.find_pattern_count(candidate_dict, train_df) >= support_count:
+                utils_local.find_pattern_count(candidate_dict, train_df) >=0:
                 break # Found
             _tries1 += 1
 
@@ -81,35 +86,46 @@ def find_conflicting_patterns_aux_1(
         # Note :: candidate_dict should now have (ps-1) <domain:entity> where these entities co-occur
         # ------------------------
 
-        max_tries = 1000
+        max_tries = 10000
         condition_satisfied = False
         cur_domain = excluded_domain
         _tries2 = 0
+
         while not condition_satisfied and _tries2 < max_tries:
             # Select an entity
+            _copy_cd = candidate_dict.copy()
             cand_e = np.random.choice(domain_entitiesSet_dict[cur_domain], size=1)[0]
-            candidate_dict[cur_domain] = cand_e
+            _copy_cd[cur_domain] = cand_e
             # ====
             # Ensure that new candidate has non-zero co-occurrence with others
-            for dpair in combinations(list(candidate_dict.keys()), 2):
+            for dpair in combinations(list(_copy_cd.keys()), 2):
                 subSet_dict = {}
-                subSet_dict[dpair[0]] = candidate_dict[dpair[0]]
-                subSet_dict[dpair[1]] = candidate_dict[dpair[1]]
+                subSet_dict[dpair[0]] = _copy_cd[dpair[0]]
+                subSet_dict[dpair[1]] = _copy_cd[dpair[1]]
 
                 if not utils_local.check_nonZeroCoOccurrence(subSet_dict, dict_coOccMatrix):
                     condition_satisfied = False
                     break
-                else:
-                    condition_satisfied = True
-
+            if condition_satisfied == False:
+                _tries2 += 1
+                continue
+            # ensure the first 3rd element does not occur with the first one
+            elif utils_local.find_pattern_count(_copy_cd, train_df) == 0:
+                candidate_dict = _copy_cd
+                condition_satisfied = True
+                break
             _tries2 += 1
-            # ====
+
+
+        # ====
         print("Tries 1 ", _tries1, " Tries 2 ", _tries2)
+
         if len(candidate_dict) == pattern_size:
             results.append(
                 candidate_dict
             )
             # print('Generated:: ', candidate_dict)
+
 
     return results
 
@@ -179,6 +195,7 @@ def generate_anomalies_type_2(
         test_df,
         save_dir,
         id_col='PanjivaRecordID',
+        company_domain = None,
         pattern_size=4,
         reqd_anom_perc=50,
         num_jobs=40,
@@ -197,7 +214,7 @@ def generate_anomalies_type_2(
     )
 
     # =========================
-    # List of patterns that are conflicting
+    # List of patterns that are conflicting: {A,B,C}
     # =========================
 
     list_results = Parallel(n_jobs=num_jobs)(
@@ -206,8 +223,9 @@ def generate_anomalies_type_2(
             dict_coOccMatrix,
             id_col,
             pattern_size=pattern_size,
-            count=distributed_pattern_count,
-            support_count=min_normal_pattern_count
+            reqd_pattern_count=distributed_pattern_count,
+            support_count=min_normal_pattern_count,
+            company_domain = company_domain
         ) for _ in range(num_jobs)
     )
     # Flatten out list to single level
