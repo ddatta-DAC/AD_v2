@@ -76,7 +76,7 @@ test_df = pd.read_csv(os.path.join(save_dir, CONFIG['test_data_file_v1']),index_
 # ===================================================== #
 
 num_jobs = CONFIG['num_jobs']
-import _multiprocessing as mp
+import multiprocessing as mp
 num_jobs = min(mp.cpu_count(),num_jobs)
 
 create_anomalies_type_1.generate_anomalies_type1(
