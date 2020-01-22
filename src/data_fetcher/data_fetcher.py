@@ -83,7 +83,7 @@ def get_anomaly_data( DATA_DIR, DIR, anomaly_type=1 ) :
         anomaly_data_file_name
     )
     with open(anomaly_data_file, 'rb') as fh:
-        anomaly_x = np.load(fh)
+        anomaly_x = np.load(fh,allow_pickle=True)
 
     anomaly_idList_data_file =  os.path.join(
         DATA_DIR,

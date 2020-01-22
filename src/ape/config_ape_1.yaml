@@ -16,14 +16,14 @@
   'num_epochs': 12
   'batch_size': 128
   'saved_model_file' : 'model_ape_12_k_24_frozen.pb'
-  'use_pretrained': True
+  'use_pretrained': False
   'learning_rate': 0.001
 'us_import1':
   'embed_size': 12
   'num_epochs': 12
   'batch_size': 128
   'saved_model_file' : 'model_ape_12_k_24_frozen.pb'
-  'use_pretrained': False
+  'use_pretrained': True
   'learning_rate': 0.0001
 'us_import2':
   'embed_size': 16
