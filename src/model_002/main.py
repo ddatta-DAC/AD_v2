@@ -21,6 +21,7 @@ except:
     from src.data_fetcher import data_fetcher
     import utils_1
 
+
 # ------------------------------- #
 CONFIG_FILE = 'config_1.yaml'
 DIR = None
@@ -146,7 +147,6 @@ def get_domain_dims(dd_file_path):
 setup_config()
 domain_dims_file = os.path.join(DATA_DIR, DIR ,"domain_dims.pkl")
 domain_dims = utils_1.get_domain_dims(domain_dims_file)
-
 domain_emb_wt = get_entity_embeddings()
 
 num_domains = len(domain_dims)
@@ -175,7 +175,7 @@ model_obj = c2v.get_model(
 # Get model data
 # ------------------------------------------------ #
 
-import src.data_fetcher.data_fetcher as data_fetcher
+
 
 train_x_pos, train_x_neg, test_x, test_idList, anomaly_x, _ = data_fetcher.get_data_MEAD(
         DATA_DIR,
@@ -186,6 +186,7 @@ train_x_pos, train_x_neg, test_x, test_idList, anomaly_x, _ = data_fetcher.get_d
 # ------------------------------------------------ #
 # Train the model
 # ------------------------------------------------ #
+
 train_x_pos = np.reshape(train_x_pos, [-1, train_x_pos.shape[1],1])
 train_x_neg = np.reshape(train_x_neg, [-1, train_x_neg.shape[1],train_x_neg.shape[2], 1])
 model_obj = c2v.model_train(
@@ -201,9 +202,9 @@ model_obj = c2v.save_model(
     model_obj
 )
 
-
 # ------------------------------------------------ #
 RUN_MODE = 'test'
+
 saved_model_obj = c2v.get_model(
     num_domains=num_domains,
     domain_dims=domain_dims,
@@ -216,8 +217,9 @@ saved_model_obj = c2v.get_model(
     save_dir=modelData_SaveDir
 )
 
+# ------------------------------------------------ #
+
 c2v.save_model(model_obj)
 print(' >>> Model', model_obj.summary())
-
 
 # ------------------------------------------------ #

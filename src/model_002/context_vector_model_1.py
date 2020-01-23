@@ -31,7 +31,9 @@ def get_model(
         RUN_MODE='train',
         save_dir = None
 ):
+    # Dimension of the context vector
     ctx_dim_1 = context_dim
+    # Dimension of the interaction layer
     interaction_dim = interaction_layer_dim
     # ---------------------------------
     # list of np arrays which are sorted by domain name lexicographically
@@ -57,7 +59,7 @@ def get_model(
         return x1
 
     def tf_split_dplus2(x):
-        global n_timesteps
+
         return tf.split(
             x,
             num_or_size_splits=n_timesteps,
@@ -75,7 +77,6 @@ def get_model(
     def split_squeeze_numDomains(x):
         import tensorflow as tf
 
-        global num_domains
         x1 = tf.split(
             x,
             num_or_size_splits=num_domains,
@@ -135,9 +136,12 @@ def get_model(
         ) for i in range(num_domains)
     ]
 
+    # -------------------------------------------
     # Dense layer for getting the Context vectors
-    list_FNN_1 = [Dense(ctx_dim_1, activation='relu', use_bias=True) for i in range(1, n_timesteps - 1)]
-    list_FNN_2 = [Dense(interaction_dim, activation='relu') for i in range(1, n_timesteps - 1)]
+    # keeping 1 for each domain
+    # -------------------------------------------
+    list_FNN_1 = [Dense(ctx_dim_1, activation='relu', use_bias=True) for _ in range(1, n_timesteps - 1)]
+    list_FNN_2 = [Dense(interaction_dim, activation='relu') for _ in range(1, n_timesteps - 1)]
     # Dense layer for transforming the input vectors
     xform_Inp_FNN = [Dense(interaction_dim, activation=None, use_bias=True) for i in range(num_domains)]
 

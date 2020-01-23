@@ -182,10 +182,10 @@ def process_all(
 
         logger.info(' >> c = ' + str(_c))
         test_pos = test_data_item[0]
-        test_anomaly = test_data_item[1]
+        test_anomaly = test_data_item[1][:4000]
 
         test_normal_ids = test_pos[0]
-        test_anomaly_ids = test_anomaly[0]
+        test_anomaly_ids = test_anomaly[0][:4000]
 
         test_ids = list(np.hstack(
             [test_normal_ids,
@@ -231,7 +231,8 @@ def process_all(
             sorted_id_score_dict,
             anomaly_id_list=test_anomaly_ids
         )
-
+        plt.plot(recall,precison,'r-')
+        plt.show()
         _auc = auc(recall, precison)
         logger.info('AUC')
         logger.info(str(_auc))
@@ -418,8 +419,6 @@ def main():
     )
 
     logger.info('-------------------')
-
-
 
 # ----------------------------------------------------------------- #
 # find out which model works best

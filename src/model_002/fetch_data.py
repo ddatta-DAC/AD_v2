@@ -50,7 +50,7 @@ def fetch_training_data(
         num_jobs = 40,
         id_col = 'PanjivaRecordID'
 ):
-    # Check if fuiles exist !
+    # Check if files exist !
     pos_data_file = os.path.join(
         DATA_DIR,
         'train_pos_x.npy'

@@ -41,11 +41,11 @@
   'num_neg_samples' : 15
 'china_export':
   'learning_rate' : 0.0005
-  'use_pretrained' : False
+  'use_pretrained' : True
   'show_loss_figure' : False
   'save_loss_figure' : False
   'use_bias' : True
-  'saved_model_file' : 'frozen_model_v1_214_1566002648.pb'
+  'saved_model_file' : 'frozen_model_v1_216_1577133792.pb'
   'num_epochs' : 8
   'op_dims' : 16
   'batchsize': 256
