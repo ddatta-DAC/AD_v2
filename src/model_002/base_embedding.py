@@ -129,7 +129,7 @@ def train_model(
     model.fit(
         x=x,
         y=y_true,
-        batch_size=64,
+        batch_size=256,
         epochs=epochs,
         verbose=1,
         shuffle=True
@@ -141,7 +141,6 @@ def train_model(
 def save_model(model, file_save_loc):
 
     for layer in model.layers:
-        print(layer.name)
         if 'embedding_w' in layer.name:
             f_path = os.path.join( file_save_loc, layer.name + ".npy")
             np.save(f_path, arr=layer.get_weights()[0])
