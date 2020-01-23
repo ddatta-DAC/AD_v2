@@ -20,17 +20,17 @@ from collections import OrderedDict
 
 sys.path.append('.')
 sys.path.append('./..')
-
+from sklearn.metrics.pairwise import cosine_similarity
 try:
     from . import base_embedding
+    from . import utils_1
 except:
     import base_embedding
-from sklearn.metrics.pairwise import cosine_similarity
+    import utils_1
+
 
 # ==================== Global variables ===================== #
 CONFIG_FILE = 'config_1.yaml'
-
-
 # ============================================================ #
 
 def create_coocc_matrix(df, col_1, col_2):
@@ -51,6 +51,7 @@ def create_coocc_matrix(df, col_1, col_2):
     return coocc
 
 
+
 def get_coOccMatrix_dict(df, id_col):
     columns = list(df.columns)
     columns.remove(id_col)
@@ -68,7 +69,6 @@ def get_coOccMatrix_dict(df, id_col):
     return columnWise_coOccMatrix_dict
 
 
-
 def get_initial_entity_embeddings(
         train_data_file,
         model_data_save_dir,
@@ -77,19 +77,23 @@ def get_initial_entity_embeddings(
         num_epochs,
         id_col='PanjivaRecordID'
 ):
-    train_df = pd.read_csv(train_data_file)
-
-    feature_cols = sorted(list(train_df.columns))
+    train_df = pd.read_csv(os.path.join(DATA_DIR, train_data_file))
+    feature_cols = list(train_df.columns)
     feature_cols = list(feature_cols)
     feature_cols.remove(id_col)
-    domains = feature_cols
+    domains = sorted(feature_cols)
+    print(feature_cols)
 
     data = train_df[feature_cols].values
-
+    # ------------------------------- #
     coOcc_dict_file = os.path.join(model_data_save_dir, "coOccMatrix_dict.pkl")
-    X_ij_file = os.path.join(model_data_save_dir,"X_ij.pkl")
-    domain_dims_file = os.path.join(DATA_DIR,"domain_dims.pkl")
+    X_ij_file = os.path.join(model_data_save_dir, "X_ij.npy")
+    domain_dims_file = os.path.join(DATA_DIR, "domain_dims.pkl")
+    domain_dims = utils_1.get_domain_dims(domain_dims_file)
 
+    # -----
+    # Check if pairwise co-occurrence dictionary exists
+    # -----
     if os.path.exists(coOcc_dict_file):
         with open(coOcc_dict_file, 'rb') as fh:
             coOccMatrix_dict = pickle.load(fh)
@@ -98,12 +102,14 @@ def get_initial_entity_embeddings(
         with open(coOcc_dict_file, "wb") as fh:
             pickle.dump(coOccMatrix_dict, fh, pickle.HIGHEST_PROTOCOL)
 
+
     # ----------------
     # Ensure X_ij is in a flattened format ; i < j
     # ----------------
     if os.path.exists(X_ij_file):
-        with open(X_ij_file,'rb') as fh:
-            X_ij = pickle.load(fh)
+        with open(X_ij_file, 'rb') as fh:
+            X_ij = np.load(fh)
+
     else:
         nd = len(feature_cols)
         num_c = nd * (nd - 1) // 2
@@ -117,12 +123,11 @@ def get_initial_entity_embeddings(
                     e2 = data[d][j]
                     X_ij[d][k] = coOccMatrix_dict[key][e1][e2]
                 k += 1
-
+        X_ij = np.asarray(X_ij,np.int32)
         with open(X_ij_file, "wb") as fh:
-            pickle.dump(X_ij, fh, pickle.HIGHEST_PROTOCOL)
+            np.save(fh, X_ij)
 
-    with open(domain_dims_file, 'rb') as fh:
-        domain_dims = pickle.load(fh)
+
 
     # X_ij_max needed for scaling
     X_ij_max = []
@@ -130,29 +135,30 @@ def get_initial_entity_embeddings(
         X_ij_max.append(np.max(v))
 
     num_domains = len(domain_dims)
+    print(domain_dims.values())
 
     model = base_embedding.get_model(
         domain_dimesnsions=list(domain_dims.values()),
-        num_domains = num_domains,
-        embed_dim = embedding_dims,
+        num_domains=num_domains,
+        embed_dim=embedding_dims,
         _X_ij_max=X_ij_max
     )
 
-    base_embedding.train_model(
+
+    model = base_embedding.train_model(
         model,
         data,
         X_ij,
         file_save_loc=model_data_save_dir,
         epochs=num_epochs
     )
-
     # ----
     # Save the embeddings (weights) in a dictionary
     # ----
     emb_w = {}
     for i in range(len(feature_cols)):
         dom = feature_cols[i]
-        f_path = os.path.join(model_data_save_dir , 'embedding_w_{}.npy'.format(i))
+        f_path = os.path.join(model_data_save_dir, 'embedding_w_{}.npy'.format(i))
         w = np.load(f_path)
         emb_w[dom] = w
 
@@ -202,7 +208,7 @@ def get_initial_entity_embeddings(
         print(' >> ', domain_i)
         file_name = os.path.join(
             model_data_save_dir,
-            'init_embedding' + domain_i + '.npy'
+            'init_embedding_' + domain_i + '_' + str(embedding_dims) + '.npy'
         )
         np.save(
             file=file_name,
@@ -240,11 +246,8 @@ def get_initial_entity_embeddings(
 
         new_df = pd.DataFrame(list(res.items()))
         new_df = new_df.sort_values(by=[1])
-        print(new_df.tail(10))
+
 
     return new_embeddings
 
-
 # ======================================================== #
-
-
