@@ -119,15 +119,7 @@ def get_model(
 
     # ================= Define the weights ===================== #
 
-    BD_LSTM_layer = Bidirectional(
-        LSTM(
-            units=lstm_dim,
-            return_sequences=True
-        ),
-        input_shape=(n_timesteps, input_emb_dim),
-        merge_mode=None
-    )
-
+    # --------------------------------
     # Embedding layer for each domain
     list_Entity_Embed = [
         Embedding(
@@ -137,6 +129,16 @@ def get_model(
             name='entity_embedding_' + str(i)
         ) for i in range(num_domains)
     ]
+    # --------------------------------
+
+    BD_LSTM_layer = Bidirectional(
+        LSTM(
+            units=lstm_dim,
+            return_sequences=True
+        ),
+        input_shape=(n_timesteps, input_emb_dim),
+        merge_mode=None
+    )
 
     # -------------------------------------------
     # Dense layer for getting the Context vectors
@@ -145,7 +147,7 @@ def get_model(
     list_FNN_1 = [Dense(ctx_dim_1, activation='relu', use_bias=True) for _ in range(1, n_timesteps - 1)]
     list_FNN_2 = [Dense(interaction_dim, activation='relu') for _ in range(1, n_timesteps - 1)]
     # Dense layer for transforming the input vectors
-    xform_Inp_FNN = [Dense(interaction_dim, activation=None, use_bias=True) for i in range(num_domains)]
+    xform_Inp_FNN = [Dense(interaction_dim, activation=None, use_bias=True) for _ in range(num_domains)]
 
     # ========================================================= #
     model = None
@@ -183,7 +185,6 @@ def get_model(
         # ----------- #
         # Context vector
         # ----------- #
-
         ctx_output = []
         for i in range(1, n_timesteps - 1):
             _left = split_BL_F_op[i - 1]
@@ -340,4 +341,11 @@ def model_train(
 
 # =========================================== #
 
-
+def run_model(
+        model_obj,
+        test_x
+):
+    res = model_obj.predict(
+        test_x
+    )
+    return res

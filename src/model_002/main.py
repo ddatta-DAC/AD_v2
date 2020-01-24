@@ -184,7 +184,7 @@ def get_training_data():
     global DATA_DIR
     global DIR
 
-    train_x_pos, train_x_neg, test_x, test_idList, anomaly_x, _ = data_fetcher.get_data_MEAD(
+    train_x_pos, train_x_neg, _, _, _, _ = data_fetcher.get_data_MEAD(
         DATA_DIR,
         DIR,
         anomaly_type=1
@@ -192,6 +192,19 @@ def get_training_data():
     train_x_pos = np.reshape(train_x_pos, [-1, train_x_pos.shape[1], 1])
     train_x_neg = np.reshape(train_x_neg, [-1, train_x_neg.shape[1], train_x_neg.shape[2], 1])
     return train_x_pos, train_x_neg
+
+def get_test_data(anomaly_type=1):
+    _, _, test_x, test_idList, anomaly_x, anomaly_idList = data_fetcher.get_data_MEAD(
+        DATA_DIR,
+        DIR,
+        anomaly_type=anomaly_type
+    )
+
+    all_test_ids = list (np.hstack([test_idList, anomaly_idList]))
+    test_data = np.vstack([test_x,anomaly_x])
+    test_data = np.reshape(test_data, [-1, test_data.shape[1], 1])
+    anomaly_idList = list(anomaly_idList)
+    return test_data, all_test_ids , anomaly_idList
 
 
 # ------------------------------------------------- #
@@ -214,6 +227,9 @@ def model_execution():
     model_signature = CONFIG[DIR]['saved_model_signature']
     _use_pretrained = model_signature != False
     model_obj = None
+
+
+
 
     # ------------------------------------------------ #
     if not _use_pretrained:
@@ -253,7 +269,6 @@ def model_execution():
         except:
             pass
 
-
     else:
         print(' Restoring ::', model_signature)
         # Use pretrained model
@@ -269,6 +284,17 @@ def model_execution():
             save_dir=modelData_SaveDir,
             model_signature=model_signature
         )
+
+    # Run anomaly detection tasks
+
+    for anomaly_type in [1,2]:
+        test_data, all_test_ids, anomaly_idList = get_test_data(anomaly_type)
+        res = c2v.run_model(model_obj, test_data)
+        print (res)
+
+        exit(1)
+
+
 
 setup_config()
 model_execution()
