@@ -163,12 +163,14 @@ def get_domain_dims(dd_file_path):
 def generate_model_signature():
     global modelData_SaveDir
     signature_prefix = 'model_002_'
-    fl = sorted(glob.glob(signature_prefix + '**.h5'))
+    fl = sorted(glob.glob(os.path.join(modelData_SaveDir, signature_prefix + '**.h5')))
+
     if fl is None or len(fl) == 0:
         return signature_prefix + str(1)
     fn = fl[-1]
     idx = fn.split('/')[-1].split('.')[0].split('_')[-1]
-    return signature_prefix + str(idx)
+
+    return signature_prefix + str(idx+1)
 
 
 # ------------------------------------------------ #
@@ -225,14 +227,15 @@ def model_execution():
     lstm_dim = CONFIG[DIR]['lstm_dim']
     context_dim = CONFIG[DIR]['context_dim']
     model_signature = CONFIG[DIR]['saved_model_signature']
-    _use_pretrained = model_signature != False
+    use_pretrained = CONFIG[DIR]['use_pretrained']
+    if use_pretrained and model_signature == False:
+        print(' >>> Correct config :: use_pretrained model_signature ')
+        exit(1)
+
     model_obj = None
 
-
-
-
     # ------------------------------------------------ #
-    if not _use_pretrained:
+    if not use_pretrained:
 
         train_x_pos, train_x_neg = get_training_data()
         model_signature = generate_model_signature()
@@ -260,7 +263,7 @@ def model_execution():
                 num_epochs=c2v_num_epochs
             )
 
-            model_obj = c2v.save_model(
+            c2v.save_model(
                 modelData_SaveDir,
                 model_obj,
                 model_signature

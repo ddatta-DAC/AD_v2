@@ -11,7 +11,7 @@
 'negative_samples_file' : 'negative_samples_v1.csv'
 'us_import1':
   'learning_rate' : 0.0005
-  'use_pretrained' : False
+  'use_pretrained' : True
   'show_loss_figure' : False
   'save_loss_figure' : False
   'use_bias' : True

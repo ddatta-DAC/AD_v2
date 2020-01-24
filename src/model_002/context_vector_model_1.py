@@ -187,13 +187,16 @@ def get_model(
         # ----------- #
         ctx_output = []
         for i in range(1, n_timesteps - 1):
-            _left = split_BL_F_op[i - 1]
-            _right = split_BL_B_op[i - 1]
+            idx = i-1
+            left_idx = i-1
+            right_idx = i+1
+            _left = split_BL_F_op[left_idx]
+            _right = split_BL_B_op[right_idx]
 
             # Context vector
             ctx_concat = Concatenate(axis=-1)([_left, _right])
-            ctx_mlp_layer1 = list_FNN_1[i - 1](ctx_concat)
-            ctx_mlp_layer2 = list_FNN_2[i - 1](ctx_mlp_layer1)
+            ctx_mlp_layer1 = list_FNN_1[idx](ctx_concat)
+            ctx_mlp_layer2 = list_FNN_2[idx](ctx_mlp_layer1)
             ctx_output.append(ctx_mlp_layer2)
 
         print(' Cur shape [Context vector]:', ctx_output[0].shape)
@@ -209,6 +212,7 @@ def get_model(
             xform_Inp_FNN[i](input_layer_split[i])
             for i in range(num_domains)
         ]
+
         # dot product
         dot_product = [Dot(axes=-1)(
             [interaction_layer_input[i], ctx_output[i]]
@@ -217,7 +221,8 @@ def get_model(
         stacked_dot_op = Lambda(tf_stack)(dot_product)
 
         if _type == 'neg':
-            stacked_dot_op = Lambda(tf_reciprocal)(stacked_dot_op)
+            # stacked_dot_op = Lambda(tf_reciprocal)(stacked_dot_op)
+            stacked_dot_op = -stacked_dot_op
             final_op = Lambda(tf_reduce_sum)(stacked_dot_op)
         else:
             final_op = Lambda(tf_reduce_sum)(stacked_dot_op)
@@ -314,8 +319,6 @@ def save_model(save_dir, model, model_signature):
     return
 # =====================================
 
-
-
 # =====================================
 #  Input to model:
 #  [Pos, Neg] : shape [[?, num_domains, 1],[?, num_negative_samples,num_domains,1]]
@@ -349,3 +352,5 @@ def run_model(
         test_x
     )
     return res
+
+
