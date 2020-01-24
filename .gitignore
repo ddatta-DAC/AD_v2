@@ -12,14 +12,12 @@ wwf_data_v1
 **/.ipynb_checkpoints/**
 **/stupidBaseline_1/generated_data_b1/**
 __pycache__/
-/src/**/summary
-/src/**/summary_data
+/src/**/model_files/**/*.pkl
 /src/**/summary_data/*
-wwf_data_v1
-**/.ipynb_checkpoints/**
 /MetaData/.ipynb_checkpoints/
 /generated_data_v1/
 /generated_data_v0/
 /Data_Raw/
-/src/model_002/model_files/
 /src/data_preprocessor/.ipynb_checkpoints/
+/experimental/
+
