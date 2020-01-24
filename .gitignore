@@ -13,6 +13,7 @@ wwf_data_v1
 **/stupidBaseline_1/generated_data_b1/**
 __pycache__/
 /src/**/model_files/**/*.pkl
+/src/**/model_files/**/*.json
 /src/**/summary_data/*
 /MetaData/.ipynb_checkpoints/
 /generated_data_v1/
