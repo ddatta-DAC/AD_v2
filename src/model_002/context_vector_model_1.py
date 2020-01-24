@@ -29,8 +29,10 @@ def get_model(
         context_dim,
         num_neg_samples=10,
         RUN_MODE='train',
-        save_dir = None
+        save_dir = None,
+        model_signature = None
 ):
+
     # Dimension of the context vector
     ctx_dim_1 = context_dim
     # Dimension of the interaction layer
@@ -249,7 +251,8 @@ def get_model(
         outputs = final_pred
         model = Model(
             inputs=inputs,
-            outputs=outputs
+            outputs=outputs,
+            name = model_signature
         )
         # ====== Fix embedding weights ======= #
         for l in model.layers:
@@ -269,8 +272,10 @@ def get_model(
             inputs=inputs,
             outputs=outputs
         )
+
+        h5_file_name = model_signature + ".h5"
         model_weights_path = os.path.join(
-            save_dir, "model.h5"
+            save_dir, h5_file_name
         )
         model.load_weights(model_weights_path)
         for l in model.layers:
@@ -291,17 +296,20 @@ def get_model(
 # =========================
 #  Save model
 # =========================
-def save_model(save_dir, model):
+def save_model(save_dir, model, model_signature):
     model_json = model.to_json()
-    f_path = os.path.join(save_dir, "model.json")
+    model_json_name = model_signature + '.json'
+    f_path = os.path.join(save_dir, model_json_name)
     with open(f_path, "w") as json_file:
         json_file.write(model_json)
+
     # ----
     # serialize weights to HDF5
     # ----
-    f_path = os.path.join(save_dir, "model.h5")
+    h5_file_name = model_signature + ".h5"
+    f_path = os.path.join(save_dir, h5_file_name)
     model.save_weights(f_path)
-    print("Saved model to disk")
+    print(" >>>>  Saved model {} to disk".format(model_signature))
     return
 # =====================================
 
