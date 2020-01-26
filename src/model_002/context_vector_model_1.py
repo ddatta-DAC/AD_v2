@@ -29,8 +29,10 @@ def get_model(
         context_dim,
         num_neg_samples=10,
         RUN_MODE='train',
-        save_dir = None
+        save_dir = None,
+        model_signature = None
 ):
+
     # Dimension of the context vector
     ctx_dim_1 = context_dim
     # Dimension of the interaction layer
@@ -117,15 +119,7 @@ def get_model(
 
     # ================= Define the weights ===================== #
 
-    BD_LSTM_layer = Bidirectional(
-        LSTM(
-            units=lstm_dim,
-            return_sequences=True
-        ),
-        input_shape=(n_timesteps, input_emb_dim),
-        merge_mode=None
-    )
-
+    # --------------------------------
     # Embedding layer for each domain
     list_Entity_Embed = [
         Embedding(
@@ -135,6 +129,16 @@ def get_model(
             name='entity_embedding_' + str(i)
         ) for i in range(num_domains)
     ]
+    # --------------------------------
+
+    BD_LSTM_layer = Bidirectional(
+        LSTM(
+            units=lstm_dim,
+            return_sequences=True
+        ),
+        input_shape=(n_timesteps, input_emb_dim),
+        merge_mode=None
+    )
 
     # -------------------------------------------
     # Dense layer for getting the Context vectors
@@ -143,7 +147,7 @@ def get_model(
     list_FNN_1 = [Dense(ctx_dim_1, activation='relu', use_bias=True) for _ in range(1, n_timesteps - 1)]
     list_FNN_2 = [Dense(interaction_dim, activation='relu') for _ in range(1, n_timesteps - 1)]
     # Dense layer for transforming the input vectors
-    xform_Inp_FNN = [Dense(interaction_dim, activation=None, use_bias=True) for i in range(num_domains)]
+    xform_Inp_FNN = [Dense(interaction_dim, activation=None, use_bias=True) for _ in range(num_domains)]
 
     # ========================================================= #
     model = None
@@ -181,16 +185,18 @@ def get_model(
         # ----------- #
         # Context vector
         # ----------- #
-
         ctx_output = []
         for i in range(1, n_timesteps - 1):
-            _left = split_BL_F_op[i - 1]
-            _right = split_BL_B_op[i - 1]
+            idx = i-1
+            left_idx = i-1
+            right_idx = i+1
+            _left = split_BL_F_op[left_idx]
+            _right = split_BL_B_op[right_idx]
 
             # Context vector
             ctx_concat = Concatenate(axis=-1)([_left, _right])
-            ctx_mlp_layer1 = list_FNN_1[i - 1](ctx_concat)
-            ctx_mlp_layer2 = list_FNN_2[i - 1](ctx_mlp_layer1)
+            ctx_mlp_layer1 = list_FNN_1[idx](ctx_concat)
+            ctx_mlp_layer2 = list_FNN_2[idx](ctx_mlp_layer1)
             ctx_output.append(ctx_mlp_layer2)
 
         print(' Cur shape [Context vector]:', ctx_output[0].shape)
@@ -206,6 +212,7 @@ def get_model(
             xform_Inp_FNN[i](input_layer_split[i])
             for i in range(num_domains)
         ]
+
         # dot product
         dot_product = [Dot(axes=-1)(
             [interaction_layer_input[i], ctx_output[i]]
@@ -214,7 +221,8 @@ def get_model(
         stacked_dot_op = Lambda(tf_stack)(dot_product)
 
         if _type == 'neg':
-            stacked_dot_op = Lambda(tf_reciprocal)(stacked_dot_op)
+            # stacked_dot_op = Lambda(tf_reciprocal)(stacked_dot_op)
+            stacked_dot_op = -stacked_dot_op
             final_op = Lambda(tf_reduce_sum)(stacked_dot_op)
         else:
             final_op = Lambda(tf_reduce_sum)(stacked_dot_op)
@@ -249,7 +257,8 @@ def get_model(
         outputs = final_pred
         model = Model(
             inputs=inputs,
-            outputs=outputs
+            outputs=outputs,
+            name = model_signature
         )
         # ====== Fix embedding weights ======= #
         for l in model.layers:
@@ -269,8 +278,10 @@ def get_model(
             inputs=inputs,
             outputs=outputs
         )
+
+        h5_file_name = model_signature + ".h5"
         model_weights_path = os.path.join(
-            save_dir, "model.h5"
+            save_dir, h5_file_name
         )
         model.load_weights(model_weights_path)
         for l in model.layers:
@@ -291,21 +302,22 @@ def get_model(
 # =========================
 #  Save model
 # =========================
-def save_model(save_dir, model):
+def save_model(save_dir, model, model_signature):
     model_json = model.to_json()
-    f_path = os.path.join(save_dir, "model.json")
+    model_json_name = model_signature + '.json'
+    f_path = os.path.join(save_dir, model_json_name)
     with open(f_path, "w") as json_file:
         json_file.write(model_json)
+
     # ----
     # serialize weights to HDF5
     # ----
-    f_path = os.path.join(save_dir, "model.h5")
+    h5_file_name = model_signature + ".h5"
+    f_path = os.path.join(save_dir, h5_file_name)
     model.save_weights(f_path)
-    print("Saved model to disk")
+    print(" >>>>  Saved model {} to disk".format(model_signature))
     return
 # =====================================
-
-
 
 # =====================================
 #  Input to model:
@@ -331,5 +343,14 @@ def model_train(
 
 
 # =========================================== #
+
+def run_model(
+        model_obj,
+        test_x
+):
+    res = model_obj.predict(
+        test_x
+    )
+    return res
 
 

@@ -7,9 +7,11 @@ import os
 import glob
 import pickle
 import logging
+
 sys.path.append('./..')
 sys.path.append('./../..')
 import multiprocessing as mp
+
 try:
     from . import get_embeddings
     from . import context_vector_model_1 as c2v
@@ -21,7 +23,6 @@ except:
     from src.data_fetcher import data_fetcher
     import utils_1
 
-
 # ------------------------------- #
 CONFIG_FILE = 'config_1.yaml'
 DIR = None
@@ -32,6 +33,8 @@ num_jobs = None
 CONFIG = None
 Refresh_Embeddings = None
 logger = None
+
+
 # ------------------------------- #
 
 
@@ -47,6 +50,16 @@ def get_logger():
     logger.addHandler(handler)
     logger.info('=======================================>> ')
     return logger
+
+def close_logger():
+    global CONFIG
+    global logger
+    handlers = logger.handlers[:]
+    for handler in handlers:
+        handler.close()
+        logger.removeHandler(handler)
+    return
+
 
 def setup_config(_DIR=None):
     global CONFIG_FILE
@@ -75,7 +88,7 @@ def setup_config(_DIR=None):
 
     if not os.path.exists(CONFIG['OP_DIR']):
         os.mkdir(CONFIG['OP_DIR'])
-    OP_DIR = os.path.join(CONFIG['OP_DIR'],DIR)
+    OP_DIR = os.path.join(CONFIG['OP_DIR'], DIR)
     if not os.path.exists(OP_DIR):
         os.mkdir(OP_DIR)
 
@@ -88,7 +101,7 @@ def setup_config(_DIR=None):
 
     if not os.path.exists(modelData_SaveDir):
         os.mkdir(modelData_SaveDir)
-    logger  = get_logger()
+    logger = get_logger()
     print(' Set up config')
     return
 
@@ -123,103 +136,169 @@ def get_entity_embeddings():
 
     domain_emb_wt = []
     file_list = sorted(glob.glob(
-            os.path.join(modelData_SaveDir, 'init_embedding**{}.npy'.format(embedding_dims))))
+        os.path.join(modelData_SaveDir, 'init_embedding**{}.npy'.format(embedding_dims))))
     for npy_file in file_list:
         _tmp_ = np.load(npy_file)
         domain_emb_wt.append(_tmp_)
 
     return domain_emb_wt
+
+
 # ================================================ #
 
 
 def get_domain_dims(dd_file_path):
     with open(dd_file_path, 'rb') as fh:
         domain_dims = pickle.load(fh)
-    _tmpDF = pd.DataFrame.from_dict(domain_dims,orient='index')
+    _tmpDF = pd.DataFrame.from_dict(domain_dims, orient='index')
     _tmpDF = _tmpDF.reset_index()
-    _tmpDF = _tmpDF.rename(columns={'index':'domain'})
+    _tmpDF = _tmpDF.rename(columns={'index': 'domain'})
     _tmpDF = _tmpDF.sort_values(by=['domain'])
-    res = { k:v for k,v in zip(_tmpDF['domain'], _tmpDF[0])}
+    res = {k: v for k, v in zip(_tmpDF['domain'], _tmpDF[0])}
     return res
 
 
+# ------------------------------------------------ #
 
-setup_config()
-domain_dims_file = os.path.join(DATA_DIR, DIR ,"domain_dims.pkl")
-domain_dims = utils_1.get_domain_dims(domain_dims_file)
-domain_emb_wt = get_entity_embeddings()
+def generate_model_signature():
+    global modelData_SaveDir
+    signature_prefix = 'model_002_'
+    fl = sorted(glob.glob(os.path.join(modelData_SaveDir, signature_prefix + '**.h5')))
 
-num_domains = len(domain_dims)
-c2v_num_epochs = CONFIG[DIR]['c2v_num_epochs']
-domain_dims_vals = list(domain_dims.values())
-interaction_layer_dim = CONFIG[DIR]['interaction_layer_dim']
-num_neg_samples = CONFIG[DIR]['num_neg_samples']
-lstm_dim = CONFIG[DIR]['lstm_dim']
-context_dim = CONFIG[DIR]['context_dim']
-RUN_MODE = None
+    if fl is None or len(fl) == 0:
+        return signature_prefix + str(1)
+    fn = fl[-1]
+    idx = fn.split('/')[-1].split('.')[0].split('_')[-1]
+
+    return signature_prefix + str(idx+1)
 
 
-RUN_MODE = 'train'
-model_obj = c2v.get_model(
-    num_domains=num_domains,
-    domain_dims=domain_dims_vals,
-    domain_emb_wt=domain_emb_wt,
-    lstm_dim=lstm_dim,
-    interaction_layer_dim=interaction_layer_dim,
-    context_dim=context_dim,
-    num_neg_samples=num_neg_samples,
-    RUN_MODE='train'
-)
+# ------------------------------------------------ #
+def LOG(_msg):
+    global logger
+    logger.info(_msg)
+    return
 
 # ------------------------------------------------ #
 # Get model data
 # ------------------------------------------------ #
+def get_training_data():
+    global DATA_DIR
+    global DIR
 
-
-
-train_x_pos, train_x_neg, test_x, test_idList, anomaly_x, _ = data_fetcher.get_data_MEAD(
+    train_x_pos, train_x_neg, _, _, _, _ = data_fetcher.get_data_MEAD(
         DATA_DIR,
         DIR,
         anomaly_type=1
-)
+    )
+    train_x_pos = np.reshape(train_x_pos, [-1, train_x_pos.shape[1], 1])
+    train_x_neg = np.reshape(train_x_neg, [-1, train_x_neg.shape[1], train_x_neg.shape[2], 1])
+    return train_x_pos, train_x_neg
 
-# ------------------------------------------------ #
-# Train the model
-# ------------------------------------------------ #
+def get_test_data(anomaly_type=1):
+    _, _, test_x, test_idList, anomaly_x, anomaly_idList = data_fetcher.get_data_MEAD(
+        DATA_DIR,
+        DIR,
+        anomaly_type=anomaly_type
+    )
 
-train_x_pos = np.reshape(train_x_pos, [-1, train_x_pos.shape[1],1])
-train_x_neg = np.reshape(train_x_neg, [-1, train_x_neg.shape[1],train_x_neg.shape[2], 1])
-model_obj = c2v.model_train(
-        model_obj,
-        train_x_pos,
-        train_x_neg,
-        batch_size=512,
-        num_epochs=c2v_num_epochs
-)
+    all_test_ids = list (np.hstack([test_idList, anomaly_idList]))
+    test_data = np.vstack([test_x,anomaly_x])
+    test_data = np.reshape(test_data, [-1, test_data.shape[1], 1])
+    anomaly_idList = list(anomaly_idList)
+    return test_data, all_test_ids , anomaly_idList
 
-model_obj = c2v.save_model(
-    modelData_SaveDir,
-    model_obj
-)
 
-# ------------------------------------------------ #
-RUN_MODE = 'test'
+# ------------------------------------------------- #
+def model_execution():
+    global DATA_DIR
+    global DIR
+    global CONFIG
+    global logger
 
-saved_model_obj = c2v.get_model(
-    num_domains=num_domains,
-    domain_dims=domain_dims,
-    domain_emb_wt=domain_emb_wt,
-    lstm_dim=lstm_dim,
-    interaction_layer_dim=interaction_layer_dim,
-    context_dim=context_dim,
-    num_neg_samples=num_neg_samples,
-    RUN_MODE='test',
-    save_dir=modelData_SaveDir
-)
+    domain_dims_file = os.path.join(DATA_DIR, DIR, "domain_dims.pkl")
+    domain_dims = utils_1.get_domain_dims(domain_dims_file)
+    domain_emb_wt = get_entity_embeddings()
+    num_domains = len(domain_dims)
+    c2v_num_epochs = CONFIG[DIR]['c2v_num_epochs']
+    domain_dims_vals = list(domain_dims.values())
+    interaction_layer_dim = CONFIG[DIR]['interaction_layer_dim']
+    num_neg_samples = CONFIG[DIR]['num_neg_samples']
+    lstm_dim = CONFIG[DIR]['lstm_dim']
+    context_dim = CONFIG[DIR]['context_dim']
+    model_signature = CONFIG[DIR]['saved_model_signature']
+    use_pretrained = CONFIG[DIR]['use_pretrained']
+    if use_pretrained and model_signature == False:
+        print(' >>> Correct config :: use_pretrained model_signature ')
+        exit(1)
 
-# ------------------------------------------------ #
+    model_obj = None
 
-c2v.save_model(model_obj)
-print(' >>> Model', model_obj.summary())
+    # ------------------------------------------------ #
+    if not use_pretrained:
 
-# ------------------------------------------------ #
+        train_x_pos, train_x_neg = get_training_data()
+        model_signature = generate_model_signature()
+        model_obj = c2v.get_model(
+            num_domains=num_domains,
+            domain_dims=domain_dims_vals,
+            domain_emb_wt=domain_emb_wt,
+            lstm_dim=lstm_dim,
+            interaction_layer_dim=interaction_layer_dim,
+            context_dim=context_dim,
+            num_neg_samples=num_neg_samples,
+            RUN_MODE='train',
+            model_signature=model_signature
+        )
+
+        # ------------------------------------------------ #
+        # Train the model
+        # ------------------------------------------------ #
+        try:
+            model_obj = c2v.model_train(
+                model_obj,
+                train_x_pos,
+                train_x_neg,
+                batch_size=512,
+                num_epochs=c2v_num_epochs
+            )
+
+            c2v.save_model(
+                modelData_SaveDir,
+                model_obj,
+                model_signature
+            )
+            LOG('Trained model :: ' + model_signature)
+        except:
+            pass
+
+    else:
+        print(' Restoring ::', model_signature)
+        # Use pretrained model
+        model_obj = c2v.get_model(
+            num_domains=num_domains,
+            domain_dims=domain_dims_vals,
+            domain_emb_wt=domain_emb_wt,
+            lstm_dim=lstm_dim,
+            interaction_layer_dim=interaction_layer_dim,
+            context_dim=context_dim,
+            num_neg_samples=num_neg_samples,
+            RUN_MODE='test',
+            save_dir=modelData_SaveDir,
+            model_signature=model_signature
+        )
+
+    # Run anomaly detection tasks
+
+    for anomaly_type in [1,2]:
+        test_data, all_test_ids, anomaly_idList = get_test_data(anomaly_type)
+        res = c2v.run_model(model_obj, test_data)
+        print (res)
+
+        exit(1)
+
+
+
+setup_config()
+model_execution()
+close_logger()
