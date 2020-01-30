@@ -22,7 +22,7 @@
   'num_neg_samples' : 15
   'Refresh_Embeddings' : False
   'entity_embedding_dims': 256
-  'eEmb_num_epochs' : 5
+  'eEmb_num_epochs' : 25
   'c2v_num_epochs': 2
   'interaction_layer_dim' : 32
   'context_dim': 32
