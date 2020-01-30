@@ -17,10 +17,6 @@ import inspect
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
-from mpl_toolkits.mplot3d import Axes3D
-from scipy.linalg import svd
-from sklearn.decomposition import TruncatedSVD
-from sklearn.utils.extmath import randomized_svd
 import yaml
 from tensorflow.contrib.tensorboard.plugins import projector
 tf.random.set_random_seed(729)
