@@ -219,6 +219,8 @@ def model_execution():
     domain_dims_file = os.path.join(DATA_DIR, DIR, "domain_dims.pkl")
     domain_dims = utils_1.get_domain_dims(domain_dims_file)
     domain_emb_wt = get_entity_embeddings()
+    return
+
     num_domains = len(domain_dims)
     c2v_num_epochs = CONFIG[DIR]['c2v_num_epochs']
     domain_dims_vals = list(domain_dims.values())

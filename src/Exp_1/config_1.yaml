@@ -15,7 +15,7 @@
   'show_loss_figure' : False
   'save_loss_figure' : False
   'use_bias' : True
-  'saved_model_signature' : 'model_002_1'
+  'ape_saved_model' : 'model_002_1'
   'num_epochs' : 25
   'op_dims' : 12
   'batchsize': 128
@@ -27,6 +27,11 @@
   'interaction_layer_dim' : 32
   'context_dim': 32
   'lstm_dim': 64
+  'ape_embed_size' : 10
+  'ape_num_epochs' : 10
+  'ape_use_pretrained' : False
+  'ape_neg_samples' : 24
+  'ape_learning_rate' : 0.0001
 
 'china_export1':
   'learning_rate' : 0.0005
