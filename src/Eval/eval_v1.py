@@ -23,15 +23,13 @@ def precision_recall_curve(
         Precision  = (S(t) intersection G) / |S(t)|
         Recall  = (S(t) intersection G) / |G|
     '''
-
-
-    print('------')
     if bounds  is None :
         min_val = min( sorted_id_score_dict.values())
         max_val = max( sorted_id_score_dict.values())
     else:
         min_val = bounds[0]
         max_val = bounds[1]
+
     step = (max_val-min_val)/100
     prev_cand_count = 0
     print(min_val,max_val)
@@ -48,7 +46,6 @@ def precision_recall_curve(
 
         p = _numerator/len(candidates)
         r = _numerator/num_anomalies
-
 
         precision_vals.append(p)
         recall_vals.append(r)
