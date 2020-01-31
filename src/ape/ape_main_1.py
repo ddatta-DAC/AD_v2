@@ -294,8 +294,6 @@ def main():
         for e in tmp:
             sorted_id_score_dict[e[0]] = e[1][0]
 
-
-
         recall, precison = eval.precision_recall_curve(
             sorted_id_score_dict,
             anomaly_id_list=test_anomaly_ids
@@ -311,7 +309,6 @@ def main():
         logger.info(' Anomaly type' + str(anomaly_type))
         logger.info('AUC')
         logger.info(str(_auc))
-
 
         '''
             if _TIME_IT == False:
@@ -347,7 +344,7 @@ def main():
 parser = argparse.ArgumentParser(description='APE on wwf data')
 parser.add_argument('-d','--dir', help='Which data to run. give dir name [ us_import, peru_export, china_export ]', required=True)
 args = vars(parser.parse_args())
-DIR = None
+DIR = 'us_import1'
 if 'dir' in args.keys() :
     print(' >>> ', args['dir'])
     DIR = str(args['dir']).strip("'")

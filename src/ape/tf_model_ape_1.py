@@ -12,8 +12,9 @@ import sys
 import yaml
 import time
 from collections import OrderedDict
-import seaborn as sns
+
 import glob
+
 tf.set_random_seed(729)
 
 OP_DIR = None
@@ -57,9 +58,6 @@ class model_ape_1:
         self.batch_size = batch_size
         self.inp_dims = inp_dims
         self.chkpt_dir = chkpt_dir
-
-
-
 
     # -------- Restore ---------- #
     def restore_model(self):
@@ -248,7 +246,7 @@ class model_ape_1:
                 self.term_4 = tf.placeholder(
                     tf.float32,
                     shape=(
-                        [None, self.neg_samples,1]
+                        [None, self.neg_samples, 1]
                     )
                 )
 
@@ -396,8 +394,7 @@ class model_ape_1:
             obj = tf.log(tf.sigmoid(tf.log(P_e) - self.term_2) + self.epsilon)
             # print('1', tf.sigmoid(tf.log(P_e)))
             # print('z3', z3)
-            z4 = tf.squeeze(self.term_4,axis=-1)
-
+            z4 = tf.squeeze(self.term_4, axis=-1)
 
             z4 = tf.log(tf.sigmoid(-z3 + z4) + self.epsilon)
             z5 = tf.reduce_sum(z4, axis=-1, keepdims=True)
@@ -429,16 +426,14 @@ class model_ape_1:
 
         losses = []
         for e in range(self.num_epochs):
-            print('epoch', e + 1)
+            print('Epoch :: ', e + 1)
             st = time.time()
             for _b in range(num_batches):
-                if _b % 100 == 0:
-                    print('Batch :', _b)
+                                 
                 _x_pos = x_pos[_b * bs: (_b + 1) * bs]
                 _x_neg = x_neg[_b * bs: (_b + 1) * bs]
                 _term_2 = term_2[_b * bs: (_b + 1) * bs]
-                _term_4 = term_4[_b * bs: (_b + 1) * bs,:,:]
-
+                _term_4 = term_4[_b * bs: (_b + 1) * bs, :, :]
 
                 _, loss = self.sess.run(
                     [self.train_opt, self.obj],
@@ -450,14 +445,13 @@ class model_ape_1:
                     }
                 )
                 batch_loss = np.mean(loss)
-                if _b % 10 == 0:
-                    print('Loss :', batch_loss)
+                if _b % 200 == 0:
+                    print('Epoch :: ', e + 1, 'Batch :', _b, ' Loss :', batch_loss)
 
                 losses.append(batch_loss)
 
             ed = time.time()
             # print('Time elapsed: ', ed - st)
-
 
         # print('------------------------------->')
         losses = np.array(losses) * -1
@@ -468,7 +462,8 @@ class model_ape_1:
         plt.title('Loss for model training', fontsize=18)
         plt.xlabel('Time', fontsize=16)
         plt.ylabel('Loss value', fontsize=16)
-        sns.lineplot(x=range(len(losses)), y=losses, lw=0.75)
+        # sns.lineplot(x=range(len(losses)), y=losses, lw=0.75)
+
         plt.plot(range(len(losses)), losses, 'r-')
         plt.savefig(fig_path)
         plt.close()
@@ -487,7 +482,7 @@ class model_ape_1:
     def inference(
             self,
             data,
-            ):
+    ):
         self.restore_model()
         output = None
         print(data.shape)
@@ -496,7 +491,7 @@ class model_ape_1:
         num_batches = data.shape[0] // bs
         print(' number of batches ....', num_batches)
         with tf.Session(graph=self.restore_graph) as sess:
-            for _b in range(num_batches+1):
+            for _b in range(num_batches + 1):
                 _data = data[_b * bs: (_b + 1) * bs]
                 output = sess.run(
                     self.score,
@@ -507,4 +502,3 @@ class model_ape_1:
         print(len(res))
         res = np.array(res)
         return res
-
