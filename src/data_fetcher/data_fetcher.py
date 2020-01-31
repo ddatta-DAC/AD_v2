@@ -2,20 +2,33 @@ import pickle
 import os
 import glob
 import numpy as np
+import pandas as pd
 
 # ---------------------------------- #
 # Standard data fetcher for all models
 # ---------------------------------- #
 
-def get_domain_dims(DATA_DIR, DIR):
-    domain_dims = None
-    with open(os.path.join(
-            DATA_DIR,
-            DIR,
-            'domain_dims.pkl'), 'rb') as fh:
-        domain_dims = pickle.load(fh)
-    return domain_dims
+# def get_domain_dims(DATA_DIR, DIR):
+#     domain_dims = None
+#     with open(os.path.join(
+#             DATA_DIR,
+#             DIR,
+#             'domain_dims.pkl'), 'rb') as fh:
+#         domain_dims = pickle.load(fh)
+#     return domain_dims
 
+
+def get_domain_dims(DATA_DIR, DIR):
+    dd_file_path = os.path.join( DATA_DIR, DIR, 'domain_dims.pkl')
+    with open(dd_file_path, 'rb') as fh:
+        domain_dims = pickle.load(fh)
+    _tmpDF = pd.DataFrame.from_dict(domain_dims, orient='index')
+    _tmpDF = _tmpDF.reset_index()
+    _tmpDF = _tmpDF.rename(columns={'index': 'domain'})
+    _tmpDF = _tmpDF.sort_values(by=['domain'])
+    res = {k: v for k, v in zip(_tmpDF['domain'], _tmpDF[0])}
+    return res
+# -------------
 
 
 def get_data_base_x(
