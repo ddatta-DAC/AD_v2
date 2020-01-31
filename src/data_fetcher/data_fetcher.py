@@ -53,6 +53,7 @@ def get_data_base_x(
     # -------------
     # Test set id _list
     # -------------
+    test_idList = None
     try:
         test_idList_file = os.path.join(
             DATA_DIR,
