@@ -23,7 +23,6 @@ import time
 import yaml
 import time
 from collections import OrderedDict
-import seaborn as sns
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import auc
 import glob
@@ -146,7 +145,7 @@ def setup():
 
     logger = logging.getLogger('main')
     logger.setLevel(logging.INFO)
-    log_file= os.path.join(OP_DIR, config['log_file'])
+    log_file = os.path.join(OP_DIR, config['log_file'])
     handler = logging.FileHandler(log_file)
     handler.setLevel(logging.INFO)
     logger.addHandler(handler)
@@ -241,7 +240,7 @@ def main():
     bounds.append(min(training_noise_scores))
     bounds.append(max(training_pos_scores))
 
-    for anomaly_type in range(1,3+1):
+    for anomaly_type in [1,2]:
         _, _, _, _, test_x, test_idList, anomaly_x, anomaly_idList = data_fetcher.get_data_APE(
             DATA_DIR,
             DIR,
@@ -270,10 +269,6 @@ def main():
 
         # ---------- #
 
-
-
-        # ---------- #
-
         print('Length of test data',test_data_x.shape)
         res = model_obj.inference(
             test_data_x
@@ -281,8 +276,6 @@ def main():
 
         test_ids = list(test_ids)
         print('Length of results ', len(res))
-
-
         res = list(res)
         _id_score_dict = {
             id: _res for id, _res in zip(test_ids, res)
@@ -315,7 +308,7 @@ def main():
         logger.info(recall_str)
 
         _auc = auc(recall, precison)
-        logger.info('c=' + str(anomaly_type))
+        logger.info(' Anomaly type' + str(anomaly_type))
         logger.info('AUC')
         logger.info(str(_auc))
 
