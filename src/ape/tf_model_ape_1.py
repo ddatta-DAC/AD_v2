@@ -63,7 +63,7 @@ class model_ape_1:
     def restore_model(self):
         tf.reset_default_graph()
 
-        with tf.gfile.GFile(self.frozen_filename, "rb") as f:
+        with tf.io.gfile.GFile(self.frozen_filename, "rb") as f:
             graph_def = tf.GraphDef()
             graph_def.ParseFromString(f.read())
         self.restore_graph = None
@@ -401,7 +401,7 @@ class model_ape_1:
             obj += z5
             self.obj = obj
             # print(self.obj)
-            self.optimizer = tf.train.AdamOptimizer(
+            self.optimizer = tf.compat.v1.train.AdamOptimizer(
                 learning_rate=self.learning_rate
             )
             self.train_opt = self.optimizer.minimize(-self.obj)
@@ -418,7 +418,7 @@ class model_ape_1:
         self.sess = tf.InteractiveSession()
         self.init = tf.global_variables_initializer()
         self.sess.run(self.init)
-        self.saver = tf.train.Saver()
+        self.saver = tf.compat.v1.train.Saver()
         bs = self.batch_size
 
         num_batches = x_pos.shape[0] // bs
@@ -475,7 +475,8 @@ class model_ape_1:
             self.wb_names
         )
 
-        with tf.gfile.GFile(self.frozen_filename, "wb") as f:
+        with tf.io.gfile.GFile(self.frozen_filename, "wb") as f:
+            print('Saving file. ', self.frozen_filename)
             f.write(frozen_graph_def.SerializeToString())
         return
 
