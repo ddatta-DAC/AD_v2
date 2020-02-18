@@ -147,8 +147,8 @@ def dedup_list_dictionaries(list_domEntDictionaries):
     return result
 
 def query_df(
-            df,
-            domainEntity_dict
+        df,
+        domainEntity_dict
         ):
 
     query_str = []
