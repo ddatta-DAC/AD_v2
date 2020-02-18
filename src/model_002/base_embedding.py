@@ -107,7 +107,7 @@ def custom_loss_function(
     a = 0.75
     epsilon = 0.000001
 
-    _err1 = K.square(y_pred - tf.math.log(y_true + epsilon))
+    _err1 = K.square(y_pred - K.log(y_true + epsilon))
     _scale1 = K.pow(
         K.clip(y_true / X_ij_max, 0.0, 1.0),
         a

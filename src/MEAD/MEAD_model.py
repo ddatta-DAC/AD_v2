@@ -304,7 +304,7 @@ class model:
         with tf.variable_scope(self.model_scope_name):
             # batch_size ,domains, label_id
 
-            self.x_pos_inp = tf.placeholder(
+            self.x_pos_inp = tf.compat.v1.placeholder(
                 tf.int32,
                 [None, self.num_domains]
             )
@@ -432,7 +432,7 @@ class model:
         # ---------------
         # batch_size, domains, label_id
         # ---------------
-        self.x_neg_inp = tf.placeholder(
+        self.x_neg_inp = tf.compat.v1.placeholder(
             tf.int32, [
                 None,
                 self.num_neg_samples,
@@ -507,7 +507,7 @@ class model:
             self.save_dir, 'checkpoints', f_name
         )
 
-        self.sess = tf.InteractiveSession()
+        self.sess = tf.compat.v1.InteractiveSession()
         self.init = tf.global_variables_initializer()
         self.sess.run(self.init)
         self.saver = tf.train.Saver()
@@ -545,10 +545,11 @@ class model:
 
                 if _b == 0:
                     print(_x_pos.shape)
-
+                    print(_x_neg.shape)
+                    
                 _, summary,  loss = self.sess.run(
                     [self.train_opt, self.summary, self.loss],
-                    feed_dict={
+                    feed_dict = {
                         self.x_pos_inp: _x_pos,
                         self.x_neg_inp: _x_neg
                     }
