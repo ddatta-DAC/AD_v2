@@ -162,10 +162,13 @@ del target_Origin_HSCode_Dest['count']
 # =========================================
 
 def generate_by_criteria(row, criteria, _fixed, _perturb, co_occurrence_dict, ref_df, id_col='PanjivaRecordID'):
-    p_d = np.random.choice(_perturb, size=2, replace=False)
-    is_duplicate = True
 
+    is_duplicate = True
+    trials  = 0
+    max_trials = 10000
     while is_duplicate:
+        trials += 1
+        p_d = np.random.choice(_perturb, size=2, replace=False)
         new_row = row.copy()
         for _dom in p_d:
             # select reference_domain from _fixed
@@ -174,7 +177,6 @@ def generate_by_criteria(row, criteria, _fixed, _perturb, co_occurrence_dict, re
 
             # select entity in _dom such that it does not co-occur with
             _pair = sorted([_dom, _f_d])
-            print(_pair)
             key = '_+_'.join(_pair)
 
             _matrix = co_occurrence_dict[key]
@@ -190,14 +192,20 @@ def generate_by_criteria(row, criteria, _fixed, _perturb, co_occurrence_dict, re
         hash_val = utils.get_hash_aux(row, id_col)
         is_duplicate = utils.is_duplicate(ref_df, hash_val)
 
+        if trials == max_trials:
+            print('Error')
+            new_row[_perturb[0]] = None
+            break
+
     suffix = '00' + str(criteria)
     row[id_col] = utils.aux_modify_id(row[id_col], suffix)
+    print('generated...')
     return row
 
 
 # --------------------------------------------------------------------- #
 
-hash_ref_df = utils.add_hash(df_train, id_col)
+hash_ref_df = utils.add_hash(df_train.copy(), id_col)
 
 # ================================================ #
 # C1 ::
@@ -261,9 +269,20 @@ res_df = pd.DataFrame(columns=list(df_test.columns))
 res_df = res_df.append(res_criteria_1_1,ignore_index=True)
 res_df = res_df.append(res_criteria_2_1,ignore_index=True)
 res_df = res_df.append(res_criteria_2_2,ignore_index=True)
+res_df = res_df.dropna()
+
 res_df.to_csv(
-    os.path.join(DATA_DIR, 'anomalies_W_pattern_1.csv',index=False)
+    os.path.join(DATA_DIR, 'anomalies_W_pattern_1.csv'),index=False
 )
+
+# ------ #
+tmp = [ target_Shipper, target_Consignee, target_PortOfLading_PortOfUnlading, target_Origin_HSCode_Dest]
+with open(os.path.join(DATA_DIR, 'intermediate_details.pkl'),'wb') as f:
+    pickle.dump(tmp, f, pickle.HIGHEST_PROTOCOL)
+
+
+
+
 
 
 
