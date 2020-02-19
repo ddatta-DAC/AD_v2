@@ -31,13 +31,13 @@ CONFIG = None
 DIR = None
 DATA_DIR = None
 
+
 def set_up_config(_DIR):
     global CONFIG_FILE
     global DIR
     global save_dir
     global CONFIG
     global DATA_DIR
-
 
     with open(CONFIG_FILE) as f:
         CONFIG = yaml.safe_load(f)
@@ -54,7 +54,9 @@ def set_up_config(_DIR):
     DATA_DIR = save_dir
     return
 
+
 set_up_config(DIR)
+
 
 def get_data():
     global id_col
@@ -162,10 +164,9 @@ del target_Origin_HSCode_Dest['count']
 # =========================================
 
 def generate_by_criteria(row, criteria, _fixed, _perturb, co_occurrence_dict, ref_df, id_col='PanjivaRecordID'):
-
     is_duplicate = True
-    trials  = 0
-    max_trials = 10000
+    trials = 0
+    max_trials = 100
     while is_duplicate:
         trials += 1
         p_d = np.random.choice(_perturb, size=2, replace=False)
@@ -189,7 +190,7 @@ def generate_by_criteria(row, criteria, _fixed, _perturb, co_occurrence_dict, re
             e = np.random.choice(pool, size=1)[0]
             new_row[_dom] = e
             # check for duplicates
-        hash_val = utils.get_hash_aux(row, id_col)
+        hash_val = utils.get_hash_aux(new_row, id_col)
         is_duplicate = utils.is_duplicate(ref_df, hash_val)
 
         if trials == max_trials:
@@ -199,7 +200,7 @@ def generate_by_criteria(row, criteria, _fixed, _perturb, co_occurrence_dict, re
 
     suffix = '00' + str(criteria)
     row[id_col] = utils.aux_modify_id(row[id_col], suffix)
-    print('generated...')
+    print(criteria, ' :: generated record')
     return row
 
 
@@ -240,15 +241,15 @@ res_criteria_1_1 = a.parallel_apply(
 
 a = df_train.merge(
     target_Origin_HSCode_Dest,
-    on = ['ShipmentOrigin', 'HSCode', 'ShipmentDestination'],
-    how = 'inner'
+    on=['ShipmentOrigin', 'HSCode', 'ShipmentDestination'],
+    how='inner'
 )
 
 a1 = a.loc[a['ConsigneePanjivaID'].isin(target_Consignee)]
-_fixed_set = ['ShipmentOrigin', 'HSCode', 'ShipmentDestination', 'ConsigneePanjivaID']
+_fixed_set = ['ConsigneePanjivaID', 'ShipmentOrigin', 'HSCode', 'ShipmentDestination']
 _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
 
-res_criteria_2_1 = a1.parallel_apply(
+res_criteria_2_1 = a1.apply(
     generate_by_criteria,
     axis=1,
     args=(201, _fixed_set, _perturb_set, columnWise_coOccMatrix_dict, hash_ref_df)
@@ -264,28 +265,17 @@ res_criteria_2_2 = a2.parallel_apply(
     args=(202, _fixed_set, _perturb_set, columnWise_coOccMatrix_dict, hash_ref_df)
 )
 
-
 res_df = pd.DataFrame(columns=list(df_test.columns))
-res_df = res_df.append(res_criteria_1_1,ignore_index=True)
-res_df = res_df.append(res_criteria_2_1,ignore_index=True)
-res_df = res_df.append(res_criteria_2_2,ignore_index=True)
+res_df = res_df.append(res_criteria_1_1, ignore_index=True)
+res_df = res_df.append(res_criteria_2_1, ignore_index=True)
+res_df = res_df.append(res_criteria_2_2, ignore_index=True)
 res_df = res_df.dropna()
 
 res_df.to_csv(
-    os.path.join(DATA_DIR, 'anomalies_W_pattern_1.csv'),index=False
+    os.path.join(DATA_DIR, 'anomalies_W_pattern_1.csv'), index=False
 )
 
 # ------ #
-tmp = [ target_Shipper, target_Consignee, target_PortOfLading_PortOfUnlading, target_Origin_HSCode_Dest]
-with open(os.path.join(DATA_DIR, 'intermediate_details.pkl'),'wb') as f:
+tmp = [target_Shipper, target_Consignee, target_PortOfLading_PortOfUnlading, target_Origin_HSCode_Dest]
+with open(os.path.join(DATA_DIR, 'intermediate_details.pkl'), 'wb') as f:
     pickle.dump(tmp, f, pickle.HIGHEST_PROTOCOL)
-
-
-
-
-
-
-
-
-
-
