@@ -9,20 +9,25 @@ import random
 from joblib import Parallel, delayed
 import yaml
 import math
+import re
+from pandarallel import pandarallel
 from collections import Counter
+
+pandarallel.initialize(progress_bar=True)
 sys.path.append('.')
 sys.path.append('./..')
 try:
     import clean_up_test_data
+    import utils_preprocess
 except:
     from . import clean_up_test_data
-# try:
-#     import create_anomalies
-# except:
-#     from . import create_anomalies
+    from . import utils_preprocess
 
-# ===================
+# -------------------------- #
 
+DATA_SOURCE = None
+DIR_LOC = None
+CONFIG = None
 CONFIG_FILE = 'config_preprocessor_v02.yaml'
 id_col = 'PanjivaRecordID'
 ns_id_col = 'NegSampleID'
@@ -34,50 +39,44 @@ num_neg_samples = None
 save_dir = None
 cleaned_csv_subdir = None
 
+# -------------------------- #
 
-# ====================
-
-def get_regex(_type):
+def get_regex(_type ):
     global DIR
 
-    if DIR == 'us_import':
+    if DIR == 'us_import1':
         if _type == 'train':
-            return '*0[1-6]*2016*.csv'
+            return '.*0[1-6]_2015.csv'
         if _type == 'test':
-            return '*0[7-9]*2016*.csv'
+            return '.*((07)|(08)|(09)|(10))_2015.csv'
 
-    if DIR == 'china_import':
+    if DIR == 'us_import2':
         if _type == 'train':
-            return '*0[1-6]*2016*.csv'
+            return '.*(((09|10|11|12)_2015)|(0[1-3]_2016)).csv'
         if _type == 'test':
-            return '*0[7-9]*2016*.csv'
-
-    if DIR == 'china_export':
-        if _type == 'train':
-            return '*0[2-3]*2016*.csv'
-        if _type == 'test':
-            return '*0[4]*2016*.csv'
+            return '.*0[4-7]_2016.csv'
 
     return '*.csv'
 
 
 def get_files(DIR, _type='all'):
-    data_dir = os.path.join(
-        './../../Data_Raw',
-        DIR
-    )
+    global DATA_SOURCE
+    data_dir = DATA_SOURCE
 
     regex = get_regex(_type)
-    files = sorted(
-        glob.glob(
-            os.path.join(data_dir, regex)
-        )
-    )
+    c = glob.glob(os.path.join(data_dir, '*'))
+
+    def glob_re(pattern, strings):
+        return filter(re.compile(pattern).match, strings)
+
+    files = sorted([_ for _ in glob_re(regex, c)])
     print('DIR ::', DIR, ' Type ::', _type, 'Files count::', len(files))
     return files
 
 
 def set_up_config():
+    global DIR
+    global CONFIG
     global CONFIG_FILE
     global use_cols
     global freq_bound
@@ -87,11 +86,17 @@ def set_up_config():
     global column_value_filters
     global num_neg_samples
     global cleaned_csv_subdir
+    global DATA_SOURCE
+    global DIR_LOC
 
     with open(CONFIG_FILE) as f:
         CONFIG = yaml.safe_load(f)
 
+
     DIR = CONFIG['DIR']
+    DIR_LOC = re.sub('[0-9]', '', DIR)
+    DATA_SOURCE = os.path.join('./../../Data_Raw', DIR_LOC)
+
     save_dir = os.path.join(
         CONFIG['save_dir'],
         DIR
@@ -112,8 +117,6 @@ def set_up_config():
     column_value_filters = CONFIG[DIR]['column_value_filters']
     num_neg_samples_ape = CONFIG[DIR]['num_neg_samples_ape']
     num_neg_samples = CONFIG[DIR]['num_neg_samples']
-
-    return CONFIG
 
 
 '''
@@ -145,28 +148,16 @@ def convert_to_ids(
 
     feature_columns = list(df.columns)
     feature_columns.remove(id_col)
-
+    feature_columns = list(sorted(feature_columns))
     dict_DomainDims = {}
     col_val2id_dict = {}
 
     for col in sorted(feature_columns):
         vals = list(set(df[col]))
-
-        # ----
-        #   0 : item1 ,
-        #   1 : item2 ,
-        #   ...
-        # ----
         id2val_dict = {
             e[0]: e[1]
             for e in enumerate(vals, 0)
         }
-
-        # ----
-        #   item1 : 0 ,
-        #   item2 : 0 ,
-        #   ...
-        # ----
         val2id_dict = {
             v: k for k, v in id2val_dict.items()
         }
@@ -253,7 +244,6 @@ def remove_low_frequency_values(df):
     global freq_bound
 
     freq_column_value_filters = {}
-
     feature_cols = list(df.columns)
     feature_cols.remove(id_col)
     # ----
@@ -280,14 +270,14 @@ def remove_low_frequency_values(df):
     return df
 
 
-def HSCode_cleanup(list_df, DIR, config):
-    hscode_col = 'HSCode'
+def HSCode_cleanup(list_df, DIR_LOC, config):
 
+    hscode_col = config['hscode_col']
     # ----- #
     # Expert curated HS codes
     hs_code_filter_file = os.path.join(
         config['hscode_filter_file_loc'],
-        DIR + config['hscode_filter_file_pattern']
+        DIR_LOC + config['hscode_filter_file_pattern']
     )
 
     tmp = pd.read_csv(
@@ -307,33 +297,31 @@ def HSCode_cleanup(list_df, DIR, config):
             return _code
         return None
 
-    # ------ #
-    # Correct the formats of HSCodes :
-    # eg. in china_export add in the preceeding 0
-    # ------ #
-    def add_preceeding_zero(_code):
-        _code = _code.strip()
-        if len(_code) > 6:
-            _code = _code[:6]
-        elif len(_code) == 5:
-            _code = '0' + _code
-        return _code
+    def remove_dot(_code):
+        return _code.replace('.','')
 
     list_processed_df = []
+
     for df in list_df:
         df = df.dropna()
         df[hscode_col] = df[hscode_col].astype(str)
-        if DIR == 'china_export':
-            df[hscode_col] = df[hscode_col].apply(add_preceeding_zero)
 
-        df[hscode_col] = df[hscode_col].apply(
+        df[hscode_col] = df[hscode_col].parallel_apply(
+            remove_dot
+        )
+
+        df[hscode_col] = df[hscode_col].parallel_apply(
             filter_by_ExpertHSCodeList,
             args=(target_codes,)
         )
-        df = df.dropna()
-        list_processed_df.append(df)
-    # --------- #
 
+        df = df.dropna()
+        df = lexical_sort_cols(df, id_col)
+
+        if df is not None and len(df) > 0:
+            list_processed_df.append(df)
+    # --------- #
+    print( [len(_) for _ in list_processed_df ])
     return list_processed_df
 
 
@@ -356,29 +344,38 @@ def apply_value_filters(list_df):
     return list_df
 
 
+'''
+Check if a row is not present in reference_DF
+reference df should have a hash
+'''
 def ensure_NotDuplicate_against(row, ref_df):
     global id_col
-    query_str = []
+    hash_val = utils_preprocess.get_hash_aux(row, id_col)
+    r = utils_preprocess.is_duplicate(ref_df, hash_val)
+    return not r
 
-    for _c, _i in row.to_dict().items():
-        if _c == id_col:
-            continue
-        query_str.append(' ' + _c + ' == ' + str(_i))
-    query_str = ' & '.join(query_str)
-    res_query = ref_df.query(query_str)
 
-    if len(res_query) > 0:
-        return False
-    return True
+# ---------------------------------------------------- #
+# Lexically sorted columns
+# ---------------------------------------------------- #
+def lexical_sort_cols(df, id_col):
+    feature_columns = list(df.columns)
+    feature_columns.remove(id_col)
+    feature_columns = list(sorted(feature_columns))
+    ord_cols = [id_col] + feature_columns
+    return df[ord_cols]
 
+# ---------------------------------------------------- #
+# Clean up training data
+# ---------------------------------------------------- #
 
 def clean_train_data():
     global DIR
     global CONFIG
-
+    global DIR_LOC
     files = get_files(DIR, 'train')
     list_df = [pd.read_csv(_file, usecols=use_cols, low_memory=False) for _file in files]
-    list_df = HSCode_cleanup(list_df, DIR, CONFIG)
+    list_df = HSCode_cleanup(list_df,DIR_LOC, CONFIG)
 
     list_df_1 = apply_value_filters(list_df)
     master_df = None
@@ -392,10 +389,11 @@ def clean_train_data():
             )
 
     master_df = remove_low_frequency_values(master_df)
-
     return master_df
 
-
+# ------------------------------------------------- #
+# set up testing data
+# ------------------------------------------------- #
 def setup_testing_data(
         test_df,
         train_df,
@@ -407,6 +405,7 @@ def setup_testing_data(
     # Replace with None if ids are not in train_set
     feature_cols = list(test_df.columns)
     feature_cols.remove(id_col)
+    feature_cols = list(sorted(feature_cols))
     test_df = test_df.dropna()
 
     for col in feature_cols:
@@ -426,6 +425,9 @@ def setup_testing_data(
         )
     test_df = test_df.dropna()
     test_df = test_df.drop_duplicates()
+    test_df = lexical_sort_cols(test_df, id_col)
+
+
     print(' Length of testing data', len(test_df))
 
     '''
@@ -433,16 +435,16 @@ def setup_testing_data(
     Paralleleize the process 
     '''
 
-    def aux_validate(target_df, train_df):
+    def aux_validate(target_df, ref_df):
         tmp_df = pd.DataFrame(
             target_df,
             copy = True
         )
 
-        tmp_df['valid'] = tmp_df.apply(
+        tmp_df['valid'] = tmp_df.parallel_apply(
             ensure_NotDuplicate_against,
             axis=1,
-            args=(train_df,)
+            args=(ref_df,)
         )
 
         tmp_df['valid'] = tmp_df.loc[ (tmp_df['valid']==True) ]
@@ -450,30 +452,36 @@ def setup_testing_data(
         return pd.DataFrame(tmp_df,copy=True)
 
 
-    num_chunks = 40
-    chunk_len = int(len(test_df) // num_chunks)
+    ref_df = utils_preprocess.add_hash(train_df.copy(), id_col)
+    new_test_df = aux_validate(test_df, ref_df)
 
-    list_df_chunks = np.split(
-        test_df.head(chunk_len * (num_chunks - 1)), num_chunks - 1
-    )
+    # num_chunks = 40
+    # chunk_len = int(len(test_df) // num_chunks)
+    #
+    # list_df_chunks = np.split(
+    #     test_df.head(chunk_len * (num_chunks - 1)), num_chunks - 1
+    # )
+    #
+    # end_len = len(test_df) - chunk_len * (num_chunks - 1)
+    # list_df_chunks.append(test_df.tail(end_len))
+    #
+    # print(' Deduplication of test set w.r.t. train :: Length of chunks ',
+    #       [len(_) for _ in list_df_chunks])
 
-    end_len = len(test_df) - chunk_len * (num_chunks - 1)
-    list_df_chunks.append(test_df.tail(end_len))
 
-    print(' Deduplication of test set w.r.t. train :: Length of chunks ',
-          [len(_) for _ in list_df_chunks])
 
-    list_dedup_df = Parallel(n_jobs=num_chunks)(
-        delayed(aux_validate)(target_df, train_df)
-        for target_df in list_df_chunks
-    )
 
-    new_test_df = None
-    for _df in list_dedup_df:
-        if new_test_df is None:
-            new_test_df = _df
-        else:
-            new_test_df = new_test_df.append(_df, ignore_index=True)
+    # list_dedup_df = Parallel(n_jobs=num_chunks)(
+    #     delayed(aux_validate)(target_df, train_df)
+    #     for target_df in list_df_chunks
+    # )
+
+    # new_test_df = None
+    # for _df in list_dedup_df:
+    #     if new_test_df is None:
+    #         new_test_df = _df
+    #     else:
+    #         new_test_df = new_test_df.append(_df, ignore_index=True)
 
     print(' After deduplication :: ', len(new_test_df))
     return new_test_df
@@ -485,6 +493,7 @@ def create_train_test_sets():
     global save_dir
     global column_value_filters
     global CONFIG
+    global DIR_LOC
 
     train_df_file = os.path.join(save_dir, 'train_data.csv')
     test_df_file = os.path.join(save_dir, 'test_data.csv')
@@ -501,16 +510,14 @@ def create_train_test_sets():
 
 
     train_df = clean_train_data()
-
-
     train_df, col_val2id_dict = convert_to_ids(
         train_df,
         save_dir
     )
-    train_df.to_csv(train_df_file, index=False)
-
     print('Length of train data ',len(train_df))
 
+    train_df = lexical_sort_cols(train_df, id_col)
+    train_df.to_csv(train_df_file, index=False)
 
     '''
          test data preprocessing
@@ -521,7 +528,7 @@ def create_train_test_sets():
         pd.read_csv(_file, low_memory=False, usecols=use_cols)
         for _file in test_files
     ]
-    list_test_df = HSCode_cleanup(list_test_df, DIR, CONFIG)
+    list_test_df = HSCode_cleanup(list_test_df, DIR_LOC, CONFIG)
 
     test_df = None
     for _df in list_test_df:
@@ -569,10 +576,9 @@ def clean_test_data_level2( ):
     test_df.to_csv(test_df_file, index=False)
     return
 
-
-CONFIG = set_up_config()
+set_up_config()
 create_train_test_sets()
-clean_test_data_level2()
+# clean_test_data_level2()
 
 
 # train_df = pd.read_csv(os.path.join(save_dir, CONFIG['train_data_file']))
