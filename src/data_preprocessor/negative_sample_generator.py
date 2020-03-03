@@ -560,7 +560,8 @@ set_up_config(DIR)
 # ======================================= #
 
 set_up_config()
-create_negative_samples_ape()
-create_ape_model_data()
+# create_negative_samples_ape()
+# create_ape_model_data()
 
+create_negative_samples_v1()
 # ======================================= #
