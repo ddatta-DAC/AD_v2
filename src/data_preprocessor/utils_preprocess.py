@@ -174,3 +174,33 @@ def check_nonZeroCoOccurrence(
         if dict_coOccMatrix[key][e1][e2] == 0:
             return False
     return True
+
+
+def collate(file_list, use_cols, id_col):
+    _master_df = None
+    for file in file_list:
+        _df = pd.read_csv(
+            file,
+            low_memory=False,
+            usecols=use_cols
+        )
+
+        # Drop missing values
+        _df = _df.dropna()
+        if _master_df is None:
+            _master_df = pd.DataFrame(_df)
+        else:
+            _master_df = _master_df.append(
+                _df,
+                ignore_index=True
+            )
+
+    feature_cols = list(_master_df.columns)
+    feature_cols.remove(id_col)
+    feature_cols = list(sorted(feature_cols))
+
+    all_cols = [id_col]
+    all_cols.extend(feature_cols)
+    print(' Columns in the dataframe : ', all_cols)
+    _master_df = _master_df[all_cols]
+    return _master_df
