@@ -509,29 +509,6 @@ def create_train_test_sets():
     return train_df, test_df, col_val2id_dict
 
 
-# -------------------------------#
-
-def clean_test_data_level2():
-    global save_dir
-    global CONFIG
-    global id_col
-
-    train_df_file = os.path.join(save_dir, 'train_data.csv')
-    test_df_file = os.path.join(save_dir, 'test_data.csv')
-    train_df = pd.read_csv(train_df_file)
-    test_df = pd.read_csv(test_df_file)
-
-    test_df = clean_up_test_data.remove_order1_spurious_coocc(
-        train_df,
-        test_df,
-        id_col
-    )
-
-    test_df_file = os.path.join(save_dir, CONFIG['test_data_file_v1'])
-    test_df.to_csv(test_df_file, index=False)
-    return
-
-
 # -------------------------------- #
 
 parser = argparse.ArgumentParser()
