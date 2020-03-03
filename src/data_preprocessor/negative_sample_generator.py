@@ -94,7 +94,7 @@ def get_neg_sample_ape(
     )
 
     Pid_val = orig_row[id_col]
-    check_duplicate = False
+    check_duplicate = True
 
     while True:
         new_row = pd.Series(orig_row, copy=True)
@@ -406,6 +406,7 @@ def get_neg_sample_v1(
             new_row[_col] = _item_id
 
         _hash = utils_local.get_hash_aux(new_row, id_col)
+
         if not utils_local.is_duplicate(ref_df, _hash):
             new_row[ns_id_col] = int(str(Pid_val) + '01' + str(_k))
             break
@@ -436,11 +437,15 @@ def create_negative_samples_v1_aux(
     )
 
     new_df[ns_id_col] = 0
-    for i, row in df_chunk.iterrows():
 
+    for i, row in df_chunk.iterrows():
         for _k in range(num_neg_samples_v1):
             _res = get_neg_sample_v1(
-                _k, ref_df, column_valid_values, row, feature_cols_id
+                _k,
+                ref_df,
+                column_valid_values,
+                row,
+                feature_cols_id
             )
             new_df = new_df.append(
                 _res,
@@ -487,6 +492,10 @@ def create_negative_samples_v1():
 
     feature_cols = list(train_df.columns)
     feature_cols.remove(id_col)
+    feature_cols = list(sorted(feature_cols))
+    _cols = [id_col] + feature_cols
+    ref_df = ref_df[_cols]
+    ref_df = utils_local.add_hash(ref_df, id_col)
 
     # feature_cols_id = {
     #     e[0]: e[1]
@@ -500,15 +509,16 @@ def create_negative_samples_v1():
 
     # Store what are valid values for each columns
     column_valid_values = {}
+
     for _fc_name in feature_cols:
-        column_valid_values[_fc_name] = list(set(list(ref_df[_fc_name])))
+        column_valid_values[_fc_name] = list(set(list(train_df[_fc_name])))
 
     chunk_len = int(len(train_df) / (num_jobs - 1))
-
     list_df_chunks = np.split(
         train_df.head(
             chunk_len * (num_jobs - 1)
-        ), num_jobs - 1
+        ),
+        num_jobs - 1
     )
 
     end_len = len(train_df) - chunk_len * (num_jobs - 1)
