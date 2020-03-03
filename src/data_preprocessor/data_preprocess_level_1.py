@@ -18,10 +18,8 @@ pandarallel.initialize(progress_bar=True)
 sys.path.append('.')
 sys.path.append('./..')
 try:
-    import clean_up_test_data
     import utils_preprocess
 except:
-    from . import clean_up_test_data
     from . import utils_preprocess
 
 # -------------------------- #
