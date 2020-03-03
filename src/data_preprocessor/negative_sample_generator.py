@@ -66,7 +66,7 @@ def set_up_config(_DIR=None):
     column_value_filters = CONFIG[DIR]['column_value_filters']
     num_neg_samples_v1 = CONFIG[DIR]['num_neg_samples']
 
-    num_jobs = CONFIG['num_chunks']
+    num_jobs = CONFIG['num_jobs']
     num_jobs = max(mp.cpu_count(), num_jobs)
 
     return
