@@ -410,6 +410,8 @@ def get_neg_sample_v1(
         if not utils_local.is_duplicate(ref_df, _hash):
             new_row[ns_id_col] = int(str(Pid_val) + '01' + str(_k))
             break
+        else:
+            pass
 
     return new_row
 
@@ -570,8 +572,6 @@ DIR = args.DIR
 set_up_config(DIR)
 
 # ======================================= #
-
-set_up_config()
 # create_negative_samples_ape()
 # create_ape_model_data()
 
