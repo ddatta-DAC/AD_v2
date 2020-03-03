@@ -7,18 +7,14 @@ import numpy as np
 import pickle
 from itertools import combinations
 from joblib import Parallel, delayed
-
+import multiprocessing as mp
 sys.path.append('./')
 sys.path.append('./..')
 
 try:
     import create_anomalies_type_1
-    import create_anomalies_type_2_v2
-    import create_anomalies_type_3
 except:
     from . import create_anomalies_type_1
-    from . import create_anomalies_type_2_v2
-    from . import create_anomalies_type_3
 
 # ===================
 
@@ -31,6 +27,8 @@ save_dir = None
 company_domain_columns = None
 contextual_pattern_support = None
 CONFIG = None
+
+# ==================
 
 def set_up_config(_DIR):
     global CONFIG_FILE
@@ -70,43 +68,24 @@ args = parser.parse_args()
 DIR = args.DIR
 set_up_config(args.DIR)
 
-train_df = pd.read_csv(os.path.join(save_dir, CONFIG['train_data_file']),index_col=None)
-test_df = pd.read_csv(os.path.join(save_dir, CONFIG['test_data_file_v1']),index_col=None)
+train_df = pd.read_csv(
+    os.path.join(save_dir, CONFIG['train_data_file']),
+    index_col=None)
+test_df = pd.read_csv(
+    os.path.join(save_dir, CONFIG['test_data_file_v1']),
+    index_col=None)
 
 # ===================================================== #
 
 num_jobs = CONFIG['num_jobs']
-import multiprocessing as mp
 num_jobs = min(mp.cpu_count(),num_jobs)
 
-# create_anomalies_type_1.generate_anomalies_type1(
-#     test_df,
-#     train_df,
-#     save_dir,
-#     id_col=id_col,
-#     num_jobs=num_jobs,
-#     anom_perc=100
-# )
-
-create_anomalies_type_2_v2.generate_anomalies_type_2(
-    train_df,
+create_anomalies_type_1.generate_anomalies_type1(
     test_df,
+    train_df,
     save_dir,
     id_col=id_col,
-    company_domain = CONFIG[DIR]['company_domain_columns'][0],
-    reqd_anom_perc=100,
     num_jobs=num_jobs,
-    pattern_min_support=contextual_pattern_support,
-    pattern_cluster_size=20
+    anom_perc=100
 )
 
-# create_anomalies_type_3.generate_anomalies_type3(
-#     test_df,
-#     train_df,
-#     save_dir,
-#     id_col=id_col,
-#     company_domains=company_domain_columns,
-#     num_jobs=num_jobs,
-#     anom_perc=100,
-#     cluster_count=20
-# )

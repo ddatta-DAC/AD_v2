@@ -4,7 +4,6 @@ import pandas as pd
 import os
 import numpy as np
 import sys
-
 sys.path.append('./..')
 sys.path.append('./../..')
 import glob
@@ -12,8 +11,6 @@ import yaml
 import pickle
 from collections import Counter
 from operator import itemgetter
-import seaborn as sns
-import matplotlib.pyplot as plt
 from pandarallel import pandarallel
 
 pandarallel.initialize()

@@ -8,7 +8,6 @@ from joblib import Parallel, delayed
 from numpy import random
 import hashlib
 from collections import Counter
-
 sys.path.append('./')
 
 try:

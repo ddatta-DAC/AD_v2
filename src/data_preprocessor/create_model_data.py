@@ -81,6 +81,7 @@ def create_base_test_matrices(
     # Read in domain_dims, domains are sorted
     with open(os.path.join(save_dir, 'domain_dims.pkl'), 'rb') as fh:
         domain_dims = pickle.load(fh)
+
     domains = list(domain_dims.keys())
 
     test_idList = list(test_df[id_col])
@@ -282,23 +283,15 @@ def create_mead_model_data(
 # ========================================================= #
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    '--DIR', choices=['us_import1', 'us_import2', 'china_export1', 'china_import1'],
+    '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
     default=None
 )
+# ========================================================= #
 
 args = parser.parse_args()
 DIR = args.DIR
 set_up_config(DIR)
 
-create_base_test_matrices(
-    save_dir,
-    id_col,
-)
-
-create_base_anomaly_matrices(
-    save_dir,
-    id_col
-)
 
 create_ape_model_data(
     term_2_col=term_2_col,
@@ -313,3 +306,13 @@ create_mead_model_data(
     id_col=id_col,
     ns_id_col=ns_id_col
 )
+
+# create_base_test_matrices(
+#     save_dir,
+#     id_col,
+# )
+#
+# create_base_anomaly_matrices(
+#     save_dir,
+#     id_col
+# )

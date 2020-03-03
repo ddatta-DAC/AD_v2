@@ -10,14 +10,16 @@ from numpy import random
 sys.path.append('./')
 
 try:
-    from . import utils_preprocess as utils_local
+    from . import utils_createAnomalies as utils_local
+    from . import clean_up_test_data
 except:
-    import utils_preprocess as utils_local
-
+    import utils_createAnomalies as utils_local
+    import clean_up_test_data
 
 
 '''
-Type 1 : Perturb 2 entities at random 
+Type 1 :
+set of 3 entities which pairwise do not co-occur, and not present in test or train set
 '''
 
 def aux_func_type_1(
@@ -98,7 +100,7 @@ def aux_func_type_1(
     return anomalies_df
 
 
-def generate_anomalies_type_1(
+def generate_anomalies_type1(
         test_df,
         train_df,
         save_dir,
