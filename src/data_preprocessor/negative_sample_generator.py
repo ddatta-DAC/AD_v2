@@ -34,7 +34,7 @@ DIR = None
 CONFIG = None
 num_jobs = None
 
-def set_up_config():
+def set_up_config(_DIR=None):
     global CONFIG_FILE
     global CONFIG
     global use_cols
@@ -48,8 +48,10 @@ def set_up_config():
 
     with open(CONFIG_FILE) as f:
         CONFIG = yaml.safe_load(f)
-
-    DIR = CONFIG['DIR']
+    if _DIR is None:
+        DIR = CONFIG['DIR']
+    else:
+        DIR = _DIR
     save_dir = os.path.join(
         CONFIG['save_dir'],
         DIR
