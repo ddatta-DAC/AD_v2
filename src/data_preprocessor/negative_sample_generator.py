@@ -9,11 +9,15 @@ import random
 from joblib import Parallel, delayed
 import yaml
 import math
+import multiprocessing as mp
+import argparse
 
 try:
     from . import utils_createAnomalies as utils_local
 except:
     import utils_createAnomalies as utils_local
+
+# ========================================================= #
 
 CONFIG_FILE = 'config_preprocessor_v02.yaml'
 id_col = 'PanjivaRecordID'
@@ -28,6 +32,7 @@ num_neg_samples_v1 = None
 save_dir = None
 DIR = None
 CONFIG = None
+num_jobs = None
 
 def set_up_config():
     global CONFIG_FILE
@@ -39,6 +44,7 @@ def set_up_config():
     global save_dir
     global column_value_filters
     global num_neg_samples_v1
+    global num_jobs
 
     with open(CONFIG_FILE) as f:
         CONFIG = yaml.safe_load(f)
@@ -58,6 +64,9 @@ def set_up_config():
     column_value_filters = CONFIG[DIR]['column_value_filters']
     num_neg_samples_v1 = CONFIG[DIR]['num_neg_samples']
 
+    num_jobs = CONFIG['num_chunks']
+    num_jobs = max(mp.cpu_count(), num_jobs)
+
     return
 
 
@@ -65,13 +74,18 @@ def get_neg_sample_ape(
         _k,
         column_id,
         column_name,
-        ref_df, column_valid_values, orig_row, P_A, feature_cols_id):
+        ref_df,
+        column_valid_values,
+        orig_row,
+        P_A,
+        feature_cols_id
+):
     global id_col
     global ns_id_col
     global term_4_col
     global term_2_col
 
-    ref_df = pd.DataFrame(ref_df,copy=True)
+    ref_df = pd.DataFrame(ref_df, copy=True)
     ref_df = utils_local.add_hash(
         ref_df,
         id_col
@@ -79,20 +93,20 @@ def get_neg_sample_ape(
 
     Pid_val = orig_row[id_col]
     check_duplicate = False
+
     while True:
         new_row = pd.Series(orig_row, copy=True)
-        _random = random.sample(
-            column_valid_values[column_name], 1
-        )[0]
+        _random = random.sample(column_valid_values[column_name], 1)[0]
         new_row[column_name] = _random
-        # Check is not a duplicate of something in training
+        # Check is not a duplicate of something in training set
 
         new_row_hash = utils_local.get_hash_aux(new_row, id_col)
-        if check_duplicate and utils_local.is_duplicate( ref_df, new_row_hash):
+        if check_duplicate and utils_local.is_duplicate(ref_df, new_row_hash):
             continue
 
         new_row[ns_id_col] = int('10' + str(_k) + str(column_id) + str(Pid_val) + '01')
         new_row[term_4_col] = np.log(P_A[column_id][_random])
+
         _tmp = 0
         for _fci, _fcn in feature_cols_id.items():
             _val = P_A[_fci][orig_row[_fcn]]
@@ -100,6 +114,7 @@ def get_neg_sample_ape(
         _tmp /= len(feature_cols_id)
         new_row[term_2_col] = _tmp
         print(" generated new row  ::  Pid_val :: {} get_neg_sample_ape ".format(Pid_val))
+    return   new_row
 
 
 def create_negative_samples_ape_aux(
@@ -110,7 +125,7 @@ def create_negative_samples_ape_aux(
         column_valid_values,
         save_dir,
         P_A
-    ):
+):
     global ns_id_col
     global term_4_col
     global term_2_col
@@ -138,7 +153,13 @@ def create_negative_samples_ape_aux(
         for column_id, column_name in feature_cols_id.items():
             for _k in range(num_neg_samples_ape):
                 _res = get_neg_sample_ape(
-                    _k, column_id, column_name, ref_df, column_valid_values, row, P_A, feature_cols_id
+                    _k, column_id,
+                    column_name,
+                    ref_df,
+                    column_valid_values,
+                    row,
+                    P_A,
+                    feature_cols_id
                 )
                 new_df = new_df.append(
                     _res,
@@ -163,9 +184,9 @@ def create_negative_samples_ape():
     global ns_id_col
     global num_neg_samples_ape
     global CONFIG
-    num_chunks = 40
-    train_data_file = os.path.join(save_dir, CONFIG['train_data_file'])
+    global num_jobs
 
+    train_data_file = os.path.join(save_dir, CONFIG['train_data_file'])
     train_df = pd.read_csv(
         train_data_file,
         index_col=None
@@ -216,11 +237,10 @@ def create_negative_samples_ape():
 
     list_df_chunks = utils_local.chunk_df(
         train_df,
-        num_chunks
+        num_jobs
     )
 
-
-    results = Parallel(n_jobs=num_chunks)(
+    results = Parallel(n_jobs = num_jobs)(
         delayed(create_negative_samples_ape_aux)(
             _i,
             list_df_chunks[_i],
@@ -232,11 +252,11 @@ def create_negative_samples_ape():
         )
         for _i in range(len(list_df_chunks))
     )
+    results = sorted(results)
 
     new_df = None
     for _f in results:
         _df = pd.read_csv(_f, index_col=None)
-
         if new_df is None:
             new_df = _df
         else:
@@ -245,6 +265,8 @@ def create_negative_samples_ape():
 
     new_df.to_csv(os.path.join(save_dir, 'negative_samples_ape_1.csv'), index=False)
     return new_df
+
+# ---------------------------------------------------- #
 
 def create_ape_model_data():
     global DIR
@@ -345,7 +367,6 @@ def create_ape_model_data():
     return
 
 
-
 '''
 Negative sample generation for the new  model
 based on the concept 1 - feature bagging
@@ -383,7 +404,7 @@ def get_neg_sample_v1(
             new_row[_col] = _item_id
 
         _hash = utils_local.get_hash_aux(new_row, id_col)
-        if not utils_local.is_duplicate( ref_df, _hash):
+        if not utils_local.is_duplicate(ref_df, _hash):
             new_row[ns_id_col] = int(str(Pid_val) + '01' + str(_k))
             break
 
@@ -440,8 +461,8 @@ def create_negative_samples_v1():
     global id_col
     global ns_id_col
     global num_neg_samples_v1
+    global num_jobs
 
-    num_chunks = 40
     train_data_file = os.path.join(save_dir, 'train_data.csv')
 
     train_df = pd.read_csv(
@@ -464,38 +485,37 @@ def create_negative_samples_v1():
 
     feature_cols = list(train_df.columns)
     feature_cols.remove(id_col)
-    feature_cols_id = {
-        e[0]: e[1]
-        for e in enumerate(feature_cols)
-    }
 
-    # get the domain dimensions
-    with open(
-            os.path.join(save_dir, 'domain_dims.pkl'), 'rb'
-    ) as fh:
-        domain_dims = pickle.load(fh)
+    # feature_cols_id = {
+    #     e[0]: e[1]
+    #     for e in enumerate(feature_cols)
+    # }
+    # # get the domain dimensions
+    # with open(
+    #         os.path.join(save_dir, 'domain_dims.pkl'), 'rb'
+    # ) as fh:
+    #     domain_dims = pickle.load(fh)
 
-        # Store what are valid values for each columns
+    # Store what are valid values for each columns
     column_valid_values = {}
     for _fc_name in feature_cols:
         column_valid_values[_fc_name] = list(set(list(ref_df[_fc_name])))
 
-    chunk_len = int(len(train_df) / (num_chunks - 1))
+    chunk_len = int(len(train_df) / (num_jobs - 1))
 
     list_df_chunks = np.split(
         train_df.head(
-            chunk_len * (num_chunks - 1)
-        ), num_chunks - 1
+            chunk_len * (num_jobs - 1)
+        ), num_jobs - 1
     )
 
-    end_len = len(train_df) - chunk_len * (num_chunks - 1)
+    end_len = len(train_df) - chunk_len * (num_jobs - 1)
     list_df_chunks.append(train_df.tail(end_len))
     for _l in range(len(list_df_chunks)):
         print(len(list_df_chunks[_l]), _l)
 
-    results = []
 
-    results = Parallel(n_jobs=10)(
+    results = Parallel(n_jobs=num_jobs)(
         delayed
         (create_negative_samples_v1_aux)(
             _i,
@@ -509,6 +529,8 @@ def create_negative_samples_v1():
     )
 
     new_df = None
+    results = sorted(results)
+
     for _f in results:
         _df = pd.read_csv(_f, index_col=None)
 
@@ -522,10 +544,23 @@ def create_negative_samples_v1():
     return new_df
 
 
+# ========================================================= #
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
+    default=None
+)
+# ========================================================= #
+
+args = parser.parse_args()
+DIR = args.DIR
+set_up_config(DIR)
 
 # ======================================= #
 
 set_up_config()
-
 create_negative_samples_ape()
 create_ape_model_data()
+
+# ======================================= #
