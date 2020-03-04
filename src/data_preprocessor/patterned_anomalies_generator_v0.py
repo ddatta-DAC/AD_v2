@@ -31,7 +31,7 @@ CONFIG = None
 DIR = None
 DATA_DIR = None
 DIR_LOC = None
-
+co_occurrence_dict = None
 
 # ===================================================================== #
 
@@ -62,7 +62,7 @@ def set_up_config(_DIR):
     return
 
 
-set_up_config(DIR)
+
 
 
 # =============================================== #
@@ -96,15 +96,15 @@ def generate_by_criteria(
         criteria,
         _fixed,
         _perturb,
-        co_occurrence_dict,
         ref_df,
         id_col='PanjivaRecordID'
     ):
+    global co_occurrence_dict
     print('  >> ', row)
     is_duplicate = True
     trials = 0
-    max_trials = 100
-
+    max_trials = 1000
+    new_row = None
     while is_duplicate:
         trials += 1
         p_d = np.random.choice(_perturb, size=2, replace=False)
@@ -131,7 +131,7 @@ def generate_by_criteria(
         hash_val = utils.get_hash_aux(new_row, id_col)
         is_duplicate = utils.is_duplicate(ref_df, hash_val)
 
-        if trials == max_trials:
+        if trials >= max_trials:
             print('Error')
             new_row[_perturb[0]] = None
             break
@@ -159,19 +159,20 @@ Main processing function
 
 
 def main_process():
+    global co_occurrence_dict
     df_train, df_test, domain_dims = get_data()
-    columnWise_coOccMatrix_dict = utils.get_coOccMatrix_dict(df_train, id_col='PanjivaRecordID')
+    co_occurrence_dict = utils.get_coOccMatrix_dict(df_train, id_col='PanjivaRecordID')
 
-    # Select pairs of ports such that their count in (20,80) percentile
+    # Select pairs of ports such that their count in (15,85) percentile
     # Select 10 % of such pairs
     kk = df_train.groupby(['PortOfLading', 'PortOfUnlading']).size().reset_index(name='count')
-    lb = np.percentile(list(kk['count']), 20)
-    ub = np.percentile(list(kk['count']), 80)
+    lb = np.percentile(list(kk['count']), 15)
+    ub = np.percentile(list(kk['count']), 85)
     kk_1 = kk.loc[(kk['count'] >= lb) & (kk['count'] <= ub)]
     kk_2 = kk_1.sample(frac=0.10)
     kk_2 = kk_2.reset_index(drop=True)
     del kk_2['count']
-    target_PortOfLading_PortOfUnlading = kk
+    target_PortOfLading_PortOfUnlading = kk_2
 
     # We need list of companies trading in these routes
     pp = df_train.merge(
@@ -182,15 +183,19 @@ def main_process():
     # Now we have the list of Shippers and Consignee who do business with them are actually suspicious
     # Assumption these are comapnes that trade along the route described by ('PortOfLading', 'PortOfUnlading')
 
-    _frac = 0.10
+    _frac = 0.15
     candidate_Shipper = list(set(pp['ShipperPanjivaID']))
     _count1 = int(_frac * domain_dims['ShipperPanjivaID'])
-    _count2 = int(_frac * domain_dims['ConsigneePanjivaID'])
+    _count1 = min(_count1, len(candidate_Shipper))
 
     target_Shipper = np.random.choice(candidate_Shipper, size=_count1, replace=False)
     pp_1 = pp.loc[pp['ShipperPanjivaID'].isin(target_Shipper)]
 
     candidate_Shipper = list(set(pp_1['ConsigneePanjivaID']))
+    _count2 = int(_frac * domain_dims['ConsigneePanjivaID'])
+    _count2 = min(_count2, len(candidate_Shipper))
+    print(_count1, _count2)
+
     target_Consignee = np.random.choice(candidate_Shipper, size=_count2, replace=False)
     print('Number of interesting shippers ', len(target_Shipper))
     print('Number of interesting consignee ', len(target_Consignee))
@@ -202,9 +207,9 @@ def main_process():
 
     # Select triplet of ports such that their count in (10,80) percentile
     # Select 10 % of them
-    _lb = 10
-    _ub = 80
-    _frac = 0.10
+    _lb = 15
+    _ub = 85
+    _frac = 0.15
     qq_1 = qq.groupby(['ShipmentOrigin', 'HSCode', 'ShipmentDestination']).size().reset_index(name='count')
     lb = np.percentile(list(qq_1['count']), _lb)
     ub = np.percentile(list(qq_1['count']), _ub)
@@ -241,12 +246,12 @@ def main_process():
     _fixed_set = ['ConsigneePanjivaID', 'PortOfLading', 'PortOfUnlading', 'ShipperPanjivaID']
     _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
 
-
     res_criteria_1_1 = a.parallel_apply(
         generate_by_criteria,
         axis=1,
-        args=(101, _fixed_set, _perturb_set, columnWise_coOccMatrix_dict, hash_ref_df,)
+        args=(101, _fixed_set, _perturb_set, hash_ref_df,)
     )
+
 
     # ================================================ #
     # C2 :
@@ -269,7 +274,7 @@ def main_process():
     res_criteria_2_1 = a1.parallel_apply(
         generate_by_criteria,
         axis=1,
-        args=(201, _fixed_set, _perturb_set, columnWise_coOccMatrix_dict, hash_ref_df, )
+        args=(201, _fixed_set, _perturb_set, hash_ref_df, )
     )
 
     a2 = a.loc[a['ShipperPanjivaID'].isin(target_Shipper)]
@@ -279,7 +284,7 @@ def main_process():
     res_criteria_2_2 = a2.parallel_apply(
         generate_by_criteria,
         axis=1,
-        args=(202, _fixed_set, _perturb_set, columnWise_coOccMatrix_dict, hash_ref_df, )
+        args=(202, _fixed_set, _perturb_set, hash_ref_df, )
     )
 
     res_df = pd.DataFrame(columns=list(df_test.columns))
@@ -323,4 +328,5 @@ parser.add_argument(
 
 args = parser.parse_args()
 DIR = args.DIR
+set_up_config(DIR)
 main_process()
