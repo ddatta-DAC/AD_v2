@@ -242,10 +242,10 @@ def main_process():
     _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
 
 
-    res_criteria_1_1 = a.apply(
+    res_criteria_1_1 = a.parallel_apply(
         generate_by_criteria,
         axis=1,
-        args=(101, _fixed_set, _perturb_set, columnWise_coOccMatrix_dict, hash_ref_df)
+        args=(101, _fixed_set, _perturb_set, columnWise_coOccMatrix_dict, hash_ref_df,)
     )
 
     # ================================================ #
@@ -269,7 +269,7 @@ def main_process():
     res_criteria_2_1 = a1.parallel_apply(
         generate_by_criteria,
         axis=1,
-        args=(201, _fixed_set, _perturb_set, columnWise_coOccMatrix_dict, hash_ref_df)
+        args=(201, _fixed_set, _perturb_set, columnWise_coOccMatrix_dict, hash_ref_df, )
     )
 
     a2 = a.loc[a['ShipperPanjivaID'].isin(target_Shipper)]
@@ -279,7 +279,7 @@ def main_process():
     res_criteria_2_2 = a2.parallel_apply(
         generate_by_criteria,
         axis=1,
-        args=(202, _fixed_set, _perturb_set, columnWise_coOccMatrix_dict, hash_ref_df)
+        args=(202, _fixed_set, _perturb_set, columnWise_coOccMatrix_dict, hash_ref_df, )
     )
 
     res_df = pd.DataFrame(columns=list(df_test.columns))
