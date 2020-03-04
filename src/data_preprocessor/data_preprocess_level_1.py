@@ -87,7 +87,6 @@ def set_up_config(_DIR = None):
     global use_cols
     global freq_bound
     global num_neg_samples_ape
-    global DIR
     global save_dir
     global column_value_filters
     global num_neg_samples

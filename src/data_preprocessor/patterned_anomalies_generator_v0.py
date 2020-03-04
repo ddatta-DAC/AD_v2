@@ -4,20 +4,23 @@ import pandas as pd
 import os
 import numpy as np
 import sys
+
 sys.path.append('./..')
 sys.path.append('./../..')
-import glob
 import yaml
+import re
 import pickle
+import argparse
 from collections import Counter
 from operator import itemgetter
+import glob
 from pandarallel import pandarallel
 
 pandarallel.initialize()
 try:
-    from . import utils_createAnomalies as utils
+    from . import utils_preprocess as utils
 except:
-    import utils_createAnomalies as utils
+    import utils_preprocess as utils
 
 # --------------------------------------------------------------------- #
 
@@ -27,7 +30,10 @@ save_dir = None
 CONFIG = None
 DIR = None
 DATA_DIR = None
+DIR_LOC = None
 
+
+# ===================================================================== #
 
 def set_up_config(_DIR):
     global CONFIG_FILE
@@ -36,11 +42,15 @@ def set_up_config(_DIR):
     global CONFIG
     global DATA_DIR
 
+
     with open(CONFIG_FILE) as f:
         CONFIG = yaml.safe_load(f)
     if _DIR is None:
         DIR = CONFIG['DIR']
+    else:
+        DIR = _DIR
 
+    DIR_LOC = re.sub('[0-9]', '', DIR)
     save_dir = os.path.join(
         CONFIG['save_dir'],
         DIR
@@ -55,6 +65,8 @@ def set_up_config(_DIR):
 set_up_config(DIR)
 
 
+# =============================================== #
+
 def get_data():
     global id_col
     global DATA_DIR
@@ -64,7 +76,6 @@ def get_data():
     df_train = pd.read_csv(os.path.join(DATA_DIR, f_name_train), index_col=None)
     df_test = pd.read_csv(os.path.join(DATA_DIR, f_name_test), index_col=None)
 
-    domain_dims = None
     with open(os.path.join(DATA_DIR, 'domain_dims.pkl'), 'rb') as fh:
         domain_dims = pickle.load(fh)
 
@@ -77,93 +88,23 @@ def get_data():
 
     df_train = df_train[cols]
     df_test = df_test[cols]
-
     return df_train, df_test, domain_dims
 
 
-# -------------------------------------------------------- #
-
-df_train, df_test, domain_dims = get_data()
-columnWise_coOccMatrix_dict = utils.get_coOccMatrix_dict(df_train, id_col='PanjivaRecordID')
-domains = list(df_train.columns)
-
-kk = df_train.groupby(['PortOfLading', 'PortOfUnlading', ]).size().reset_index(name='count')
-
-# ==================
-# Select pairs such that their count in (20,80) percentile
-# ==================
-
-lb = np.percentile(list(kk['count']), 20)
-ub = np.percentile(list(kk['count']), 80)
-kk_1 = kk.loc[(kk['count'] >= lb) & (kk['count'] <= ub)]
-kk_2 = kk_1.sample(frac=0.20)
-kk_2 = kk_2.reset_index(drop=True)
-del kk_2['count']
-target_PortOfLading_PortOfUnlading = kk
-
-# ===============
-# We need list of comapnies trading in these routes
-# ===============
-pp = df_train.merge(
-    target_PortOfLading_PortOfUnlading,
-    on=['PortOfLading', 'PortOfUnlading'],
-    how='inner'
-)
-
-candidate_Shipper = list(set(pp['ShipperPanjivaID']))
-_count = int(0.1 * domain_dims['ShipperPanjivaID'])
-target_Shipper = np.random.choice(candidate_Shipper, size=_count, replace=False)
-print('Number of interesting shippers ', len(target_Shipper))
-
-_count = int(0.1 * domain_dims['ConsigneePanjivaID'])
-# ==================================
-# Now we have the list of shippers
-# Consignee who do business with them are actually suspicous
-# ==================================
-pp_1 = pp.loc[pp['ShipperPanjivaID'].isin(target_Shipper)]
-candidate_Shipper = list(set(pp_1['ConsigneePanjivaID']))
-target_Consignee = np.random.choice(candidate_Shipper, size=_count, replace=False)
-print('Number of interesting consignee ', len(target_Consignee))
-
-'''
-# ## ---------------------------------------------
-# # Criteria 1
-# ## We define interesting records as ones which satisfy these 2 conditions:
-# ### 1. contains both these comapnies
-# ### 2. contains the route ( 'PortOfLading','PortOfUnlading' )
-# ## ---------------------------------------------
-'''
-
-qq = df_train.loc[
-    (df_train['ShipperPanjivaID'].isin(target_Shipper)) & (df_train['ConsigneePanjivaID'].isin(target_Consignee))]
-qq_1 = qq.groupby(['ShipmentOrigin', 'HSCode', 'ShipmentDestination']).size().reset_index(name='count')
-lb = np.percentile(list(qq_1['count']), 10)
-ub = np.percentile(list(qq_1['count']), 90)
-_count = int(0.2 * len(qq_1))
-
-target_Origin_HSCode_Dest = qq_1.loc[(qq_1['count'] >= lb) & (qq_1['count'] <= ub)].sample(n=_count)
-del target_Origin_HSCode_Dest['count']
-
-'''
-## --------------------------------------------
-#  ------------- Criteria 2 -------------------
-## Use the set of consignee and shippers obtained earlier
-## We define interesting records as ones which satisfy these 2 conditions:
-### 1. contain one of the comapnies
-### 2. contain the triplet (ShipmentOrigin	HSCode	ShipmentDestination)
-## --------------------------------------------
-'''
-
-
-# =========================================
-# select 2 of _perturb domains
-# set them to random options :  such that the row does not occur in train or test
-# =========================================
-
-def generate_by_criteria(row, criteria, _fixed, _perturb, co_occurrence_dict, ref_df, id_col='PanjivaRecordID'):
+def generate_by_criteria(
+        row,
+        criteria,
+        _fixed,
+        _perturb,
+        co_occurrence_dict,
+        ref_df,
+        id_col='PanjivaRecordID'
+    ):
+    print('  >> ', row)
     is_duplicate = True
     trials = 0
     max_trials = 100
+
     while is_duplicate:
         trials += 1
         p_d = np.random.choice(_perturb, size=2, replace=False)
@@ -196,83 +137,190 @@ def generate_by_criteria(row, criteria, _fixed, _perturb, co_occurrence_dict, re
             break
 
     suffix = '00' + str(criteria)
-    row[id_col] = utils.aux_modify_id(row[id_col], suffix)
+    new_row[id_col] = utils.aux_modify_id(new_row[id_col], suffix)
     print(criteria, ' :: generated record')
-    return row
+    return new_row
 
 
-# --------------------------------------------------------------------- #
+'''
+Main processing function
+    ------------- Criteria 1 -------------------
+    ## We define interesting records as ones which satisfy these 2 conditions:
+    ### 1. contains both these companies
+    ### 2. contains the route ( 'PortOfLading','PortOfUnlading' )
+    ---------------------------------------------
+    ------------- Criteria 2 --------------------
+    ## Use the set of consignee and shippers obtained earlier
+    ## We define interesting records as ones which satisfy these 2 conditions:
+    ### 1. contain one of the companies
+    ### 2. contain the triplet (ShipmentOrigin	HSCode	ShipmentDestination)
+    ----------------------------------------------
+'''
 
-hash_ref_df = utils.add_hash(df_train.copy(), id_col)
 
-# ================================================ #
-# C1 ::
-# target_Shipper
-# candidate_Shipper
-# target_PortOfLading_PortOfUnlading
-# ================================================ #
+def main_process():
+    df_train, df_test, domain_dims = get_data()
+    columnWise_coOccMatrix_dict = utils.get_coOccMatrix_dict(df_train, id_col='PanjivaRecordID')
 
-a = df_train.merge(
-    target_PortOfLading_PortOfUnlading,
-    on=['PortOfLading', 'PortOfUnlading'],
-    how='inner'
+    # Select pairs of ports such that their count in (20,80) percentile
+    # Select 10 % of such pairs
+    kk = df_train.groupby(['PortOfLading', 'PortOfUnlading']).size().reset_index(name='count')
+    lb = np.percentile(list(kk['count']), 20)
+    ub = np.percentile(list(kk['count']), 80)
+    kk_1 = kk.loc[(kk['count'] >= lb) & (kk['count'] <= ub)]
+    kk_2 = kk_1.sample(frac=0.10)
+    kk_2 = kk_2.reset_index(drop=True)
+    del kk_2['count']
+    target_PortOfLading_PortOfUnlading = kk
+
+    # We need list of companies trading in these routes
+    pp = df_train.merge(
+        target_PortOfLading_PortOfUnlading,
+        on=['PortOfLading', 'PortOfUnlading'],
+        how='inner'
+    )
+    # Now we have the list of Shippers and Consignee who do business with them are actually suspicious
+    # Assumption these are comapnes that trade along the route described by ('PortOfLading', 'PortOfUnlading')
+
+    _frac = 0.10
+    candidate_Shipper = list(set(pp['ShipperPanjivaID']))
+    _count1 = int(_frac * domain_dims['ShipperPanjivaID'])
+    _count2 = int(_frac * domain_dims['ConsigneePanjivaID'])
+
+    target_Shipper = np.random.choice(candidate_Shipper, size=_count1, replace=False)
+    pp_1 = pp.loc[pp['ShipperPanjivaID'].isin(target_Shipper)]
+
+    candidate_Shipper = list(set(pp_1['ConsigneePanjivaID']))
+    target_Consignee = np.random.choice(candidate_Shipper, size=_count2, replace=False)
+    print('Number of interesting shippers ', len(target_Shipper))
+    print('Number of interesting consignee ', len(target_Consignee))
+
+    qq = df_train.loc[
+        (df_train['ShipperPanjivaID'].isin(target_Shipper)) &
+        (df_train['ConsigneePanjivaID'].isin(target_Consignee))
+        ]
+
+    # Select triplet of ports such that their count in (10,80) percentile
+    # Select 10 % of them
+    _lb = 10
+    _ub = 80
+    _frac = 0.10
+    qq_1 = qq.groupby(['ShipmentOrigin', 'HSCode', 'ShipmentDestination']).size().reset_index(name='count')
+    lb = np.percentile(list(qq_1['count']), _lb)
+    ub = np.percentile(list(qq_1['count']), _ub)
+    _count = int(_frac * len(qq_1))
+
+    target_Origin_HSCode_Dest = qq_1.loc[(qq_1['count'] >= lb) & (qq_1['count'] <= ub)].sample(n=_count)
+    del target_Origin_HSCode_Dest['count']
+
+    # =========================================
+    # select 2 of _perturb domains
+    # set them to random options :  such that the row does not occur in train or test
+    # =========================================
+    ref_df = df_test.copy()
+    ref_df = ref_df.append(df_train)
+    hash_ref_df = utils.add_hash(ref_df, id_col)
+
+    # ================================================ #
+    # C1 ::
+    # target_Shipper
+    # candidate_Shipper
+    # target_PortOfLading_PortOfUnlading
+    # ================================================ #
+
+    a = df_train.merge(
+        target_PortOfLading_PortOfUnlading,
+        on=['PortOfLading', 'PortOfUnlading'],
+        how='inner'
+    )
+
+    a = a.loc[a['ConsigneePanjivaID'].isin(target_Consignee)]
+    a = a.loc[a['ShipperPanjivaID'].isin(target_Shipper)]
+
+    print(' Candidate list len', len(a))
+    _fixed_set = ['ConsigneePanjivaID', 'PortOfLading', 'PortOfUnlading', 'ShipperPanjivaID']
+    _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
+
+
+    res_criteria_1_1 = a.apply(
+        generate_by_criteria,
+        axis=1,
+        args=(101, _fixed_set, _perturb_set, columnWise_coOccMatrix_dict, hash_ref_df)
+    )
+
+    # ================================================ #
+    # C2 :
+    # target_Shipper
+    # candidate_Shipper
+    # target_Origin_HSCode_Dest
+    # ================================================ #
+
+    a = df_train.merge(
+        target_Origin_HSCode_Dest,
+        on=['ShipmentOrigin', 'HSCode', 'ShipmentDestination'],
+        how='inner'
+    )
+    print('  Candidate list len', len(a))
+
+    a1 = a.loc[a['ConsigneePanjivaID'].isin(target_Consignee)]
+    _fixed_set = ['ConsigneePanjivaID', 'ShipmentOrigin', 'HSCode', 'ShipmentDestination']
+    _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
+
+    res_criteria_2_1 = a1.parallel_apply(
+        generate_by_criteria,
+        axis=1,
+        args=(201, _fixed_set, _perturb_set, columnWise_coOccMatrix_dict, hash_ref_df)
+    )
+
+    a2 = a.loc[a['ShipperPanjivaID'].isin(target_Shipper)]
+    _fixed_set = ['ShipmentOrigin', 'HSCode', 'ShipmentDestination', 'ShipperPanjivaID']
+    _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
+
+    res_criteria_2_2 = a2.parallel_apply(
+        generate_by_criteria,
+        axis=1,
+        args=(202, _fixed_set, _perturb_set, columnWise_coOccMatrix_dict, hash_ref_df)
+    )
+
+    res_df = pd.DataFrame(columns=list(df_test.columns))
+    res_df = res_df.append(res_criteria_1_1, ignore_index=True)
+    res_df = res_df.append(res_criteria_2_1, ignore_index=True)
+    res_df = res_df.append(res_criteria_2_2, ignore_index=True)
+    res_df = res_df.dropna()
+    res_df.to_csv(
+        os.path.join(DATA_DIR, 'anomalies_W_pattern_1.csv'), index=False
+    )
+
+    # ------ #
+    # Save the dfs
+
+    intermediate_data_loc = os.path.join(DATA_DIR, 'fraud_targets')
+    if not os.path.exists(intermediate_data_loc):
+        os.mkdir(intermediate_data_loc)
+
+    tmp = pd.DataFrame(columns=['ShipperPanjivaID'])
+    tmp['ShipperPanjivaID'] = target_Shipper
+    f_name = os.path.join(intermediate_data_loc,'gen_fraud_Shipper.csv')
+    tmp.to_csv(f_name, index=None)
+
+    tmp = pd.DataFrame(columns=['ConsigneePanjivaID'])
+    tmp['ConsigneePanjivaID'] = target_Consignee
+    f_name = os.path.join(intermediate_data_loc, 'gen_fraud_Consignee.csv')
+    tmp.to_csv(f_name, index=None)
+
+    f_name = os.path.join(intermediate_data_loc, 'gen_fraud_PortOfLading_PortOfUnlading.csv')
+    target_PortOfLading_PortOfUnlading.to_csv( f_name , index=None)
+    f_name = os.path.join(intermediate_data_loc, 'gen_fraud_Origin_HSCode_Destination.csv')
+    target_Origin_HSCode_Dest.to_csv(f_name, index=None)
+    return
+
+# ----------------------------------------------------------------------------------------- #
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
+    default=None
 )
-a = a.loc[a['ConsigneePanjivaID'].isin(target_Consignee)]
-a = a.loc[a['ShipperPanjivaID'].isin(target_Shipper)]
 
-_fixed_set = ['ConsigneePanjivaID', 'PortOfLading', 'PortOfUnlading', 'ShipperPanjivaID']
-_perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
-
-res_criteria_1_1 = a.parallel_apply(
-    generate_by_criteria,
-    axis=1,
-    args=(101, _fixed_set, _perturb_set, columnWise_coOccMatrix_dict, hash_ref_df)
-)
-
-# ================================================ #
-# C2 :
-# target_Shipper
-# candidate_Shipper
-# target_Origin_HSCode_Dest
-# ================================================ #
-
-a = df_train.merge(
-    target_Origin_HSCode_Dest,
-    on=['ShipmentOrigin', 'HSCode', 'ShipmentDestination'],
-    how='inner'
-)
-
-a1 = a.loc[a['ConsigneePanjivaID'].isin(target_Consignee)]
-_fixed_set = ['ConsigneePanjivaID', 'ShipmentOrigin', 'HSCode', 'ShipmentDestination']
-_perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
-
-res_criteria_2_1 = a1.apply(
-    generate_by_criteria,
-    axis=1,
-    args=(201, _fixed_set, _perturb_set, columnWise_coOccMatrix_dict, hash_ref_df)
-)
-
-a2 = a.loc[a['ShipperPanjivaID'].isin(target_Shipper)]
-_fixed_set = ['ShipmentOrigin', 'HSCode', 'ShipmentDestination', 'ShipperPanjivaID']
-_perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
-
-res_criteria_2_2 = a2.parallel_apply(
-    generate_by_criteria,
-    axis=1,
-    args=(202, _fixed_set, _perturb_set, columnWise_coOccMatrix_dict, hash_ref_df)
-)
-
-res_df = pd.DataFrame(columns=list(df_test.columns))
-res_df = res_df.append(res_criteria_1_1, ignore_index=True)
-res_df = res_df.append(res_criteria_2_1, ignore_index=True)
-res_df = res_df.append(res_criteria_2_2, ignore_index=True)
-res_df = res_df.dropna()
-
-res_df.to_csv(
-    os.path.join(DATA_DIR, 'anomalies_W_pattern_1.csv'), index=False
-)
-
-# ------ #
-tmp = [target_Shipper, target_Consignee, target_PortOfLading_PortOfUnlading, target_Origin_HSCode_Dest]
-with open(os.path.join(DATA_DIR, 'intermediate_details.pkl'), 'wb') as f:
-    pickle.dump(tmp, f, pickle.HIGHEST_PROTOCOL)
+args = parser.parse_args()
+DIR = args.DIR
+main_process()
