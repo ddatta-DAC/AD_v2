@@ -251,7 +251,7 @@ def main_process():
 
     candidate_HSCode = set(
         df_train.loc[
-            (df_train['ShipperPanjivaID'].isin(target_Shipper)) |
+            (df_train['ShipperPanjivaID'].isin(target_Shipper)) &
             (df_train['ConsigneePanjivaID'].isin(target_Consignee))
         ]['HSCode']
     )
