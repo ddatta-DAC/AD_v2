@@ -317,7 +317,7 @@ def main_process():
     res_df = res_df.dropna()
     res_df = res_df.drop_duplicates(subset=feature_cols)
     res_df.to_csv(
-        os.path.join(DATA_DIR, 'anomalies_W_pattern_1.csv'), index=False
+        os.path.join(DATA_DIR, 'anomalies_Fraud.csv'), index=False
     )
 
     # ------ #
@@ -426,7 +426,7 @@ def main_process():
     UserNonInteresting_anomalies_df.to_csv(
         os.path.join(
             DATA_DIR,
-            'anomalies_WO_pattern.csv'
+            'anomalies_NotFraud.csv'
         ),
         index=False
     )

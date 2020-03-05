@@ -110,23 +110,31 @@ def create_base_anomaly_matrices(
     # find the anomaly files !
     # ------------------------
 
-    csv_file_list = sorted(glob.glob(os.path.join(save_dir, 'anomalies_type**.csv')))
+    anomalies_NotFraud_file = os.path.join(save_dir, 'anomalies_NotFraud.csv')
+    anomalies_Fraud_file = os.path.join(save_dir, 'anomalies_Fraud.csv')
 
-    for _file in csv_file_list:
+    _files = [anomalies_Fraud_file, anomalies_NotFraud_file]
+    _keys = ['F', 'NF']
+
+    # -----------------
+    # matrix_anomaly_F.npy
+    # matrix_anomaly_NF.npy
+    # matrix_anomaly_idList_F.npy
+    # matrix_anomaly_idList_NF.npy
+    # -----------------
+    for _file,_key in zip(_files,_keys):
         _df = pd.read_csv(
             _file,
             index_col=None
         )
-        anomaly_type = int(re.findall(r'\d+', _file)[-1])
 
         id_list = list(_df[id_col])
         del _df[id_col]
-
         x = _df.values
 
-        fpath = os.path.join(save_dir, 'matrix_anomaly_x_type' + str(anomaly_type) + '.npy')
+        fpath = os.path.join(save_dir, 'matrix_anomaly_' + str(_key) + '.npy')
         np.save(fpath, x)
-        fpath = os.path.join(save_dir, 'matrix_anomaly_idList_type' + str(anomaly_type) + '.npy')
+        fpath = os.path.join(save_dir, 'matrix_anomaly_idList_' + str(_key) + '.npy')
         np.save(fpath, id_list)
 
     return

@@ -499,7 +499,9 @@ def create_train_test_sets():
     test_df.to_csv(test_df_file, index=False)
     train_df.to_csv(train_df_file, index=False)
 
+    # -----------------------
     # Save col_val2id_dict
+    # -----------------------
     with open(column_valuesId_dict_path, 'wb') as fh:
         pickle.dump(col_val2id_dict, fh, pickle.HIGHEST_PROTOCOL)
 
