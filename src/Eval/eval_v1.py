@@ -15,8 +15,6 @@ def precision_recall_curve(
     num_anomalies = len(anomaly_id_list)
     print('Number of Anomalies ', num_anomalies)
     total_count = len(sorted_id_score_dict)
-    print(total_count)
-    input_ids = list(sorted_id_score_dict.keys())
 
     '''
     Following charu aggarwal
@@ -32,14 +30,14 @@ def precision_recall_curve(
 
     step = (max_val-min_val)/100
     prev_cand_count = 0
-    print(min_val,max_val)
-    for t in np.arange(min_val, max_val + step, step):
 
+    for t in np.arange(min_val, max_val + step, step):
         # find number of records marked anomalies at this threshold
         candidates = [_ for _,val in sorted_id_score_dict.items() if val <= t ]
-        if prev_cand_count == len(candidates) : continue
-
+        if prev_cand_count == len(candidates) :
+            continue
         prev_cand_count = len(candidates)
+
         _numerator = len(
             set(candidates).intersection(anomaly_id_list)
         )

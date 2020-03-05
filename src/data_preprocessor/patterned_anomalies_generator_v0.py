@@ -159,10 +159,12 @@ Main processing function
 
 
 def main_process():
+
     global co_occurrence_dict
     df_train, df_test, domain_dims = get_data()
     co_occurrence_dict = utils.get_coOccMatrix_dict(df_train, id_col='PanjivaRecordID')
 
+    # ----- Crteria 1 ------ #
     # Select pairs of ports such that their count in (15,85) percentile
     # Select 10 % of such pairs
     kk = df_train.groupby(['PortOfLading', 'PortOfUnlading']).size().reset_index(name='count')
@@ -194,34 +196,15 @@ def main_process():
     candidate_Shipper = list(set(pp_1['ConsigneePanjivaID']))
     _count2 = int(_frac * domain_dims['ConsigneePanjivaID'])
     _count2 = min(_count2, len(candidate_Shipper))
-    print(_count1, _count2)
 
     target_Consignee = np.random.choice(candidate_Shipper, size=_count2, replace=False)
     print('Number of interesting shippers ', len(target_Shipper))
     print('Number of interesting consignee ', len(target_Consignee))
 
-    qq = df_train.loc[
-        (df_train['ShipperPanjivaID'].isin(target_Shipper)) &
-        (df_train['ConsigneePanjivaID'].isin(target_Consignee))
-        ]
 
-    # Select triplet of ports such that their count in (10,80) percentile
-    # Select 10 % of them
-    _lb = 15
-    _ub = 85
-    _frac = 0.15
-    qq_1 = qq.groupby(['ShipmentOrigin', 'HSCode', 'ShipmentDestination']).size().reset_index(name='count')
-    lb = np.percentile(list(qq_1['count']), _lb)
-    ub = np.percentile(list(qq_1['count']), _ub)
-    _count = int(_frac * len(qq_1))
-
-    target_Origin_HSCode_Dest = qq_1.loc[(qq_1['count'] >= lb) & (qq_1['count'] <= ub)].sample(n=_count)
-    del target_Origin_HSCode_Dest['count']
-
-    # =========================================
-    # select 2 of _perturb domains
-    # set them to random options :  such that the row does not occur in train or test
-    # =========================================
+    #  ------------------
+    # select 2 of _perturb domains ; set them to random options : such that the row does not occur in train or test (ref)
+    # --------------------
     ref_df = df_test.copy()
     ref_df = ref_df.append(df_train)
     hash_ref_df = utils.add_hash(ref_df, id_col)
@@ -255,36 +238,72 @@ def main_process():
 
     # ================================================ #
     # C2 :
-    # target_Shipper
-    # candidate_Shipper
-    # target_Origin_HSCode_Dest
+    # target_Shipper OR candidate_Shipper
+    # target HSCode
+    # target ShipementDestination
+    # target ShipmentOrigin
     # ================================================ #
 
+    hh = df_train.groupby(['HSCode']).size().reset_index(name='count')
+    lb = np.percentile(list(hh['count']), 10)
+    ub = np.percentile(list(hh['count']), 90)
+    _count = int(0.2 * len(hh))
+
+    candidate_HSCode = set(
+        df_train.loc[
+            (df_train['ShipperPanjivaID'].isin(target_Shipper)) |
+            (df_train['ConsigneePanjivaID'].isin(target_Consignee))
+        ]['HSCode']
+    )
+    candidate_HSCode = list(
+            hh.loc[
+                (hh['count'] >= lb) &
+                (hh['count'] <= ub) &
+                (hh['HSCode']).isin(candidate_HSCode)]
+            ['HSCode']
+    )
+    target_HSCode = np.random.choice(candidate_HSCode, size=_count, replace=False)
+
+    qq = df_train.loc[
+        (df_train['ShipperPanjivaID'].isin(target_Shipper)) | (df_train['ConsigneePanjivaID'].isin(target_Consignee))]
+    qq = qq.loc[qq['HSCode'].isin(target_HSCode)]
+    qq_1 = qq.groupby(['ShipmentOrigin', 'ShipmentDestination']).size().reset_index(name='count')
+
+    lb = np.percentile(list(qq_1['count']), 15)
+    ub = np.percentile(list(qq_1['count']), 85)
+    _count = int(0.25 * len(qq_1))
+
+    target_ShipmentOrigin_ShipmentDestination = qq_1.loc[
+        (qq_1['count'] >= lb) &
+        (qq_1['count'] <= ub)
+    ].sample(n=_count)
+    del target_ShipmentOrigin_ShipmentDestination['count']
+
     a = df_train.merge(
-        target_Origin_HSCode_Dest,
-        on=['ShipmentOrigin', 'HSCode', 'ShipmentDestination'],
+        target_ShipmentOrigin_ShipmentDestination,
+        on=['ShipmentOrigin', 'ShipmentDestination'],
         how='inner'
     )
-    print('  Candidate list len', len(a))
 
-    a1 = a.loc[a['ConsigneePanjivaID'].isin(target_Consignee)]
+    a1 = a.loc[(a['ConsigneePanjivaID'].isin(target_Consignee)) | (a['HSCode'].isin(target_HSCode))]
     _fixed_set = ['ConsigneePanjivaID', 'ShipmentOrigin', 'HSCode', 'ShipmentDestination']
     _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
 
-    res_criteria_2_1 = a1.parallel_apply(
+    res_criteria_2_1 = a1.apply(
         generate_by_criteria,
         axis=1,
-        args=(201, _fixed_set, _perturb_set, hash_ref_df, )
+        args=(201, _fixed_set, _perturb_set, hash_ref_df)
     )
 
-    a2 = a.loc[a['ShipperPanjivaID'].isin(target_Shipper)]
+
+    a2 = a.loc[a['ShipperPanjivaID'].isin(target_Shipper) | (a['HSCode'].isin(target_HSCode))]
     _fixed_set = ['ShipmentOrigin', 'HSCode', 'ShipmentDestination', 'ShipperPanjivaID']
     _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
 
     res_criteria_2_2 = a2.parallel_apply(
         generate_by_criteria,
         axis=1,
-        args=(202, _fixed_set, _perturb_set, hash_ref_df, )
+        args=(202, _fixed_set, _perturb_set, hash_ref_df)
     )
 
     res_df = pd.DataFrame(columns=list(df_test.columns))
@@ -292,6 +311,7 @@ def main_process():
     res_df = res_df.append(res_criteria_2_1, ignore_index=True)
     res_df = res_df.append(res_criteria_2_2, ignore_index=True)
     res_df = res_df.dropna()
+
     res_df.to_csv(
         os.path.join(DATA_DIR, 'anomalies_W_pattern_1.csv'), index=False
     )
@@ -313,10 +333,102 @@ def main_process():
     f_name = os.path.join(intermediate_data_loc, 'gen_fraud_Consignee.csv')
     tmp.to_csv(f_name, index=None)
 
+    tmp = pd.DataFrame(columns=['HSCode'])
+    tmp['HSCode'] = target_HSCode
+    f_name = os.path.join(intermediate_data_loc, 'gen_fraud_HSCode.csv')
+    tmp.to_csv(f_name, index=None)
+
     f_name = os.path.join(intermediate_data_loc, 'gen_fraud_PortOfLading_PortOfUnlading.csv')
     target_PortOfLading_PortOfUnlading.to_csv( f_name , index=None)
-    f_name = os.path.join(intermediate_data_loc, 'gen_fraud_Origin_HSCode_Destination.csv')
-    target_Origin_HSCode_Dest.to_csv(f_name, index=None)
+    f_name = os.path.join(intermediate_data_loc, 'gen_fraud_ShipmentOrigin_ShipmentDestination.csv')
+    target_ShipmentOrigin_ShipmentDestination.to_csv(f_name, index=None)
+
+    # -------------------------------------------------------- #
+    # Generate anomalies that are not "interesting"
+    # -------------------------------------------------------- #
+    rmv_list = list(
+        df_train.merge(target_PortOfLading_PortOfUnlading, how='inner', on=['PortOfLading', 'PortOfUnlading'])[id_col])
+    a = df_test.loc[~df_test[id_col].isin(rmv_list)]
+    a = a.loc[(~a['ConsigneePanjivaID'].isin(target_Consignee)) | (~a['ShipperPanjivaID'].isin(target_Shipper))]
+    a = a.sample(min(len(a), len(df_test)))
+
+    _fixed_set = ['ConsigneePanjivaID', 'PortOfLading', 'PortOfUnlading', 'ShipperPanjivaID']
+    _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
+
+    res_NA_1 = a.parallel_apply(
+        generate_by_criteria,
+        axis=1,
+        args=(901, _fixed_set, _perturb_set, hash_ref_df,)
+    )
+
+    rmv_list = list(df_train.merge(
+        target_ShipmentOrigin_ShipmentDestination,
+        how='inner',
+        on=['ShipmentOrigin', 'ShipmentDestination']
+    )[id_col])
+
+    a = df_test.loc[~df_test[id_col].isin(rmv_list)]
+    a = a.loc[(~a['ConsigneePanjivaID'].isin(target_Consignee))]
+    a = a.sample(min(len(a), len(df_test)))
+    _fixed_set = ['ConsigneePanjivaID', 'ShipmentOrigin', 'ShipmentDestination']
+    _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
+
+    res_NA_2 = a.parallel_apply(
+        generate_by_criteria,
+        axis=1,
+        args=(902, _fixed_set, _perturb_set, hash_ref_df,)
+    )
+
+    rmv_list = list(df_train.merge(target_ShipmentOrigin_ShipmentDestination, how='inner',
+                                   on=['ShipmentOrigin', 'ShipmentDestination'])[id_col])
+    a = df_test.loc[~df_test[id_col].isin(rmv_list)]
+    a = a.loc[(~a['ShipperPanjivaID'].isin(target_Shipper))]
+    a = a.sample(min(len(a), len(df_test)))
+    _fixed_set = ['ShipmentOrigin', 'ShipmentDestination', 'ShipperPanjivaID']
+    _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
+
+    res_NA_3 = a.parallel_apply(
+        generate_by_criteria,
+        axis=1,
+        args=(903, _fixed_set, _perturb_set, hash_ref_df)
+    )
+
+    rmv_list = list(df_train.merge(target_ShipmentOrigin_ShipmentDestination, how='inner',
+                                   on=['ShipmentOrigin', 'ShipmentDestination'])[id_col])
+    a = df_test.loc[~df_test[id_col].isin(rmv_list)]
+    a = a.loc[(~a['HSCode'].isin(target_HSCode))]
+    a = a.sample(min(len(a), len(df_test)))
+    _fixed_set = ['HSCode', 'ShipmentDestination', 'ShipperPanjivaID']
+    _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
+
+    res_NA_4 = a.parallel_apply(
+        generate_by_criteria,
+        axis=1,
+        args=(904, _fixed_set, _perturb_set, hash_ref_df)
+    )
+
+    # ---------------------------------------
+    # join the all the Non Anomaly anomalies
+    # ---------------------------------------
+    _tmp_ = pd.DataFrame(columns=(df_test.columns))
+    _list_ = [res_NA_1, res_NA_2, res_NA_3, res_NA_4]
+    for _ in _list_:
+        _tmp_ = _tmp_.append(_, ignore_index=True)
+
+    feature_cols = list(df_test.columns)
+    feature_cols.remove(id_col)
+    feature_cols = list(sorted(feature_cols))
+
+    # ----------------------------------------------- #
+    UserNonInteresting_anomalies_df = _tmp_.drop_duplicates(subset=feature_cols)
+    UserNonInteresting_anomalies_df.to_csv(
+        os.path.join(
+            DATA_DIR,
+            'anomalies_WO_pattern.csv'
+        ),
+        index=False
+    )
+
     return
 
 # ----------------------------------------------------------------------------------------- #
