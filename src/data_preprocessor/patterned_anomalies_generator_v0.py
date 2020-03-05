@@ -164,6 +164,10 @@ def main_process():
     df_train, df_test, domain_dims = get_data()
     co_occurrence_dict = utils.get_coOccMatrix_dict(df_train, id_col='PanjivaRecordID')
 
+    feature_cols = list(df_test.columns)
+    feature_cols.remove(id_col)
+    feature_cols = list(sorted(feature_cols))
+
     # ----- Crteria 1 ------ #
     # Select pairs of ports such that their count in (15,85) percentile
     # Select 10 % of such pairs
@@ -311,7 +315,7 @@ def main_process():
     res_df = res_df.append(res_criteria_2_1, ignore_index=True)
     res_df = res_df.append(res_criteria_2_2, ignore_index=True)
     res_df = res_df.dropna()
-
+    res_df = res_df.drop_duplicates(subset=feature_cols)
     res_df.to_csv(
         os.path.join(DATA_DIR, 'anomalies_W_pattern_1.csv'), index=False
     )
@@ -415,9 +419,7 @@ def main_process():
     for _ in _list_:
         _tmp_ = _tmp_.append(_, ignore_index=True)
 
-    feature_cols = list(df_test.columns)
-    feature_cols.remove(id_col)
-    feature_cols = list(sorted(feature_cols))
+
 
     # ----------------------------------------------- #
     UserNonInteresting_anomalies_df = _tmp_.drop_duplicates(subset=feature_cols)
