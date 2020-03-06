@@ -21,7 +21,17 @@ def get_domain_dims(DATA_DIR, DIR):
     return res
 # -------------
 
+def get_train_x_csv(DATA_DIR,DIR):
+    fp = os.path.join(
+        DATA_DIR,
+        DIR,
+        'train_data.csv'
+    )
+    df = pd.read_csv(fp, index_col=None)
+    return df
 
+
+# -------------
 def get_data_base_x(
         DATA_DIR,
         DIR
@@ -73,31 +83,58 @@ def get_data_base_x(
     return train_x_pos, test_x, test_idList
 
 
-# ========================================= #
+# ========================================================== #
 # Anomaly data
-# ========================================= #
+# ========================================================== #
+def get_anomaly_data( DATA_DIR, DIR, discriminate=False) :
 
-def get_anomaly_data( DATA_DIR, DIR, anomaly_type=1) :
+    anomaly_data_file_name_F = 'matrix_anomaly_F.npy'
+    anomaly_data_file_name_NF = 'matrix_anomaly_NF.npy'
+    anomaly_idList_file_name_F = 'matrix_anomaly_idList_F.npy'
+    anomaly_idList_file_name_NF = 'matrix_anomaly_idList_NF.npy'
 
-    anomaly_data_file_name = 'matrix_anomaly_x_type' + str(anomaly_type) + '.npy'
-    anomaly_idList_file_name = 'matrix_anomaly_idList_type' + str(anomaly_type) + '.npy'
-    anomaly_data_file = os.path.join(
+
+    anomaly_data_file_F = os.path.join(
         DATA_DIR,
         DIR,
-        anomaly_data_file_name
+        anomaly_data_file_name_F
     )
-    with open(anomaly_data_file, 'rb') as fh:
-        anomaly_x = np.load(fh,allow_pickle=True)
 
-    anomaly_idList_data_file =  os.path.join(
+    anomaly_data_file_NF = os.path.join(
         DATA_DIR,
         DIR,
-        anomaly_idList_file_name
+        anomaly_data_file_name_NF
     )
-    with open(anomaly_idList_data_file, 'rb') as fh:
-        anomaly_idList = np.load(fh)
 
-    return anomaly_x, anomaly_idList
+    with open(anomaly_data_file_F, 'rb') as fh:
+        anomaly_F_x = np.load(fh, allow_pickle=True)
+
+    with open(anomaly_data_file_NF, 'rb') as fh:
+        anomaly_NF_x = np.load(fh, allow_pickle=True)
+
+    anomaly_idList_F_file =  os.path.join(
+        DATA_DIR,
+        DIR,
+        anomaly_idList_file_name_F
+    )
+
+    anomaly_idList_NF_file = os.path.join(
+        DATA_DIR,
+        DIR,
+        anomaly_idList_file_name_NF
+    )
+
+    with open(anomaly_idList_F_file, 'rb') as fh:
+        anomaly_idList_F = np.load(fh)
+
+    with open(anomaly_idList_NF_file, 'rb') as fh:
+        anomaly_idList_NF = np.load(fh)
+    if discriminate :
+        return [anomaly_F_x, anomaly_NF_x], [anomaly_idList_F, anomaly_idList_NF]
+    else:
+        anomaly_x = np.vstack([anomaly_F_x, anomaly_NF_x])
+        anomaly_idList = np.hstack([anomaly_idList_F, anomaly_idList_NF])
+        return anomaly_x, anomaly_idList
 
 
 
@@ -107,8 +144,7 @@ def get_anomaly_data( DATA_DIR, DIR, anomaly_type=1) :
 
 def get_data_MEAD_train(
         DATA_DIR,
-        DIR,
-        anomaly_type=1
+        DIR
 ):
     train_x_pos, test_x, test_idList = get_data_base_x(DATA_DIR, DIR)
     train_x_neg = None
@@ -124,150 +160,21 @@ def get_data_MEAD_train(
     except:
         print('Error reading file ::', train_x_neg_file)
 
-    anomaly_x, anomaly_idList = get_anomaly_data(DATA_DIR, DIR, anomaly_type)
-    return train_x_pos, train_x_neg, test_x, test_idList, anomaly_x, anomaly_idList
+    return train_x_pos, train_x_neg
 
 
 def get_data_test(
         DATA_DIR,
-        DIR,
-        anomaly_type=1
-):
-    anomaly_x, anomaly_idList = get_anomaly_data(DATA_DIR, DIR, anomaly_type)
-    return train_x_pos, train_x_neg, test_x, test_idList, anomaly_x, anomaly_idList
-
-
-
-
-
-def get_data_v2(
-        DATA_DIR,
         DIR
 ):
-    with open(os.path.join(
-            DATA_DIR,
-            DIR,
-            'domain_dims.pkl'
-    ), 'rb') as fh:
-        domain_dims = pickle.load(fh)
-
-
-    train_x_pos_file = os.path.join(
+    _, test_x, test_idList = get_data_base_x(DATA_DIR, DIR)
+    anomaly_x, anomaly_idList = get_anomaly_data(
         DATA_DIR,
         DIR,
-        'matrix_train_positive.pkl'
+        discriminate=False
     )
-
-    with open(train_x_pos_file, 'rb') as fh:
-        train_x_pos = pickle.load(fh)
-
-    train_x_neg_file = os.path.join(
-        DATA_DIR,
-        DIR,
-        'ape_negative_samples.pkl'
-    )
-
-    with open(train_x_neg_file, 'rb') as fh:
-        train_x_neg = pickle.load(fh)
-
-    test_x_file = os.path.join(
-        DATA_DIR,
-        DIR,
-        'matrix_test_positive.pkl'
-    )
-
-    with open(test_x_file, 'rb') as fh:
-        test_x = pickle.load(fh)
-
-    anomaly_data_file = os.path.join(
-        DATA_DIR,
-        DIR,
-        'matrix_test_anomalies.pkl'
-    )
-    test_id_list_file = os.path.join(
-        DATA_DIR,
-        DIR,
-        'test_idList.pkl'
-    )
-
-    with open(anomaly_data_file, 'rb') as fh:
-        anomaly_data = pickle.load(fh)
-
-    with open(test_id_list_file, 'rb') as fh:
-        _id_list = pickle.load(fh)
-        test_anomaly_idList = _id_list[0]
-        test_normal_idList = _id_list[1]
-
-    test_pos = [test_normal_idList, test_x]
-    test_anomaly = [test_anomaly_idList, anomaly_data]
-    return train_x_pos, train_x_neg, test_pos, test_anomaly , domain_dims
+    return test_x, test_idList, anomaly_x, anomaly_idList
 
 
 
-def get_data_v3(
-        DATA_DIR,
-        DIR,
-        c = 3
-):
-    with open(os.path.join(
-            DATA_DIR,
-            DIR,
-            'domain_dims.pkl'
-    ), 'rb') as fh:
-        domain_dims = pickle.load(fh)
 
-
-    train_x_pos_file = os.path.join(
-        DATA_DIR,
-        DIR,
-        'matrix_train_positive_v1.pkl'
-    )
-
-    with open(train_x_pos_file, 'rb') as fh:
-        train_x_pos = pickle.load(fh)
-
-    train_x_neg_file = os.path.join(
-        DATA_DIR,
-        DIR,
-        'negative_samples_v1.pkl'
-    )
-
-    with open(train_x_neg_file, 'rb') as fh:
-        train_x_neg = pickle.load(fh)
-        train_x_neg = train_x_neg
-
-    test_x_file = os.path.join(
-        DATA_DIR,
-        DIR,
-        'matrix_test_positive.pkl'
-    )
-
-    with open(test_x_file, 'rb') as fh:
-        test_x = pickle.load(fh)
-
-    anomaly_data_file_f_name = 'matrix_test_anomalies_c' + str(c) + '.pkl'
-    anomaly_data_file = os.path.join(
-        DATA_DIR,
-        DIR,
-        anomaly_data_file_f_name
-    )
-
-    test_id_list_f_name = 'test_idList_c' + str(c) + '.pkl'
-    test_id_list_file = os.path.join(
-        DATA_DIR,
-        DIR,
-        test_id_list_f_name
-    )
-    print(' >> ', anomaly_data_file_f_name, test_id_list_f_name)
-
-    with open(anomaly_data_file, 'rb') as fh:
-        anomaly_data = pickle.load(fh)
-
-    with open(test_id_list_file, 'rb') as fh:
-        _id_list = pickle.load(fh)
-        test_anomaly_idList = _id_list[0]
-        test_normal_idList = _id_list[1]
-
-    test_pos = [test_normal_idList, test_x]
-    test_anomaly = [test_anomaly_idList, anomaly_data]
-    return train_x_pos, train_x_neg, test_pos, test_anomaly , domain_dims
