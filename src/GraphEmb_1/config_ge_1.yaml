@@ -1,0 +1,6 @@
+'DIR': 'us_import1'
+'DATA_SOURCE': './../../generated_data_v1'
+'SAVE_DATA_DIR': './saved_data/'
+'id_col': 'PanjivaRecordID'
+'hscode_col': 'HSCode'
+'num_jobs': 40
