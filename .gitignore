@@ -22,4 +22,4 @@ src/**/__pycache__/**
 /Data_Raw/
 /src/data_preprocessor/.ipynb_checkpoints/
 /experimental/
-
+/src/GraphEmb_1/saved_data/

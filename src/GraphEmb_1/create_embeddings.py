@@ -10,16 +10,17 @@ import argparse
 # ------------------------------------------ #
 try:
     from src.data_fetcher import data_fetcher_v2 as data_fetcher
+    from src.GraphEmb_1 import Random_Walk_v1 as Random_Walk
 except:
     from .src.data_fetcher import data_fetcher_v2 as data_fetcher
+    from .src.GraphEmb_1 import Random_Walk_v1 as Random_Walk
 
 DIR = None
-
 CONFIG_FILE = 'config_ge_1.yaml'
 CONFIG = None
 SOURCE_DATA_DIR = None
-SAVE_DIR =  None
-
+SAVE_DATA_DIR =  None
+id_col = None
 
 # ------------------------------------------ #
 # Set up configuration
@@ -31,6 +32,7 @@ def set_up_config(_DIR=None):
     global CONFIG_FILE
     global SAVE_DIR
     global id_col
+    global SAVE_DATA_DIR
 
     if _DIR is not None:
         DIR = _DIR
@@ -50,13 +52,13 @@ def set_up_config(_DIR=None):
     if not os.path.exists(CONFIG['SAVE_DATA_DIR']):
         os.mkdir(CONFIG['SAVE_DATA_DIR'])
 
-    SAVE_DIR = os.path.join(
+    SAVE_DATA_DIR = os.path.join(
         CONFIG['SAVE_DATA_DIR'],
         DIR
     )
 
-    if not os.path.exists(SAVE_DIR):
-        os.mkdir(SAVE_DIR)
+    if not os.path.exists(SAVE_DATA_DIR):
+        os.mkdir(SAVE_DATA_DIR)
 
     id_col = CONFIG['id_col']
     return
@@ -76,12 +78,16 @@ set_up_config(args.DIR)
 def get_data():
     global SOURCE_DATA_DIR
     global DIR
-
-    records_x , _, _ = data_fetcher.get_data_base_x(SOURCE_DATA_DIR, DIR)
+    records_x = data_fetcher.get_train_x_csv(SOURCE_DATA_DIR, DIR)
     domain_dims = data_fetcher.get_domain_dims(SOURCE_DATA_DIR, DIR)
     print(domain_dims)
     return records_x, domain_dims
 
-get_data()
-
+records_x, domain_dims = get_data()
+Random_Walk.initialize(
+    records_x,
+    domain_dims,
+    id_col,
+    SAVE_DATA_DIR
+)
 
