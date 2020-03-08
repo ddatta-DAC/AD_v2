@@ -10,6 +10,12 @@ import pickle
 import math
 from itertools import combinations
 from hashlib import md5
+from multiprocessing import Pool
+import multiprocessing
+
+# ---- Global object ----- #
+NODE_OBJECT_DICT = None
+# ------------------------- #
 
 class Entity_Node:
     def __init__(self, domain, entity):
@@ -45,7 +51,7 @@ class Entity_Node:
         self.transition_dict[nbr_type] = VA
         return
 
-    def sample(self, nbr_type):
+    def sample_nbr(self, nbr_type):
         if nbr_type not in self.nbr_types:
             return None
         return self.transition_dict[nbr_type].sample_n(size=1)[0]
@@ -58,19 +64,20 @@ def get_key(a, b):
         return '_+_'.join([b, a])
 
 
-class RandomWalker_v1:
+class RandomWalkGraph_v1:
     def __init__(self):
         self.df_x = None
         self.MP_list = []
         self.node_obj_dict_file = None
         self.save_data_dir = None
-        self.node_object_dict = None
+        self.node_object_dict = {}
         return
 
 
     def update_node_obj_dict(
         self
     ):
+        print('Saving file : ', self.node_object_dict_file)
         with open(self.node_object_dict_file, "wb") as fh:
             pickle.dump(
                 self.node_object_dict,
@@ -87,11 +94,10 @@ class RandomWalker_v1:
             self,
             domain_dims
     ):
-
-        NO_REFRESH = False
+        NO_REFRESH = True
         if NO_REFRESH and os.path.exists(self.node_obj_dict_file):
             with open(self.node_obj_dict_file, "rb") as fh:
-                self.node_object_dict  = pickle.load(fh)
+                self.node_object_dict = pickle.load(fh)
         else:
             self.node_object_dict  = {}
             # Create node objects for only node types in the path
@@ -102,43 +108,25 @@ class RandomWalker_v1:
                         domain=_domain_name,
                         entity=_id
                     )
-                    self.node_object_dict [_domain_name][_id] = _obj
+                    self.node_object_dict[_domain_name][_id] = _obj
+            self.update_node_obj_dict()
+
         return
 
 
     def get_coOccMatrixDict(
             self,
-            df_x,
-            save_data_dir,
-            id_col
+            df_x
         ):
-        coOccMatrix_File = os.path.join(save_data_dir, 'coOccMatrixSaved.pkl')
+        coOccMatrix_File = os.path.join(self.save_data_dir, 'coOccMatrixSaved.pkl')
         if not os.path.exists(coOccMatrix_File):
-            coOCcMatrix_dict = cMg.get_coOccMatrix_dict(df_x, id_col)
+            coOCcMatrix_dict = cMg.get_coOccMatrix_dict(df_x, self.id_col)
             with open(coOccMatrix_File, 'wb') as fh:
                 pickle.dump(coOCcMatrix_dict, fh, pickle.HIGHEST_PROTOCOL)
         else:
             with open(coOccMatrix_File, 'rb') as fh:
                 coOCcMatrix_dict = pickle.load(fh)
         return coOCcMatrix_dict
-
-    # def setup_MP(
-    #     self,
-    #     domain_dims,
-    #     meta_path_seq=[],
-    #     symmetric=True,
-    #     save_data_dir=None,
-    #     id_col='PanjivaRecordID',
-    # ):
-    #     if len(meta_path_seq) < 2:
-    #         print('Error')
-    #         exit(1)
-    #     if symmetric:
-    #         MP = meta_path_seq + meta_path_seq[::-1][1:]
-    #     else:
-    #         MP = meta_path_seq
-    #     return
-
 
 # ---------------------------------------------- #
 
@@ -151,29 +139,37 @@ class RandomWalker_v1:
             save_data_dir = None,
             saved_file_name = 'node_obj_dict.pkl'
     ):
+        global NODE_OBJECT_DICT
+        self.MP_list = MP_list
+        self.domain_dims = domain_dims
+        self.id_col = id_col
         self.save_data_dir = save_data_dir
         self.saved_file_name = saved_file_name
         _signature = ''.join(sorted([''.join(_) for _ in MP_list]))
-        self.signature = str(md5(str.encode(_signature)).hexdigest())
 
+        self.signature = str(md5(str.encode(_signature)).hexdigest())
         self.saved_file_name = saved_file_name.replace(
             '.',
-            '_'+ self.signature + '.'
+            '_' + self.signature + '.'
         )
 
         self.node_object_dict_file = os.path.join(
             self.save_data_dir,
             self.saved_file_name
         )
-        print(self.saved_file_name)
+        print(' >> ', self.saved_file_name)
+
         if os.path.exists(self.node_object_dict_file):
+            print( 'Node dict file exists !!')
             with open(self.node_object_dict_file,"rb") as fh:
-                self.node_object_dict_file = pickle.load(fh)
+                self.node_object_dict = pickle.load(fh)
+                NODE_OBJECT_DICT = self.node_object_dict
             return
 
-        self.node_object_dict = {}
-        coOCcMatrix_dict = self.get_coOccMatrixDict(df_x, save_data_dir, id_col)
+        # ----------------------------------------- #
+        self.coOCcMatrix_dict = self.get_coOccMatrixDict(df_x)
         self.get_node_obj_dict(domain_dims )
+        NODE_OBJECT_DICT = self.node_object_dict
 
         # ----------------------------------------- #
         # set up transition probabilities
@@ -212,7 +208,7 @@ class RandomWalker_v1:
                 (i, j) = (j, i)
 
             key = get_key(i, j)
-            matrix = np.array(coOCcMatrix_dict[key])
+            matrix = np.array(self.coOCcMatrix_dict[key])
             # ------------------------------
             # Consider both directions
             # i -> j  and j -> i
@@ -257,5 +253,112 @@ class RandomWalker_v1:
 
         self.update_node_obj_dict()
         return
+
+    @staticmethod
+    def aux_rw_exec_1(
+            args
+    ):
+        global NODE_OBJECT_DICT
+
+        start_node_idx = args[0]
+        domain_steps = args[1]
+        rw_count = args[2]
+        node_object_dict = NODE_OBJECT_DICT
+
+        all_walks = []
+        for i in range(rw_count):
+            _domain_steps = list(domain_steps)
+            cur_node_idx = start_node_idx
+            walk_idx = []
+            while len(_domain_steps) > 0:
+                walk_idx.append(cur_node_idx)
+                cur_domain = _domain_steps.pop(0)
+                cur_node = node_object_dict[cur_domain][cur_node_idx]
+                if len(_domain_steps) == 0: break
+                nxt_domain = _domain_steps[0]
+                nxt_e_idx = cur_node.sample_nbr(nxt_domain)
+                cur_node_idx = nxt_e_idx
+            all_walks.append(walk_idx)
+        return all_walks
+
+    # ---------------------------------- #
+    # Function to get the random walks
+    # ---------------------------------- #
+    def generate_RandomWalks(
+            self,
+            mp=None,
+            rw_count = 5
+    ):
+        if mp is not None:
+            # check if valid
+            tmp =[]
+            for _mp in self.MP_list:
+                tmp.append('_'.join(_mp))
+            _c = '_'.join(mp)
+            if _c in tmp :
+                MP_list = [mp]
+        else:
+            MP_list = list(self.MP_list)
+
+        print(' Keys node_object_dict', self.node_object_dict.keys())
+        print('Meta paths', self.MP_list)
+        num_jobs = max(4, multiprocessing.cpu_count())
+        print('Number of jobs ', num_jobs)
+        _dir = os.path.join(self.save_data_dir, 'RW_Samples')
+
+        if not os.path.exists(_dir):
+            os.mkdir(_dir)
+
+        for _MP in MP_list:
+            # Do RW for each of the domain entities in the meta path
+            path_queue = _MP + _MP[::-1][1:]
+            print(path_queue)
+
+            # Start the random walk from start node
+            domain_t = _MP[0]
+            start_nodes_idx = []
+
+            for e_id in range(self.domain_dims[domain_t]):
+                start_nodes_idx.append(e_id)
+
+            res = None
+            tmp_res =[]
+            with Pool(num_jobs) as p:
+                args = [
+                    ( n ,path_queue, rw_count)
+                    for n in start_nodes_idx
+                ]
+                tmp = p.map(
+                    RandomWalkGraph_v1.aux_rw_exec_1,
+                    args
+                )
+                tmp_res.extend(tmp)
+
+            for _r in tmp_res :
+                tmp = _r
+                if res is None: res = tmp
+                else: res.extend(tmp)
+
+            df = pd.DataFrame(res, columns=path_queue)
+            # Save DataFrame
+            fname = '_'.join(_MP) + '.csv'
+            fpath = os.path.join(
+                _dir,
+                fname
+            )
+            print(fpath)
+            df.to_csv(fpath,index=None)
+        return
+
+
+
+
+
+
+
+
+
+
+
 
 

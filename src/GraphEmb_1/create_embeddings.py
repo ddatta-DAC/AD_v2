@@ -84,15 +84,22 @@ def get_data():
     return records_x, domain_dims
 
 records_x, domain_dims = get_data()
+rw_obj = Random_Walk.RandomWalkGraph_v1()
+MP_list = [
+    ['PortOfLading','Carrier','PortOfUnlading'],
+    ['ShipmentOrigin', 'HSCode', 'ShipmentDestination'],
+    ['ShipmentOrigin', 'PortOfLading', 'HSCode', 'PortOfUnlading', 'ShipmentDestination']
+    ]
 
-obj = Random_Walk.RandomWalker_v1()
-MP_list = [['PortOfLading','Carrier','PortOfUnlading']]
-obj.initialize(
+rw_obj.initialize(
     records_x,
     domain_dims,
     id_col,
     MP_list = MP_list,
     save_data_dir = SAVE_DATA_DIR
 )
+rw_obj.generate_RandomWalks()
+
+
 
 
