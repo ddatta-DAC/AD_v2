@@ -28,10 +28,12 @@ class Entity_Node:
             nbr_type,
             unnorm_counts
     ):
+        if nbr_type in self.transition_dict.keys():
+            return
+
         self.nbr_types.append(nbr_type)
         _sum = np.sum(unnorm_counts)
         norm_prob = [_ / _sum for _ in unnorm_counts]
-
         # -------------------
         # Dampen out rare values through raising them to power 0.75
         # -------------------
