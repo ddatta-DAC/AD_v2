@@ -86,9 +86,10 @@ def get_data():
 records_x, domain_dims = get_data()
 rw_obj = Random_Walk.RandomWalkGraph_v1()
 MP_list = [
-    ['PortOfLading','Carrier','PortOfUnlading'],
-    ['ShipmentOrigin', 'HSCode', 'ShipmentDestination'],
-    ['ShipmentOrigin', 'PortOfLading', 'HSCode', 'PortOfUnlading', 'ShipmentDestination']
+    ['ShipperPanjivaID', 'PortOfLading', 'Carrier', 'PortOfUnlading', 'ConsigneePanjvaID'],
+    ['ShipperPanjivaID', 'ShipmentOrigin', 'HSCode', 'ShipmentDestination', 'ConsigneePanjvaID'],
+    ['ShipperPanjivaID', 'PortOfLading', 'HSCode', 'PortOfUnlading', 'ConsigneePanjvaID'],
+    ['ShipmentOrigin', 'PortOfLading', 'PortOfUnlading', 'ShipmentDestination'],
     ]
 
 rw_obj.initialize(
