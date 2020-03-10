@@ -5,8 +5,10 @@ import os
 import sys
 import yaml
 from pandarallel import pandarallel
-pandarallel.initialize()
 import argparse
+sys.path.append('./..')
+sys.path.append('./../..')
+pandarallel.initialize()
 # ------------------------------------------ #
 try:
     from src.data_fetcher import data_fetcher_v2 as data_fetcher

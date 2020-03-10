@@ -77,8 +77,8 @@ class RandomWalkGraph_v1:
     def update_node_obj_dict(
         self
     ):
-        print('Saving file : ', self.node_object_dict_file)
-        with open(self.node_object_dict_file, "wb") as fh:
+        print('Saving file : ', self.node_obj_dict_file)
+        with open(self.node_obj_dict_file, "wb") as fh:
             pickle.dump(
                 self.node_object_dict,
                 fh,
@@ -94,6 +94,7 @@ class RandomWalkGraph_v1:
             self,
             domain_dims
     ):
+        print(self.node_obj_dict_file)
         NO_REFRESH = True
         if NO_REFRESH and os.path.exists(self.node_obj_dict_file):
             with open(self.node_obj_dict_file, "rb") as fh:
@@ -153,15 +154,15 @@ class RandomWalkGraph_v1:
             '_' + self.signature + '.'
         )
 
-        self.node_object_dict_file = os.path.join(
+        self.node_obj_dict_file = os.path.join(
             self.save_data_dir,
             self.saved_file_name
         )
         print(' >> ', self.saved_file_name)
 
-        if os.path.exists(self.node_object_dict_file):
+        if os.path.exists(self.node_obj_dict_file):
             print( 'Node dict file exists !!')
-            with open(self.node_object_dict_file,"rb") as fh:
+            with open(self.node_obj_dict_file,"rb") as fh:
                 self.node_object_dict = pickle.load(fh)
                 NODE_OBJECT_DICT = self.node_object_dict
             return
