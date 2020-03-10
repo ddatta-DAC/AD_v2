@@ -5,7 +5,7 @@ import random
 from collections import Counter
 
 
-class alais_sampling():
+class alais_sampling_obj():
     def __init__(self, list_prob):
         self.list_prob = list_prob
         self.setup()
@@ -44,6 +44,11 @@ class alais_sampling():
         self.alias = J
         return
 
+    # ===================================
+    # Generate Single draw
+    # According to set Discrete probability distribution
+    # ===================================
+
     def generate(self):
         i = int(np.floor(np.random.rand() * self.n))
         p_i = np.random.rand()
@@ -52,14 +57,12 @@ class alais_sampling():
         else:
             return int(self.alias[i])
 
-
 # ----------------------------------------------- #
 
-
-p_list = [1 / 4, 1 / 8, 1 / 8, 1 / 2]
-obj = alais_sampling(p_list)
-res = []
-for _ in range(10000):
-    res.append(obj.generate())
-
-print(Counter(res))
+def test():
+    p_list = [1 / 4, 1 / 8, 1 / 8, 1 / 2]
+    obj = alais_sampling(p_list)
+    res = []
+    for _ in range(10000):
+        res.append(obj.generate())
+    print(Counter(res))

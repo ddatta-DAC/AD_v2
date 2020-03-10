@@ -23,6 +23,7 @@ class Entity_Node:
         self.entity = entity
         self.transition_dict = {}
         self.nbr_types = []
+        self.negative_nbr_dict = {}
         return
 
     def set_neighbor_types(self, list_nbr_types):
@@ -51,10 +52,33 @@ class Entity_Node:
         self.transition_dict[nbr_type] = VA
         return
 
+    def set_negative_neighbor(
+            self,
+            nbr_type,
+            unnorm_counts
+    ):
+        if nbr_type in self.negative_nbr_dict.keys():
+            return
+
+        # Sample negative neighbors uniformly
+        t = np.logical_xor(unnorm_counts, np.ones(unnorm_counts.size, dtype=np.float))
+        t = t.astype(np.float16)
+        t = t/sum(t)
+        prob_dist = {e[0]: e[1] for e in enumerate(t)}
+        VA = VoseAlias(prob_dist)
+        self.negative_nbr_dict[nbr_type] = VA
+        return
+
     def sample_nbr(self, nbr_type):
         if nbr_type not in self.nbr_types:
             return None
         return self.transition_dict[nbr_type].sample_n(size=1)[0]
+
+    def sample_negative_nbr(self, nbr_type):
+        if nbr_type not in self.nbr_types:
+            return None
+        return self.negative_nbr_dict[nbr_type].sample_n(size=1)[0]
+
 # ----------------------------------------------------------------- #
 
 def get_key(a, b):
@@ -141,6 +165,7 @@ class RandomWalkGraph_v1:
             saved_file_name = 'node_obj_dict.pkl'
     ):
         global NODE_OBJECT_DICT
+        self.n_jobs = multiprocessing.cpu_count()
         self.MP_list = MP_list
         self.domain_dims = domain_dims
         self.id_col = id_col
@@ -219,7 +244,7 @@ class RandomWalkGraph_v1:
             nbr_type = j
             orientation = 'r'
 
-            res = Parallel(n_jobs=8)(
+            res = Parallel(n_jobs=self.n_jobs)(
                 delayed(aux_f)
                 (obj,
                 nbr_type,
@@ -238,7 +263,7 @@ class RandomWalkGraph_v1:
             nbr_type = i
             orientation = 'c'
 
-            res = Parallel(n_jobs=8)(
+            res = Parallel(n_jobs= self.n_jobs )(
                 delayed(aux_f)
                 (obj,
                  nbr_type,
@@ -260,7 +285,6 @@ class RandomWalkGraph_v1:
             args
     ):
         global NODE_OBJECT_DICT
-
         start_node_idx = args[0]
         domain_steps = args[1]
         rw_count = args[2]
@@ -303,7 +327,7 @@ class RandomWalkGraph_v1:
 
         print(' Keys node_object_dict', self.node_object_dict.keys())
         print('Meta paths', self.MP_list)
-        num_jobs = max(4, multiprocessing.cpu_count())
+        num_jobs = max(4,  self.n_jobs )
         print('Number of jobs ', num_jobs)
         _dir = os.path.join(self.save_data_dir, 'RW_Samples')
 
@@ -313,7 +337,7 @@ class RandomWalkGraph_v1:
         for _MP in MP_list:
             # Do RW for each of the domain entities in the meta path
             path_queue = _MP + _MP[::-1][1:]
-            print(path_queue)
+            print('Path :: ', path_queue)
 
             # Start the random walk from start node
             domain_t = _MP[0]
