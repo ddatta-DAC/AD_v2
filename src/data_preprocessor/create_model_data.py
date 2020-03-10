@@ -122,7 +122,7 @@ def create_base_anomaly_matrices(
     # matrix_anomaly_idList_F.npy
     # matrix_anomaly_idList_NF.npy
     # -----------------
-    for _file,_key in zip(_files,_keys):
+    for _file, _key in zip(_files, _keys):
         _df = pd.read_csv(
             _file,
             index_col=None
@@ -299,7 +299,6 @@ parser.add_argument(
 args = parser.parse_args()
 DIR = args.DIR
 set_up_config(DIR)
-
 
 create_mead_model_data(
     save_dir=save_dir,
