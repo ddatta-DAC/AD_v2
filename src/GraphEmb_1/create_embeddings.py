@@ -14,8 +14,8 @@ try:
     from src.data_fetcher import data_fetcher_v2 as data_fetcher
     from src.GraphEmb_1 import Random_Walk_v1 as Random_Walk
 except:
-    from .src.data_fetcher import data_fetcher_v2 as data_fetcher
-    from .src.GraphEmb_1 import Random_Walk_v1 as Random_Walk
+    from data_fetcher import data_fetcher_v2 as data_fetcher
+    from GraphEmb_1 import Random_Walk_v1 as Random_Walk
 
 DIR = None
 CONFIG_FILE = 'config_ge_1.yaml'
@@ -88,9 +88,9 @@ def get_data():
 records_x, domain_dims = get_data()
 rw_obj = Random_Walk.RandomWalkGraph_v1()
 MP_list = [
-    ['ShipperPanjivaID', 'PortOfLading', 'Carrier', 'PortOfUnlading', 'ConsigneePanjvaID'],
-    ['ShipperPanjivaID', 'ShipmentOrigin', 'HSCode', 'ShipmentDestination', 'ConsigneePanjvaID'],
-    ['ShipperPanjivaID', 'PortOfLading', 'HSCode', 'PortOfUnlading', 'ConsigneePanjvaID'],
+    ['ShipperPanjivaID', 'PortOfLading', 'Carrier', 'PortOfUnlading', 'ConsigneePanjivaID'],
+    ['ShipperPanjivaID', 'ShipmentOrigin', 'HSCode', 'ShipmentDestination', 'ConsigneePanjivaID'],
+    ['ShipperPanjivaID', 'PortOfLading', 'HSCode', 'PortOfUnlading', 'ConsigneePanjivaID'],
     ['ShipmentOrigin', 'PortOfLading', 'PortOfUnlading', 'ShipmentDestination'],
     ]
 
@@ -102,7 +102,4 @@ rw_obj.initialize(
     save_data_dir = SAVE_DATA_DIR
 )
 rw_obj.generate_RandomWalks()
-
-
-
 
