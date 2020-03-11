@@ -97,7 +97,6 @@ class RandomWalkGraph_v1:
         self.node_object_dict = {}
         return
 
-
     def update_node_obj_dict(
         self
     ):
@@ -281,28 +280,56 @@ class RandomWalkGraph_v1:
         return
 
     @staticmethod
+    # ----------------------
+    # Takes 3 arguments:
+    # 1. entity id of starting node, belonging to domain of 1st type in metapath
+    # 2. actual metapath (symmetric)
+    # 3. rw_count
+    # ----------------------
     def aux_rw_exec_1(
             args
     ):
         global NODE_OBJECT_DICT
+
         start_node_idx = args[0]
         domain_steps = args[1]
         rw_count = args[2]
+
         node_object_dict = NODE_OBJECT_DICT
 
         all_walks = []
+        # ---
+        # Note :: ensure no cycles
+        # ---
         for i in range(rw_count):
             _domain_steps = list(domain_steps)
             cur_node_idx = start_node_idx
             walk_idx = []
+            cycle_prevention_dict = {}
+            first = True
+
             while len(_domain_steps) > 0:
-                walk_idx.append(cur_node_idx)
+                if first:
+                    cur_node_idx = start_node_idx
+                    first = False
+
                 cur_domain = _domain_steps.pop(0)
-                cur_node = node_object_dict[cur_domain][cur_node_idx]
-                if len(_domain_steps) == 0: break
+                walk_idx.append(cur_node_idx)
+                cur_node_obj = node_object_dict[cur_domain][cur_node_idx]
+
+                # Break if reached end
+                if len(_domain_steps) == 0:
+                    break
+
                 nxt_domain = _domain_steps[0]
-                nxt_e_idx = cur_node.sample_nbr(nxt_domain)
+                nxt_e_idx = cur_node_obj.sample_nbr(nxt_domain)
+                if nxt_domain in cycle_prevention_dict.keys() :
+                    while cycle_prevention_dict[nxt_domain] == nxt_e_idx:
+                        nxt_e_idx = cur_node_obj.sample_nbr(nxt_domain)
+
+                #  for the next iteration
                 cur_node_idx = nxt_e_idx
+
             all_walks.append(walk_idx)
         return all_walks
 
