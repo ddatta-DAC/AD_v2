@@ -437,7 +437,6 @@ class RandomWalkGraph_v1:
         domain_steps = args[1]
         rw_count = args[2]
         num_neg_samples = args[3]
-
         node_object_dict = NODE_OBJECT_DICT
 
         all_walks = []
@@ -502,7 +501,7 @@ class RandomWalkGraph_v1:
             all_walks.append(walk_idx)
             all_neg_samples.append(neg_samples)
 
-        all_neg_samples = np.vstack(all_neg_samples)
+        all_neg_samples = np.stack(all_neg_samples, axis=0)
         print(' all_neg_samples shape ', all_neg_samples.shape)
         return (all_walks, all_neg_samples)
 
