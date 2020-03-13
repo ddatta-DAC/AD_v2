@@ -101,5 +101,5 @@ rw_obj.initialize(
     MP_list = MP_list,
     save_data_dir = SAVE_DATA_DIR
 )
-rw_obj.generate_RandomWalks()
+rw_obj.generate_RandomWalks_w_neg_samples()
 
