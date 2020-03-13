@@ -538,7 +538,7 @@ class RandomWalkGraph_v1:
             tmp2_res = []
             with Pool(num_jobs) as p:
                 args = [
-                    (n, path_queue, rw_count)
+                    (n, path_queue, rw_count, num_neg_samples)
                     for n in start_nodes_idx
                 ]
 
