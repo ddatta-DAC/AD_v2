@@ -65,7 +65,7 @@ class Entity_Node:
 
         # Sample negative neighbors uniformly
         t = np.logical_xor(unnorm_counts, np.ones(unnorm_counts.size, dtype=np.float))
-        t = t.astype(np.float16)
+        t = t.astype(np.float)
         t = t / sum(t)
         prob_dist = {e[0]: e[1] for e in enumerate(t)}
         VA = VoseAlias(prob_dist)
