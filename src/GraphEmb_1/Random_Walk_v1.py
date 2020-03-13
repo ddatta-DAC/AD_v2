@@ -581,8 +581,7 @@ class RandomWalkGraph_v1:
             fname = '_'.join(_MP) + '_neg_samples.npy'
             fpath = os.path.join( _dir, fname)
         
-            neg_res = np.concatenate(neg_res)   
-            
-            np.save( fpath, tmp2_res )
+            neg_res = np.concatenate(neg_res)
+            np.save( fpath, neg_res )
 
         return
