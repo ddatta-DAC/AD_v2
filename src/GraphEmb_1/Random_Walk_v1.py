@@ -221,6 +221,10 @@ class RandomWalkGraph_v1:
                 nbr_type=nbr_type,
                 unnorm_counts=arr
             )
+            obj.set_negative_neighbor(
+                nbr_type=nbr_type,
+                unnorm_counts=arr
+            )
             return (idx, obj)
 
         relations = []
