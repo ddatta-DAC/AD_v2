@@ -12,9 +12,11 @@ Refresh = True
 CONFIG = None
 CONFIG_FILE = 'data_loader_config.yaml'
 DATA_SOURCE_loc = None
-RW_dir =  None
+RW_dir = None
 Serialized_RW_dir = None
 SAVE_DIR_loc = None
+
+
 # ------------------------------------------ #
 # Set up configuration
 # ------------------------------------------ #
@@ -28,7 +30,7 @@ def set_up_config(_DIR=None):
     global Serialized_RW_dir
     global RW_dir
     global domain_dims
-    
+
     if _DIR is not None:
         DIR = _DIR
 
@@ -41,12 +43,12 @@ def set_up_config(_DIR=None):
         DIR = _DIR
 
     DATA_SOURCE_loc = os.path.join(
-        CONFIG['DATA_SOURCE'] , DIR
+        CONFIG['DATA_SOURCE'], DIR
     )
     SAVE_DIR_loc = DATA_SOURCE_loc
     RW_dir = 'RW_Samples'
     Serialized_RW_dir = 'Serialized'
-    
+
     Refresh = CONFIG[DIR]['Refresh']
 
     with open(
@@ -54,11 +56,10 @@ def set_up_config(_DIR=None):
                 './../../../generated_data_v1/',
                 DIR,
                 'domain_dims.pkl'
-            ),'rb') as fh:
-       domain_dims = pickle.load(fh)
+            ), 'rb') as fh:
+        domain_dims = pickle.load(fh)
 
     return
-
 
 
 # -------
@@ -66,19 +67,19 @@ def set_up_config(_DIR=None):
 # This function serializes the ids in a continuous range
 # -------
 def convert_data(
-        DATA_SOURCE = None,
-        RW_DIR = None,
-        Serialized_DIR = None,
-        SAVE_DIR_loc = None,
-        domain_dims = None
+        DATA_SOURCE=None,
+        RW_DIR=None,
+        Serialized_DIR=None,
+        SAVE_DIR_loc=None,
+        domain_dims=None
 ):
     global Refresh
 
     mapping_df_file = 'Serialized_Mapping.csv'
     mapping_df_file = os.path.join(SAVE_DIR_loc, mapping_df_file)
-    RW_SOURCE = os.path.join(DATA_SOURCE,RW_DIR)
+    RW_SOURCE = os.path.join(DATA_SOURCE, RW_DIR)
 
-    if not Refresh :
+    if not Refresh:
         return
     if not os.path.exists(mapping_df_file):
         prev_count = 0
@@ -88,18 +89,18 @@ def convert_data(
                 r = [dn, eid, eid + prev_count]
                 res.append(r)
             prev_count += ds
-        
+
         mapping_df = pd.DataFrame(
-            data = res,
-            columns =
+            data=res,
+            columns=
             ['Domain', 'Entity_ID', 'Serial_ID']
         )
         mapping_df.to_csv(
-            mapping_df_file,index=None
+            mapping_df_file, index=None
         )
     else:
-        mapping_df = pd.read_csv(mapping_df_file,index_col = None)
-    
+        mapping_df = pd.read_csv(mapping_df_file, index_col=None)
+
     # ----- #
     inp_files = glob.glob(
         os.path.join(RW_SOURCE, '**.csv')
@@ -111,21 +112,21 @@ def convert_data(
         Serialized_DIR
     )
 
-
     if not os.path.exists(SAVE_DIR):
         os.mkdir(SAVE_DIR)
 
     for _file in inp_files:
-        def convert(row , cols):
+        def convert(row, cols):
             for c in cols:
-                _c = c.replace('.1','')
+                _c = c.replace('.1', '')
                 v = row[c]
                 v = list(mapping_df.loc[
-                    ( mapping_df['Domain']==_c ) &
-                    ( mapping_df['Entity_ID']==v )
-                ]['Serial_ID'])
+                             (mapping_df['Domain'] == _c) &
+                             (mapping_df['Entity_ID'] == v)
+                             ]['Serial_ID'])
                 row[c] = v[0]
             return row
+
         old_df = pd.read_csv(
             _file, index_col=None
         )
@@ -135,7 +136,7 @@ def convert_data(
             axis=1,
             args=(cols,)
         )
-        
+
         # Save file
         file_name = _file.split('/')[-1]
         file_path = os.path.join(SAVE_DIR, file_name)
@@ -143,6 +144,13 @@ def convert_data(
             file_path,
             index=None
         )
+    return
+
+def create_ingestion_data(
+    source_file_dir = None
+):
+    global  SAVE_DIR_loc
+
     return
 
 # --------------------------------------------------------- #
@@ -159,12 +167,12 @@ parser.add_argument(
 args = parser.parse_args()
 set_up_config(args.DIR)
 
-
 # --------------------------------- #
+
 convert_data(
-        DATA_SOURCE = DATA_SOURCE_loc,
-        RW_DIR = RW_dir,
-        Serialized_DIR = Serialized_RW_dir,
-        SAVE_DIR_loc = SAVE_DIR_loc,
-        domain_dims = domain_dims
+    DATA_SOURCE=DATA_SOURCE_loc,
+    RW_DIR=RW_dir,
+    Serialized_DIR=Serialized_RW_dir,
+    SAVE_DIR_loc=SAVE_DIR_loc,
+    domain_dims=domain_dims
 )
