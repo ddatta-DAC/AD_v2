@@ -160,8 +160,6 @@ args = parser.parse_args()
 set_up_config(args.DIR)
 
 
-
-
 # --------------------------------- #
 convert_data(
         DATA_SOURCE = DATA_SOURCE_loc,

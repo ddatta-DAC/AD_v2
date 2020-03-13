@@ -477,8 +477,9 @@ class RandomWalkGraph_v1:
                 _neg_samples = np.reshape(
                     _neg_samples,[1,-1]
                 )
-
+                print(_neg_samples.shape, neg_samples.shape)
                 neg_samples = np.hstack([neg_samples, _neg_samples])
+                print(neg_samples.shape)
 
                 # ---------------------------------- #
                 if i+1 == path_len :
@@ -496,6 +497,7 @@ class RandomWalkGraph_v1:
                 cur_node_idx = nxt_e_idx
 
             # -------------------------------------- #
+            exit(2)
             all_walks.append(walk_idx)
             all_neg_samples.append(neg_samples)
 
