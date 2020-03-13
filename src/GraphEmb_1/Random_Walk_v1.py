@@ -451,7 +451,7 @@ class RandomWalkGraph_v1:
             cycle_prevention_dict = {}
             cur_node_idx = start_node_idx
             path_len = len(_domain_steps)
-            neg_samples = []
+            neg_samples = None
             walk_idx = []
 
             for i in range(len(_domain_steps)):
@@ -460,14 +460,16 @@ class RandomWalkGraph_v1:
                 cur_node_obj = node_object_dict[cur_domain][cur_node_idx]
 
                 # ----- Get the negative samples ----- #
-                if i < path_len-1:
-                    _nbr_domain = _domain_steps[i+1]
-                elif i == 0 :
+                if i == path_len-1:
                     _nbr_domain = _domain_steps[i-1]
+                elif i == 0 :
+                    _nbr_domain = _domain_steps[i+1]
                 else:
-                    _nbr_domain = np.random.choice([i-1, i+1],1)[0]
+                    _i = np.random.choice([i-1, i+1],1)[0]
+                    _nbr_domain = _domain_steps[_i]
 
                 _nbr_e_idx = cur_node_obj.sample_nbr(_nbr_domain)
+              
                 _nbr_e_obj = node_object_dict[_nbr_domain][_nbr_e_idx]
                 _neg_samples = _nbr_e_obj.sample_multiple_negative_nbr(
                     cur_domain,
@@ -475,11 +477,12 @@ class RandomWalkGraph_v1:
                 )
                 # _neg_samples has shape [ ns ]
                 _neg_samples = np.reshape(
-                    _neg_samples,[1,-1]
+                    _neg_samples,[-1,1]
                 )
-                print(_neg_samples.shape, neg_samples.shape)
-                neg_samples = np.hstack([neg_samples, _neg_samples])
-                print(neg_samples.shape)
+                if neg_samples is None : 
+                    neg_samples = _neg_samples
+                else:
+                    neg_samples = np.hstack([neg_samples, _neg_samples])
 
                 # ---------------------------------- #
                 if i+1 == path_len :
@@ -497,7 +500,6 @@ class RandomWalkGraph_v1:
                 cur_node_idx = nxt_e_idx
 
             # -------------------------------------- #
-            exit(2)
             all_walks.append(walk_idx)
             all_neg_samples.append(neg_samples)
 
