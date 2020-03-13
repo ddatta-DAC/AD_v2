@@ -505,7 +505,7 @@ class RandomWalkGraph_v1:
 
         all_neg_samples = np.vstack(all_neg_samples)
         print(' all_neg_samples shape ', all_neg_samples.shape)
-        return all_walks, all_neg_samples
+        return (all_walks, all_neg_samples)
 
 
     # ------------------------------------
@@ -559,12 +559,12 @@ class RandomWalkGraph_v1:
                     for n in start_nodes_idx
                 ]
 
-                tmp1, tmp2 = p.map(
+                tmp = p.map(
                     RandomWalkGraph_v1.aux_rw_exec_2,
                     args
                 )
-                tmp1_res.extend(tmp1)
-                tmp2_res.extend(tmp2)
+                tmp1_res.extend(tmp[0])
+                tmp2_res.extend(tmp[1])
 
             for _r in tmp1_res:
                 tmp = _r
