@@ -1,8 +1,17 @@
 import torch
 import torch.nn as nn
 from random import shuffle
-from torch.nn.parameter import Parameter
-from collections import OrderedDict
+import numpy as np
+import sys
+sys.path.append('./..')
+sys.path.append('./../..')
+# -------------------------------- #
+
+try :
+    from src.utils import plotter
+except:
+    from utils import plotter
+
 try:
     print('Cuda available ::', torch.cuda.is_available(), 'Cde current device ::', torch.cuda.current_device(),
           torch.cuda.get_device_name(0))
@@ -26,20 +35,23 @@ class Net(nn.Module):
 
     def setup_Net(
             self,
+            num_entities,
             emb_dim,
-            domain_dims,
+            context_size,
             num_neg_samples
     ):
-
-        self.num_domains = len(domain_dims)
-        self.domain_dims = domain_dims
+        self.context_size = context_size
+        self.num_entities = num_entities
+        self.emb_dim = emb_dim
         self.num_neg_samples = num_neg_samples
-        self.dict_Entity_Embed = OrderedDict({})
 
         self.Emb = nn.Embedding(
-                num_embeddings = domain_dims,
-                embedding_dim = emb_dim
-            )
+            num_embeddings=self.num_entities,
+            embedding_dim=self.emb_dim
+        )
+
+        self._LogSigmoid = nn.LogSigmoid()
+        self._cos = nn.CosineSimilarity(dim=-1)
 
         return
 
@@ -48,62 +60,87 @@ class Net(nn.Module):
     # ---------------
     def forward(
             self,
-            input_x_pos,
-            input_x_neg=None
+            input_x
     ):
+
+        x_context = None
+        x_neg_context = None
+        train_mode = False
+        if len(input_x) == 1:
+            train_mode = False
+            x_target = input_x[0]
+        else:
+            train_mode = True
+            x_target = input_x[0]  # [ batch , 1]
+            x_context = input_x[1]  # [ batch, m ]
+            x_neg_context = input_x[2]  # [ batch, n, m ]
 
         # ------------- Core function ------------------- #
         # x :: id of entity node
         # All the nodes have a contiguous id
         # ----------------------------------------------- #
         def process(
-                centre_node,            # [batch, ]
-                context_nodes,          # [batch, context_size]
+                target,  # [batch, ]
+                context,  # [batch, context_size]
                 is_Negative = False
         ):
 
-            x_t = self.Emb(centre_node)
-            x_c = self.Emb(context_nodes)
-
+            # x_t shape [ batch, emb_dim ]
+            x_t = self.Emb(target)
+            # x_C should have shape [ batch, context_Size, emb_dim ]
+            x_c = self.Emb(context)
             # For each c i.e. context
             # log (sigmoid ( x_t . x_c )
 
+            if is_Negative:
+                x_t1 = x_t.repeat(
+                    1,
+                    self.num_neg_samples * self.context_size
+                ).view(
+                    [-1, self.num_neg_samples, self.context_size, self.emb_dim]
+                )
+                p = self._cos(-x_t1, x_c)
 
-            return
+            else:
+                x_t1 = x_t.repeat(
+                    1, self.context_size
+                ).view([-1, self.context_size, self.emb_dim])
+                p = self._cos(x_t1, x_c)
+
+            q = self._LogSigmoid(p)
+            return q
 
         # ------------- main function ------------------- #
-        if input_x_neg is None:
-            return process(input_x_pos)
-            # Mean so that gradients can be calculated
+        if train_mode == False:
+            return self.Emb(x_target)
+
         else:
-            pos = torch.log(process(input_x_pos))
-            list_neg_x = torch.chunk(
-                input_x_neg,
-                self.num_neg_samples,
+            # Mean so that gradients can be calculated
+
+            pos_1 = process(
+                x_target,
+                x_context,
+                is_Negative=False
+            )
+
+            neg_1 = process(
+                x_target,
+                x_neg_context,
+                is_Negative=True
+            )
+            n2 = torch.mean(
+                neg_1,
                 dim=1
             )
 
-            list_neg_x = [torch.squeeze(_, dim=1) for _ in list_neg_x]
-            ns = []
-
-            for _neg_x in list_neg_x:
-                res = process(_neg_x, is_Negative=True)
-                ns.append(res)
-
-            ns = torch.stack(ns, dim=1)
-            neg = torch.mean(ns)
-
-            # -----------------
-            # This is the objective function
-            # -----------------
-            res = pos + neg
-            # -----------------
-            # This is the objective function
-            # -----------------
+            res = pos_1 + n2
+            res = torch.sum(
+                res,dim=1
+            )
+            res = -res
             # maximize P, means minimize -P
             return res
 
-    # net.list_W_m[i].weight.detach().numpy()
 
 class model:
     def __init__(self):
@@ -111,31 +148,35 @@ class model:
 
     @staticmethod
     def custom_loss(y_pred, y_true=None):
-
-        return y_pred
+        return torch.mean(y_pred)
 
     def build(
             self,
             emb_dim,
-            domain_dims,
-            num_neg_samples = 10,
-            LR = 0.005,
+            num_entities,
+            context_size=4,
+            num_neg_samples=10,
+            LR=0.005,
             num_epochs=10,
             batch_size=128,
             log_interval=100
     ):
-
+        self.context_size = context_size
         self.num_epochs = num_epochs
         self.batch_size = batch_size
-        self.emb_dims = emb_dim
-        domain_dims_vals = list(domain_dims.values())
+        self.emb_dim = emb_dim
+        self.num_entities = num_entities
         self.log_interval = log_interval
+        self.num_neg_samples = num_neg_samples
         self.net = Net()
+
         self.net.setup_Net(
-            emb_dim,
-            domain_dims_vals,
-            num_neg_samples
+            num_entities=self.num_entities,
+            emb_dim=self.emb_dim,
+            context_size=self.context_size,
+            num_neg_samples=self.num_neg_samples
         )
+
         self.optimizer = torch.optim.Adam(
             self.net.parameters(),
             lr=LR
@@ -144,48 +185,61 @@ class model:
         print(self.net)
         return
 
+    # ===========================
+    # Train the model
+    # x_t : [ batch, ]
+    # x_c : [ batch, context_size ]
+    # x_c_neg : [ batch , num_neg_samples , context_size]
+    # ===========================
     def train_model(
             self,
-            train_x
+            x_target,  # [batch, ]
+            x_context,
+            x_neg_context
     ):
         bs = self.batch_size
-        num_batches = train_x.shape[0] // bs + 1
-
+        num_batches = x_target.shape[0] // bs + 1
+        self.optimizer.zero_grad()
+        record_loss = []
         for epoch in range(self.num_epochs):
             # Shuffle
-            ind_list = list(range(train_x.shape[0]))
+            num_data_pts = x_target.shape[0]
+            ind_list = list(range(num_data_pts))
             shuffle(ind_list)
-            _train_x = train_x[ind_list, :]
+            _x_t = x_target[ind_list]
+            _x_c = x_context[ind_list, :]
+            _x_nc = x_neg_context[ind_list, :, :]
 
             for batch_idx in range(num_batches):
-                _x_pos = _train_x[batch_idx * bs:(batch_idx + 1) * bs]
-
+                _x_t_b = _x_t[batch_idx * bs:(batch_idx + 1) * bs]
+                _x_c_b = _x_c[batch_idx * bs:(batch_idx + 1) * bs]
+                _x_nc_b = _x_nc[batch_idx * bs:(batch_idx + 1) * bs]
                 # --------
                 # feed tensor
                 # --------
-                _x_pos = torch.LongTensor(_x_pos)
+                _x_t_b = torch.LongTensor(_x_t_b)
+                _x_c_b = torch.LongTensor(_x_c_b)
+                _x_nc_b = torch.LongTensor(_x_nc_b)
 
                 self.optimizer.zero_grad()
-                output = self.net(_x_pos)
+                output = self.net((_x_t_b, _x_c_b, _x_nc_b))
 
                 loss = self.criterion(
                     output,
                     None
                 )
+
                 loss.backward()
                 self.optimizer.step()
+                record_loss.append(float(loss))
+
                 # ----- #
                 if batch_idx % self.log_interval == 0:
-                    print('Train ::  Epoch: {}, '
-                          'Batch {}, Loss {:4f}'.format(epoch, batch_idx, loss)
-                    )
-
+                    msg = 'Train ::  Epoch: {} Batch {}, Loss {:4f}'.format(epoch, batch_idx, loss)
+                    print(msg)
+        return record_loss
 
 # --------------------------------------------- #
 
-obj = model()
-obj.build(
-    emb_dim  = 12,
-    domain_dims ={'PortOFLading': 10,
-                  'Carrier': 25}
-)
+
+

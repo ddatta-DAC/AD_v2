@@ -63,6 +63,7 @@ def set_up_config(_DIR=None):
 
 # -------
 # Data Source : Directory where Random Walks are stored
+# This function serializes the ids in a continuous range
 # -------
 def convert_data(
         DATA_SOURCE = None,
@@ -145,7 +146,10 @@ def convert_data(
     return
 
 # --------------------------------------------------------- #
+# function to sample
+# --------------------------------------------------------- #
 
+# --------------------------------------------------------- #
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
@@ -159,7 +163,6 @@ set_up_config(args.DIR)
 
 
 # --------------------------------- #
-
 convert_data(
         DATA_SOURCE = DATA_SOURCE_loc,
         RW_DIR = RW_dir,
