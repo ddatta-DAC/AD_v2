@@ -513,8 +513,8 @@ class RandomWalkGraph_v1:
     def generate_RandomWalks_w_neg_samples(
             self,
             mp=None,
-            rw_count=5,
-            num_neg_samples=5
+            rw_count=10,
+            num_neg_samples=10
     ):
 
         if mp is not None:
@@ -549,23 +549,21 @@ class RandomWalkGraph_v1:
                 start_nodes_idx.append(e_id)
 
             res = None
-            tmp1_res = []
-            tmp2_res = []
+            neg_res = [] 
             with Pool(num_jobs) as p:
                 args = [
                     (n, path_queue, rw_count, num_neg_samples)
                     for n in start_nodes_idx
                 ]
 
-                tmp = p.map(
+                tmp_0 = p.map(
                     RandomWalkGraph_v1.aux_rw_exec_2,
                     args
                 )
-                tmp1_res.extend(tmp[0])
-                tmp2_res.extend(tmp[1])
 
-            for _r in tmp1_res:
-                tmp = _r
+            for _r in tmp_0:
+                neg_res.append(_r[1])
+                tmp = _r[0]
                 if res is None: res = tmp
                 else: res.extend(tmp)
 
@@ -582,7 +580,9 @@ class RandomWalkGraph_v1:
             # ---- Save the negative samples as a numpy array ------ #
             fname = '_'.join(_MP) + '_neg_samples.npy'
             fpath = os.path.join( _dir, fname)
-            tmp2_res = np.array(tmp2_res)
-            np.save(fpath, tmp2_res)
+        
+            neg_res = np.concatenate(neg_res)   
+            
+            np.save( fpath, tmp2_res )
 
         return
