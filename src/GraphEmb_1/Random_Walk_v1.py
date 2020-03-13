@@ -486,7 +486,6 @@ class RandomWalkGraph_v1:
 
                 # ---------------------------------- #
                 if i+1 == path_len :
-                    print(' neg_samples ', neg_samples.shape)
                     break
 
                 nxt_domain = _domain_steps[i+1]
