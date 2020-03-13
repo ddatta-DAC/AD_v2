@@ -502,7 +502,6 @@ class RandomWalkGraph_v1:
             all_neg_samples.append(neg_samples)
 
         all_neg_samples = np.stack(all_neg_samples, axis=0)
-        print(' all_neg_samples shape ', all_neg_samples.shape)
         return (all_walks, all_neg_samples)
 
 
@@ -574,13 +573,12 @@ class RandomWalkGraph_v1:
                 _dir,
                 fname
             )
-            print(fpath)
+
             df.to_csv(fpath, index=None)
 
             # ---- Save the negative samples as a numpy array ------ #
             fname = '_'.join(_MP) + '_neg_samples.npy'
             fpath = os.path.join( _dir, fname)
-        
             neg_res = np.concatenate(neg_res)
             np.save( fpath, neg_res )
 
