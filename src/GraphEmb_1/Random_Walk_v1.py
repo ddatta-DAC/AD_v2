@@ -464,8 +464,8 @@ class RandomWalkGraph_v1:
                     _nbr_domain = np.random.choice([i-1, i+1],1)[0]
 
                 _nbr_e_idx = cur_node_obj.sample_nbr(_nbr_domain)
-
-                _neg_samples = _nbr_e_idx.sample_multiple_negative_nbr(
+                _nbr_e_obj = node_object_dict[_nbr_domain][_nbr_e_idx]
+                _neg_samples = _nbr_e_obj.sample_multiple_negative_nbr(
                     cur_domain,
                     num_neg_samples
                 )
