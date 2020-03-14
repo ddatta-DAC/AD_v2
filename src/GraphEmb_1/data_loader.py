@@ -6,6 +6,8 @@ import os
 import yaml
 from pandarallel import pandarallel
 import argparse
+from multiprocessing import Pool
+import multiprocessing
 
 pandarallel.initialize()
 Refresh = True
@@ -96,15 +98,18 @@ def convert_data(
             ['Domain', 'Entity_ID', 'Serial_ID']
         )
         mapping_df.to_csv(
-            mapping_df_file, index=None
+            mapping_df_file,
+            index=None
         )
     else:
         mapping_df = pd.read_csv(mapping_df_file, index_col=None)
 
     # ----- #
-    inp_files = glob.glob(
+    _files = glob.glob(
         os.path.join(RW_SOURCE, '**.csv')
     )
+
+    mp_specs = sorted([_.split('/')[-1].split('.')[0] for _ in _files])
 
     SAVE_DIR = os.path.join(
         SAVE_DIR_loc,
@@ -115,21 +120,24 @@ def convert_data(
     if not os.path.exists(SAVE_DIR):
         os.mkdir(SAVE_DIR)
 
-    for _file in inp_files:
-        def convert(row, cols):
-            for c in cols:
-                _c = c.replace('.1', '')
-                v = row[c]
-                v = list(mapping_df.loc[
-                             (mapping_df['Domain'] == _c) &
-                             (mapping_df['Entity_ID'] == v)
-                             ]['Serial_ID'])
-                row[c] = v[0]
-            return row
+    def convert(row, cols):
+        for c in cols:
+            _c = c.replace('.1', '')
+            v = row[c]
+            v = list(mapping_df.loc[
+                         (mapping_df['Domain'] == _c) &
+                         (mapping_df['Entity_ID'] == v)
+                         ]['Serial_ID'])
+            row[c] = v[0]
+        return row
 
+    for mp_spec in mp_specs:
         old_df = pd.read_csv(
-            _file, index_col=None
+            os.path.join(
+                RW_SOURCE,
+                mp_spec + '.csv')
         )
+
         cols = list(old_df.columns)
         new_df = old_df.parallel_apply(
             convert,
@@ -138,18 +146,148 @@ def convert_data(
         )
 
         # Save file
-        file_name = _file.split('/')[-1]
-        file_path = os.path.join(SAVE_DIR, file_name)
+        df_file_name = mp_spec + '.csv'
+        df_file_path = os.path.join(SAVE_DIR, df_file_name)
         new_df.to_csv(
-            file_path,
+            df_file_path,
             index=None
         )
+
+        # --------------------
+        # Read in and convert the negative samples
+        # --------------------
+        file_name =  mp_spec + '_neg_samples.npy'
+        file_path = os.path.join(
+            RW_SOURCE,
+            file_name
+        )
+        arr = np.load(file_path)
+
+        num_samples = arr.shape[1]
+        num_cols = len(cols)
+        df_ns = pd.DataFrame(
+            data = arr.reshape([-1, num_cols]),
+            columns = cols
+        )
+        # convert
+        new_df_ns = df_ns.parallel_apply(
+            convert,
+            axis=1,
+            args=(cols,)
+        )
+        data_ns = new_df_ns.values
+        data_ns = data_ns.reshape([-1, num_samples, num_cols])
+        save_file_path = os.path.join(
+            SAVE_DIR,
+            file_name
+        )
+        np.save(save_file_path, data_ns )
+
     return
 
-def create_ingestion_data(
-    source_file_dir = None
+# ---------------------------------------------------------- #
+# Function to create data specific to metapath2vec_1 model
+# Following the skip-gram, a word and its context are chosen as well as corresponding negative 'context'
+# Inputs to model:
+# ---------------------------------------------------------- #
+def create_ingestion_data_v1(
+    source_file_dir = None,
+    model_data_save_dir = None,
+    ctxt_size = 2
 ):
-    global  SAVE_DIR_loc
+    _files = glob.glob(
+        '**.csv'
+    )
+    mp_specs = sorted([ _.split('.')[0] for _ in _files])
+
+    def create_data_aux(args) :
+        _row = args[0]
+        _row = _row.copy()
+        _neg_samples_arr = args[1]
+        _cols = args[2]
+        _ctxt_size = args[3]
+
+        k = _ctxt_size//2
+        num_cols = len(_cols)
+
+        centre = []
+        context = []
+        neg_samples = []
+
+        # from i-k to i+1
+        for i in range( k, num_cols-k-1 ):
+            cur_cols = _cols[i-k:i+k+1]
+            tmp1 = _row[cur_cols].values
+            tmp2 = _neg_samples_arr[:i-k:i+k+1]
+
+            cur_centre_col = _cols[i]
+            cur_centre = _row[cur_centre_col]
+            centre.append(cur_centre)
+
+            del tmp1[cur_centre_col]
+            context.append(tmp1.values)
+
+            tmp_df = pd.DataFrame(data=tmp2 , columns= cur_cols)
+            del tmp_df[cur_centre_col]
+            ns = tmp_df.values
+            neg_samples.append(ns)
+
+        return (centre, context, neg_samples)
+
+    centre = []
+    context = []
+    neg_samples = []
+
+    for mp_spec in mp_specs :
+        df = pd.read_csv(
+            os.path.join(source_file_dir, mp_spec + '.csv')
+        )
+        neg_samples_file = os.path.join(
+            source_file_dir, mp_spec+'_neg_samples.npy'
+        )
+        neg_samples = np.load(neg_samples_file)
+        num_jobs = multiprocessing.cpu_count()
+
+        cols = list(df.columns)
+        args = [
+            (row, neg_samples[i], cols, ctxt_size)
+            for i, row in df.iterrows()
+        ]
+        results = None
+        with Pool(num_jobs) as p:
+            results = p.map(
+                create_data_aux,
+                args
+            )
+
+        for _result in results :
+            _centre = _result[0]
+            _context = _result[1]
+            _neg_samples = _result[2]
+
+            centre.extend(_centre)
+            context.append(_context)
+            neg_samples.append(_neg_samples)
+
+    centre = np.array(centre)
+    context = np.array(context)
+    neg_samples = np.stack(neg_samples,axis=0)
+
+    # -----------------
+    # Save data
+    # -----------------
+    np.save(
+        os.path.join(model_data_save_dir, 'x_target.npy'),
+        centre
+    )
+    np.save(
+        os.path.join(model_data_save_dir, 'x_context.npy'),
+        context
+    )
+    np.save(
+        os.path.join(model_data_save_dir, 'x_neg_samples.npy'),
+        neg_samples
+    )
 
     return
 
