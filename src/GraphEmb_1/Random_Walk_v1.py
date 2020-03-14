@@ -384,11 +384,12 @@ class RandomWalkGraph_v1:
 
             res = None
             tmp_res = []
+            args = [
+                (n, path_queue, rw_count)
+                for n in start_nodes_idx
+            ]
+
             with Pool(num_jobs) as p:
-                args = [
-                    (n, path_queue, rw_count)
-                    for n in start_nodes_idx
-                ]
 
                 tmp = p.map(
                     RandomWalkGraph_v1.aux_rw_exec_1,
@@ -548,13 +549,14 @@ class RandomWalkGraph_v1:
                 start_nodes_idx.append(e_id)
 
             res = None
-            neg_res = [] 
-            with Pool(num_jobs) as p:
-                args = [
-                    (n, path_queue, rw_count, num_neg_samples)
-                    for n in start_nodes_idx
-                ]
+            neg_res = []
 
+            args = [
+                (n, path_queue, rw_count, num_neg_samples)
+                for n in start_nodes_idx
+            ]
+
+            with Pool(num_jobs) as p:
                 tmp_0 = p.map(
                     RandomWalkGraph_v1.aux_rw_exec_2,
                     args
