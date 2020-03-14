@@ -277,15 +277,15 @@ def create_ingestion_data_v1(
     # Save data
     # -----------------
     np.save(
-        os.path.join(model_data_save_dir),
+        os.path.join(model_data_save_dir, 'x_target.npy'),
         centre
     )
     np.save(
-        os.path.join(),
+        os.path.join(model_data_save_dir, 'x_context.npy'),
         context
     )
     np.save(
-        os.path.join(),
+        os.path.join(model_data_save_dir, 'x_neg_samples.npy'),
         neg_samples
     )
 
