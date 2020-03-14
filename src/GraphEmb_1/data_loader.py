@@ -55,7 +55,7 @@ def set_up_config(_DIR=None):
 
     with open(
             os.path.join(
-                './../../../generated_data_v1/',
+                './../../generated_data_v1/',
                 DIR,
                 'domain_dims.pkl'
             ), 'rb') as fh:
