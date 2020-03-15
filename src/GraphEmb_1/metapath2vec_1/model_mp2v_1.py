@@ -3,6 +3,7 @@ import torch.nn as nn
 from random import shuffle
 import numpy as np
 import sys
+
 sys.path.append('./..')
 sys.path.append('./../..')
 
@@ -79,7 +80,7 @@ class Net(nn.Module):
         def process(
                 target,  # [batch, ]
                 context,  # [batch, context_size]
-                is_Negative = False
+                is_Negative=False
         ):
 
             # x_t shape [ batch, emb_dim ]
@@ -132,7 +133,7 @@ class Net(nn.Module):
 
             res = pos_1 + n2
             res = torch.sum(
-                res,dim=1
+                res, dim=1
             )
             res = -res
             # maximize P, means minimize -P
@@ -180,9 +181,11 @@ class model:
         )
         self.criterion = model.custom_loss
 
-
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+        if torch.cuda.is_available():
+            device = "cuda:0"
+        else:
+            device = "cpu"
+        device = torch.device(device)
         if torch.cuda.device_count() > 1:
             print('Using multiple GPUs!!')
             self.net = nn.DataParallel(self.net)
@@ -247,6 +250,3 @@ class model:
         return record_loss
 
 # --------------------------------------------- #
-
-
-
