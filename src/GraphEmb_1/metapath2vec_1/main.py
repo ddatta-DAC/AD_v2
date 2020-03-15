@@ -20,7 +20,6 @@ except:
     from src.GraphEmb_1 import data_loader
 
 # -------------------------------------------- #
-exit(1)
 
 domain_dims = data_loader.get_domain_dims()
 num_entities = sum(list(domain_dims.values()))
@@ -29,7 +28,7 @@ obj.build(
     emb_dim=250,
     num_entities=num_entities,
     num_neg_samples=10,
-    context_size=32,
+    context_size=2,
     batch_size=64,
     num_epochs=10
 )
