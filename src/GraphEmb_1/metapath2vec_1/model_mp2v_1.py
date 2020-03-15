@@ -179,13 +179,17 @@ class model:
             lr=LR
         )
         self.criterion = model.custom_loss
-    
-	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-	if torch.cuda.device_count() > 1:
-		print('Using multiple GPUs!!')
-		self.net = nn.DataParallel(self.net)
-	model.to(device)
-	print(self.net)
+
+
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        if torch.cuda.device_count() > 1:
+            print('Using multiple GPUs!!')
+            self.net = nn.DataParallel(self.net)
+
+        self.net.to(device)
+
+        print(self.net)
         return
 
     # ===========================

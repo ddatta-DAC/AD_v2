@@ -37,7 +37,7 @@ obj.build(
 x_t, x_c, x_ns = data_loader.fetch_model_data_m2pv_1()
 
 y = obj.train_model(x_t, x_c, x_ns)
-x = range(len(y))
-plotter.get_general_plot(
-    x,y
-)
+# x = range(len(y))
+# plotter.get_general_plot(
+#     x,y
+# )
