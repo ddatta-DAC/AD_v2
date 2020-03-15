@@ -81,8 +81,6 @@ def convert_data(
     mapping_df_file = os.path.join(SAVE_DIR_loc, RW_DIR, Serialized_DIR, mapping_df_file)
     RW_SOURCE = os.path.join(DATA_SOURCE, RW_DIR)
 
-    if not Refresh:
-        return
 
     SAVE_DIR = os.path.join(
         SAVE_DIR_loc,
@@ -93,8 +91,8 @@ def convert_data(
     if not os.path.exists(SAVE_DIR):
         os.mkdir(SAVE_DIR)
 
-    print(SAVE_DIR)
-
+    if not Refresh:
+        return SAVE_DIR
 
     if not os.path.exists(mapping_df_file):
         prev_count = 0
@@ -190,8 +188,7 @@ def convert_data(
             data = arr.reshape([-1, num_cols]),
             columns = cols
         )
-        print(df_ns.columns, cols)
-        print(len(df_ns))
+
         # convert
         # for i,row in df_ns.iterrows():
         #     print(convert(row,cols))
@@ -204,10 +201,9 @@ def convert_data(
 
         data_ns = new_df_ns.values
         data_ns = data_ns.reshape([-1, num_samples, num_cols])
-
         np.save(save_file_path, data_ns )
 
-    return
+    return SAVE_DIR
 
 # ---------------------------------------------------------- #
 # Function to create data specific to metapath2vec_1 model
@@ -222,6 +218,12 @@ def create_ingestion_data_v1(
     _files = glob.glob(
         '**.csv'
     )
+    model_data_save_dir = os.path.join(
+        source_file_dir, model_data_save_dir
+    )
+    if not os.path.exists(model_data_save_dir):
+        os.mkdir(model_data_save_dir)
+
     mp_specs = sorted([ _.split('.')[0] for _ in _files])
 
     def create_data_aux(args) :
@@ -313,11 +315,9 @@ def create_ingestion_data_v1(
         neg_samples
     )
 
-    return
+    return model_data_save_dir
 
-# --------------------------------------------------------- #
-# function to sample
-# --------------------------------------------------------- #
+
 
 # --------------------------------------------------------- #
 parser = argparse.ArgumentParser()
@@ -331,10 +331,17 @@ set_up_config(args.DIR)
 
 # --------------------------------- #
 
-convert_data(
+SAVE_DIR = convert_data(
     DATA_SOURCE=DATA_SOURCE_loc,
     RW_DIR=RW_dir,
     Serialized_DIR=Serialized_RW_dir,
     SAVE_DIR_loc=SAVE_DIR_loc,
     domain_dims=domain_dims
 )
+
+MODEL_DATA_LOC = create_ingestion_data_v1(
+    source_file_dir = SAVE_DIR,
+    model_data_save_dir = 'metapath2vec_1',
+    ctxt_size = 2
+)
+
