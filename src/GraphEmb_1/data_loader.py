@@ -78,11 +78,24 @@ def convert_data(
     global Refresh
 
     mapping_df_file = 'Serialized_Mapping.csv'
-    mapping_df_file = os.path.join(SAVE_DIR_loc, mapping_df_file)
+    mapping_df_file = os.path.join(SAVE_DIR_loc, RW_DIR, Serialized_DIR, mapping_df_file)
     RW_SOURCE = os.path.join(DATA_SOURCE, RW_DIR)
 
     if not Refresh:
         return
+
+    SAVE_DIR = os.path.join(
+        SAVE_DIR_loc,
+        RW_DIR,
+        Serialized_DIR
+    )
+
+    if not os.path.exists(SAVE_DIR):
+        os.mkdir(SAVE_DIR)
+
+    print(SAVE_DIR)
+
+
     if not os.path.exists(mapping_df_file):
         prev_count = 0
         res = []
@@ -94,12 +107,13 @@ def convert_data(
 
         mapping_df = pd.DataFrame(
             data=res,
-            columns=
-            ['Domain', 'Entity_ID', 'Serial_ID']
+            columns= ['Domain', 'Entity_ID', 'Serial_ID']
         )
+        print(os.getcwd())
+        print(mapping_df_file)
         mapping_df.to_csv(
             mapping_df_file,
-            index=None
+            index=False
         )
     else:
         mapping_df = pd.read_csv(mapping_df_file, index_col=None)
@@ -111,24 +125,23 @@ def convert_data(
 
     mp_specs = sorted([_.split('/')[-1].split('.')[0] for _ in _files])
 
-    SAVE_DIR = os.path.join(
-        SAVE_DIR_loc,
-        RW_DIR,
-        Serialized_DIR
-    )
 
-    if not os.path.exists(SAVE_DIR):
-        os.mkdir(SAVE_DIR)
 
-    def convert(row, cols):
+    def convert(_row, cols):
+        row = _row.copy()
+        # print(' >> ', row)
         for c in cols:
+            val = row[c]
             _c = c.replace('.1', '')
-            v = row[c]
-            v = list(mapping_df.loc[
-                         (mapping_df['Domain'] == _c) &
-                         (mapping_df['Entity_ID'] == v)
-                         ]['Serial_ID'])
-            row[c] = v[0]
+            res = list(
+                mapping_df.loc[
+                    (mapping_df['Domain'] == _c) &
+                    (mapping_df['Entity_ID'] == val)]
+                ['Serial_ID']
+            )
+
+            row[c] = res[0]
+
         return row
 
     for mp_spec in mp_specs:
@@ -139,6 +152,7 @@ def convert_data(
         )
 
         cols = list(old_df.columns)
+        print(' old cols ', cols)
         new_df = old_df.parallel_apply(
             convert,
             axis=1,
@@ -163,24 +177,34 @@ def convert_data(
         )
         arr = np.load(file_path)
 
+        file_name = mp_spec + '_serilaized_neg_samples.npy'
+        save_file_path = os.path.join(
+            SAVE_DIR,
+            file_name
+        )
+        print('Saving to :: ', save_file_path)
+
         num_samples = arr.shape[1]
         num_cols = len(cols)
         df_ns = pd.DataFrame(
             data = arr.reshape([-1, num_cols]),
             columns = cols
         )
+        print(df_ns.columns, cols)
+        print(len(df_ns))
         # convert
+        # for i,row in df_ns.iterrows():
+        #     print(convert(row,cols))
+        pandarallel.initialize()
         new_df_ns = df_ns.parallel_apply(
             convert,
             axis=1,
             args=(cols,)
         )
+
         data_ns = new_df_ns.values
         data_ns = data_ns.reshape([-1, num_samples, num_cols])
-        save_file_path = os.path.join(
-            SAVE_DIR,
-            file_name
-        )
+
         np.save(save_file_path, data_ns )
 
     return
