@@ -2,7 +2,10 @@ DIR : 'us_import1'
 'DATA_SOURCE' : './saved_data'
 'us_import1' :
   'Refresh' : False
+  'Refresh_create_data' : True
 'us_import2' :
   'Refresh' : False
+  'Refresh_create_data' : True
 'us_import3' :
   'Refresh' : False
+  'Refresh_create_data' : True
