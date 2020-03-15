@@ -8,6 +8,7 @@ from pandarallel import pandarallel
 import argparse
 from multiprocessing import Pool
 import multiprocessing
+from joblib import Parallel, delayed
 
 pandarallel.initialize()
 Refresh = True
@@ -210,94 +211,110 @@ def convert_data(
 # Following the skip-gram, a word and its context are chosen as well as corresponding negative 'context'
 # Inputs to model:
 # ---------------------------------------------------------- #
-def create_ingestion_data_v1(
-    source_file_dir = None,
-    model_data_save_dir = None,
-    ctxt_size = 2
-):
-    _files = glob.glob(
-        '**.csv'
-    )
-    model_data_save_dir = os.path.join(
-        source_file_dir, model_data_save_dir
-    )
-    if not os.path.exists(model_data_save_dir):
-        os.mkdir(model_data_save_dir)
 
-    mp_specs = sorted([ _.split('.')[0] for _ in _files])
 
-    def create_data_aux(args) :
-        _row = args[0]
-        _row = _row.copy()
-        _neg_samples_arr = args[1]
-        _cols = args[2]
-        _ctxt_size = args[3]
+def create_data_aux(args) :
 
-        k = _ctxt_size//2
-        num_cols = len(_cols)
+    inp_row = args[0]
+    row = inp_row.copy()
+    _neg_samples_arr = args[1]
+    _cols = args[2]
+    _ctxt_size = args[3]
 
-        centre = []
-        context = []
-        neg_samples = []
-
-        # from i-k to i+1
-        for i in range( k, num_cols-k-1 ):
-            cur_cols = _cols[i-k:i+k+1]
-            tmp1 = _row[cur_cols].values
-            tmp2 = _neg_samples_arr[:i-k:i+k+1]
-
-            cur_centre_col = _cols[i]
-            cur_centre = _row[cur_centre_col]
-            centre.append(cur_centre)
-
-            del tmp1[cur_centre_col]
-            context.append(tmp1.values)
-
-            tmp_df = pd.DataFrame(data=tmp2 , columns= cur_cols)
-            del tmp_df[cur_centre_col]
-            ns = tmp_df.values
-            neg_samples.append(ns)
-
-        return (centre, context, neg_samples)
+    k = _ctxt_size//2
+    num_cols = len(_cols)
 
     centre = []
     context = []
     neg_samples = []
 
-    for mp_spec in mp_specs :
+    # from i-k to i+1
+    for i in range( k, num_cols-k ):
+        _row = row.copy()
+        cur_cols = _cols[i-k:i+k+1]
+        tmp2 = _neg_samples_arr[:, i-k:i+k+1]
+
+        cur_centre_col = _cols[i]
+        cur_centre = _row[cur_centre_col]
+        centre.append(cur_centre)
+        _row = _row[cur_cols]
+        del _row[cur_centre_col]
+
+        context.append(_row.values)
+
+        tmp_df = pd.DataFrame(
+            data=tmp2 ,
+            columns= cur_cols
+        )
+
+        del tmp_df[cur_centre_col]
+        ns = tmp_df.values
+        neg_samples.append(ns)
+
+    return (centre, context, neg_samples)
+
+def create_ingestion_data_v1(
+    source_file_dir = None,
+    model_data_save_dir = None,
+    ctxt_size = 2
+):
+    model_data_save_dir = os.path.join(
+        source_file_dir, model_data_save_dir
+    )
+
+    print(source_file_dir)
+    _files = glob.glob(
+        source_file_dir + '/../**.csv'
+    )
+    print(_files)
+
+    if not os.path.exists(model_data_save_dir):
+        os.mkdir(model_data_save_dir)
+
+    mp_specs = sorted([ _.split('/')[-1].split('.')[0] for _ in _files])
+    print(mp_specs)
+
+
+    res_centre = []
+    res_context = []
+    res_neg_samples = []
+
+    for mp_spec in mp_specs[:1] :
         df = pd.read_csv(
             os.path.join(source_file_dir, mp_spec + '.csv')
         )
+
         neg_samples_file = os.path.join(
-            source_file_dir, mp_spec+'_neg_samples.npy'
+            source_file_dir, mp_spec+'_serilaized_neg_samples.npy'
         )
         neg_samples = np.load(neg_samples_file)
+        neg_samples = neg_samples
         num_jobs = multiprocessing.cpu_count()
 
         cols = list(df.columns)
-        args = [
-            (row, neg_samples[i], cols, ctxt_size)
-            for i, row in df.iterrows()
-        ]
-        results = None
-        with Pool(num_jobs) as p:
-            results = p.map(
-                create_data_aux,
-                args
-            )
+
+        results = Parallel( num_jobs )(
+            delayed(create_data_aux)(
+                (row, neg_samples[i], cols, ctxt_size),)
+            for  i, row in df.iterrows()
+        )
 
         for _result in results :
             _centre = _result[0]
             _context = _result[1]
             _neg_samples = _result[2]
 
-            centre.extend(_centre)
-            context.append(_context)
-            neg_samples.append(_neg_samples)
+            res_centre.extend(_centre)
+            res_context.append(_context)
+            res_neg_samples.append(_neg_samples)
 
-    centre = np.array(centre)
-    context = np.array(context)
-    neg_samples = np.stack(neg_samples,axis=0)
+    centre = np.array(res_centre)
+    context = np.vstack(res_context)
+    neg_samples = np.vstack(res_neg_samples)
+
+    print(centre.shape)
+    print(context.shape)
+    print(neg_samples.shape)
 
     # -----------------
     # Save data
