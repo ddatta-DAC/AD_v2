@@ -6,29 +6,32 @@ sys.path.append('./..')
 sys.path.append('./../..')
 try:
     from utils import plotter
+    import model_mp2v_1
+    from GraphEmb_1 import  data_loader
 except:
     from src.utils import plotter
-
+    from . import model_mp2v_1
+    from src.GraphEmb_1 import  data_loader
 # -------------------------------------------- #
 
-num_entities = 100
-obj = model()
+
+domain_dims = data_loader.get_domain_dims()
+num_entities = sum(list(domain_dims.values()))
+obj = model_mp2v_1.model()
 obj.build(
     emb_dim=250,
     num_entities=num_entities,
-    num_neg_samples=5,
-    context_size=3,
-    batch_size=6
+    num_neg_samples=10,
+    context_size=32,
+    batch_size=64,
+    num_epochs=10
 )
 
 
-a = np.random.randint(num_entities,size=[1000])
-b = np.random.randint(num_entities,size=[1000,3])
-c = np.random.randint(num_entities,size=[1000,5,3])
+x_t, x_c, x_ns = data_loader.fetch_model_data_m2pv_1()
 
-y = obj.train_model(a,b,c)
+y = obj.train_model(x_t, x_c, x_ns)
 x = range(len(y))
-f = plotter.get_general_plot(
+plotter.get_general_plot(
     x,y
 )
-print(f)

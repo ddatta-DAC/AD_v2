@@ -19,7 +19,7 @@ RW_dir = None
 Serialized_RW_dir = None
 SAVE_DIR_loc = None
 REFRESH_create_data = False
-
+domain_dims = None
 
 # ------------------------------------------ #
 # Set up configuration
@@ -66,6 +66,9 @@ def set_up_config(_DIR=None):
 
     return
 
+def get_domain_dims():
+    global domain_dims
+    return domain_dims
 
 # -------
 # Data Source : Directory where Random Walks are stored
@@ -367,4 +370,25 @@ MODEL_DATA_LOC = create_ingestion_data_v1(
     model_data_save_dir = 'metapath2vec_1',
     ctxt_size = 2
 )
+
+# ----------------------------------- #
+
+
+def fetch_model_data_m2pv_1(
+    source_dir = None
+):
+    global MODEL_DATA_LOC
+    source_dir = MODEL_DATA_LOC
+    centre = np.load(os.path.join(source_dir, 'x_target.npy'))
+    context = np.load(os.path.join(source_dir, 'x_context.npy'))
+    neg_samples = np.load(os.path.join(source_dir, 'x_neg_samples.npy'))
+    return centre, context, neg_samples
+
+
+
+
+
+
+
+
 
