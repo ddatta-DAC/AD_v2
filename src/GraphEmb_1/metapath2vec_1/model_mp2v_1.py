@@ -8,10 +8,6 @@ sys.path.append('./../..')
 
 # -------------------------------- #
 
-try :
-    from src.utils import plotter
-except:
-    from utils import plotter
 
 try:
     print('Cuda available ::', torch.cuda.is_available(), 'Cde current device ::', torch.cuda.current_device(),

@@ -9,6 +9,7 @@ import argparse
 from multiprocessing import Pool
 import multiprocessing
 from joblib import Parallel, delayed
+import inspect
 
 pandarallel.initialize()
 Refresh = True
@@ -20,6 +21,16 @@ Serialized_RW_dir = None
 SAVE_DIR_loc = None
 REFRESH_create_data = False
 domain_dims = None
+
+def get_cur_path():
+    this_file_path = '/'.join(
+        os.path.abspath(
+            inspect.stack()[0][1]
+        ).split('/')[:-1]
+    )
+
+    os.chdir(this_file_path)
+    return this_file_path
 
 # ------------------------------------------ #
 # Set up configuration
@@ -38,7 +49,7 @@ def set_up_config(_DIR=None):
     if _DIR is not None:
         DIR = _DIR
 
-    with open(CONFIG_FILE) as f:
+    with open(os.path.join(get_cur_path(), CONFIG_FILE)) as f:
         CONFIG = yaml.safe_load(f)
 
     if _DIR is None:

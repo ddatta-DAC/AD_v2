@@ -6,14 +6,21 @@ sys.path.append('./..')
 sys.path.append('./../..')
 try:
     from utils import plotter
-    import model_mp2v_1
-    from GraphEmb_1 import  data_loader
 except:
     from src.utils import plotter
-    from . import model_mp2v_1
-    from src.GraphEmb_1 import  data_loader
-# -------------------------------------------- #
 
+try:
+    import model_mp2v_1
+except:
+    from . import model_mp2v_1
+
+try:
+    from GraphEmb_1 import  data_loader
+except:
+    from src.GraphEmb_1 import data_loader
+
+# -------------------------------------------- #
+exit(1)
 
 domain_dims = data_loader.get_domain_dims()
 num_entities = sum(list(domain_dims.values()))
