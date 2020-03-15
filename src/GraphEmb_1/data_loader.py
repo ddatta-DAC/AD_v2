@@ -18,6 +18,7 @@ DATA_SOURCE_loc = None
 RW_dir = None
 Serialized_RW_dir = None
 SAVE_DIR_loc = None
+REFRESH_create_data = False
 
 
 # ------------------------------------------ #
@@ -33,7 +34,7 @@ def set_up_config(_DIR=None):
     global Serialized_RW_dir
     global RW_dir
     global domain_dims
-
+    global REFRESH_create_data
     if _DIR is not None:
         DIR = _DIR
 
@@ -53,6 +54,7 @@ def set_up_config(_DIR=None):
     Serialized_RW_dir = 'Serialized'
 
     Refresh = CONFIG[DIR]['Refresh']
+    REFRESH_create_data = CONFIG[DIR]['Refresh_create_data']
 
     with open(
             os.path.join(
@@ -258,9 +260,15 @@ def create_ingestion_data_v1(
     model_data_save_dir = None,
     ctxt_size = 2
 ):
+    global REFRESH_create_data
     model_data_save_dir = os.path.join(
         source_file_dir, model_data_save_dir
     )
+    if not os.path.exists(model_data_save_dir):
+        os.mkdir(model_data_save_dir)
+
+    if not REFRESH_create_data:
+        return model_data_save_dir
 
     print(source_file_dir)
     _files = glob.glob(
@@ -268,8 +276,6 @@ def create_ingestion_data_v1(
     )
     print(_files)
 
-    if not os.path.exists(model_data_save_dir):
-        os.mkdir(model_data_save_dir)
 
     mp_specs = sorted([ _.split('/')[-1].split('.')[0] for _ in _files])
     print(mp_specs)
