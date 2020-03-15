@@ -285,7 +285,7 @@ def create_ingestion_data_v1(
     res_context = []
     res_neg_samples = []
 
-    for mp_spec in mp_specs[:1] :
+    for mp_spec in mp_specs :
         df = pd.read_csv(
             os.path.join(source_file_dir, mp_spec + '.csv')
         )
