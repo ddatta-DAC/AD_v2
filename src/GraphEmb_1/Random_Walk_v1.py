@@ -87,7 +87,10 @@ class Entity_Node:
         return
 
     def sample_nbr(self, nbr_type):
-        if nbr_type not in self.nbr_types:
+        if nbr_type not in self.transition_dict.keys():
+            print('Neighbor type not in transition dictionary!!')
+            print(self.transition_dict.keys())
+            exit(2)
             return None
         return self.transition_dict[nbr_type].sample_n(size=1)[0]
 
@@ -140,7 +143,8 @@ class RandomWalkGraph_v1:
             self,
             domain_dims
     ):
-        print(self.node_obj_dict_file)
+        print('File :: ', self.node_obj_dict_file)
+
         NO_REFRESH = True
         if NO_REFRESH and os.path.exists(self.node_obj_dict_file):
             with open(self.node_obj_dict_file, "rb") as fh:
@@ -240,7 +244,9 @@ class RandomWalkGraph_v1:
                 arr = matrix[:, e_idx]
 
             # find the serilaized ids of the neighbors
-            _tmp_df = Serial_mapping_df.loc[Serial_mapping_df['Domain'] == nbr_type].reset_index(drop=True)
+            _tmp_df = Serial_mapping_df.loc[
+                Serial_mapping_df['Domain'] == nbr_type
+            ].reset_index(drop=True)
             _tmp_df = _tmp_df.sort_values(by=['Entity_ID'])
             _tmp_df['count'] = arr
 
@@ -397,7 +403,7 @@ class RandomWalkGraph_v1:
                 # For the next step
                 next_nbr_domain = path_seq[i + 1]
                 nbr_s_id = cur_node_obj.sample_nbr(next_nbr_domain)
-                print(nbr_s_id)
+                print('Neighbor serial id  :: ', nbr_s_id)
                 nbr_e_id = Entity_ID_lookup(
                     next_nbr_domain,
                     nbr_s_id
