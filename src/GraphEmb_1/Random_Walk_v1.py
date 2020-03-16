@@ -201,17 +201,18 @@ class RandomWalkGraph_v1:
         self.signature = str(md5(str.encode(_signature)).hexdigest())
         self.saved_file_name = saved_file_name.replace(
             '.',
-            '_' + self.signature + '.pkl'
+            '_' + self.signature + '.'
         )
 
         self.node_obj_dict_file = os.path.join(
             self.save_data_dir,
             self.saved_file_name
         )
-        print('Node dict file exists', self.saved_file_name)
+
 
         if os.path.exists(self.node_obj_dict_file):
-            print('Node dict file exists !!')
+            print('Node dict file exists :: ', self.saved_file_name)
+
             with open(self.node_obj_dict_file, "rb") as fh:
                 self.node_object_dict = pickle.load(fh)
                 NODE_OBJECT_DICT = self.node_object_dict
@@ -285,7 +286,7 @@ class RandomWalkGraph_v1:
             entities_i = [_ for _ in range(domain_dims[domain_i])]
 
             tmp = {idx: self.node_object_dict[domain_i][idx] for idx in entities_i}
-            nbr_type = j
+            nbr_type = domain_j
             orientation = 'r'
 
             results = Parallel(n_jobs=self.n_jobs)(

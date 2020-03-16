@@ -112,14 +112,15 @@ def get_data():
     else:
         serial_mapping_df = pd.read_csv(mapping_df_file, index_col=None)
 
+    print(serial_mapping_df)
+
     def convert(_row, cols):
         row = _row.copy()
         for c in cols:
             val = row[c]
-            _c = c.replace('.1', '')
             res = list(
                 serial_mapping_df.loc[
-                    (serial_mapping_df['Domain'] == _c) &
+                    (serial_mapping_df['Domain'] == c) &
                     (serial_mapping_df['Entity_ID'] == val)]
                 ['Serial_ID']
             )
@@ -127,14 +128,16 @@ def get_data():
         return row
 
     cols = list(data.columns)
+    cols.remove(id_col)
+    print (cols)
 
-    serialized_data = data.parallel_apply(
-        convert,
-        axis=1,
-        args=(cols,)
-    )
-
-    return data, serialized_data, domain_dims, serial_mapping_df
+    # serialized_data = data.parallel_apply(
+    #     convert,
+    #     axis=1,
+    #     args=(cols,)
+    # )
+    # exit(1)
+    return data, domain_dims, serial_mapping_df
 
 
 MP_list = []
@@ -148,12 +151,12 @@ with open('metapaths.txt','r') as fh:
 # --------------------------------------------- #
 
 
-data, serialized_data, domain_dims, serial_mapping_df = get_data()
+data, domain_dims, serial_mapping_df = get_data()
 rw_obj = Random_Walk.RandomWalkGraph_v1()
 
 rw_obj.initialize(
     data_wdom = data,
-    serial_mapping_df =  serial_mapping_df,
+    serial_mapping_df = serial_mapping_df,
     domain_dims = domain_dims,
     id_col = id_col,
     MP_list = MP_list,
