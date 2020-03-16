@@ -91,9 +91,8 @@ class Entity_Node:
 
             print('Neighbor type not in transition dictionary!!')
             print(self.transition_dict.keys())
-            print(self.domain)
+            print(self.domain, 'Nbr type', nbr_type)
             print(self.entity)
-            exit(2)
             return None
         return self.transition_dict[nbr_type].sample_n(size=1)[0]
 
@@ -363,8 +362,7 @@ class RandomWalkGraph_v1:
         node_object_dict = NODE_OBJECT_DICT
 
         augmented_mp = mp + mp[::-1][1:]
-        print(' > > >', augmented_mp)
-        exit(2)
+
         path_seq = augmented_mp * (rw_length//len(augmented_mp) + 1)
         # --------------
         # Pad it at  end
@@ -408,6 +406,8 @@ class RandomWalkGraph_v1:
                 # For the next step
                 next_nbr_domain = path_seq[i + 1]
                 nbr_s_id = cur_node_obj.sample_nbr(next_nbr_domain)
+                if nbr_s_id is None:
+                    return None
                 print('Neighbor serial id  :: ', nbr_s_id)
                 nbr_e_id = Entity_ID_lookup(
                     next_nbr_domain,
