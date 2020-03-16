@@ -363,6 +363,8 @@ class RandomWalkGraph_v1:
         node_object_dict = NODE_OBJECT_DICT
 
         augmented_mp = mp + mp[::-1][1:]
+        print(' > > >', augmented_mp)
+        exit(2)
         path_seq = augmented_mp * (rw_length//len(augmented_mp) + 1)
         # --------------
         # Pad it at  end
