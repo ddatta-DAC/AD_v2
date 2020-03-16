@@ -362,12 +362,13 @@ class RandomWalkGraph_v1:
         node_object_dict = NODE_OBJECT_DICT
 
         augmented_mp = mp + mp[::-1][1:]
-
-        path_seq = augmented_mp * (rw_length//len(augmented_mp) + 1)
+        rep_len = len(augmented_mp)-1
+        path_seq = augmented_mp + augmented_mp[1:] * (rw_length//rep_len)
         # --------------
         # Pad it at  end
         # --------------
-        path_seq = path_seq[:rw_length +1]
+        path_seq = path_seq[:rw_length + 1]
+        print('len(path_seq)', len(path_seq))
         all_walks = []
         all_neg_samples = []
         # --------------------------
@@ -405,10 +406,16 @@ class RandomWalkGraph_v1:
                 walk.append(cur_node_s_id)
                 # For the next step
                 next_nbr_domain = path_seq[i + 1]
+
                 nbr_s_id = cur_node_obj.sample_nbr(next_nbr_domain)
+                # while  nbr_s_id in cycle_prevention_dict[next_nbr_domain]:
+                #     nbr_s_id = cur_node_obj.sample_nbr(next_nbr_domain)
+
+                cycle_prevention_dict[next_nbr_domain].append(nbr_s_id)
+
                 if nbr_s_id is None:
                     return None
-                print('Neighbor serial id  :: ', nbr_s_id)
+
                 nbr_e_id = Entity_ID_lookup(
                     next_nbr_domain,
                     nbr_s_id
@@ -440,7 +447,8 @@ class RandomWalkGraph_v1:
             # -------------------------------------- #
             # remove the last one ; since padding was done
             # -------------------------------------- #
-            walk = walk[:-1]
+
+
             all_walks.append(walk)
             all_neg_samples.append(neg_samples)
 
