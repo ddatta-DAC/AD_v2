@@ -99,18 +99,18 @@ def get_data():
                 res.append(r)
             prev_count += ds
 
-        serialization_mapping_df = pd.DataFrame(
+        serial_mapping_df = pd.DataFrame(
             data=res,
             columns=['Domain', 'Entity_ID', 'Serial_ID']
         )
         print(os.getcwd())
         print(mapping_df_file)
-        serialization_mapping_df.to_csv(
+        serial_mapping_df.to_csv(
             mapping_df_file,
             index=False
         )
     else:
-        serialization_mapping_df = pd.read_csv(mapping_df_file, index_col=None)
+        serial_mapping_df = pd.read_csv(mapping_df_file, index_col=None)
 
     def convert(_row, cols):
         row = _row.copy()
@@ -118,9 +118,9 @@ def get_data():
             val = row[c]
             _c = c.replace('.1', '')
             res = list(
-                serialization_mapping_df.loc[
-                    (mapping_df['Domain'] == _c) &
-                    (mapping_df['Entity_ID'] == val)]
+                serial_mapping_df.loc[
+                    (serial_mapping_df['Domain'] == _c) &
+                    (serial_mapping_df['Entity_ID'] == val)]
                 ['Serial_ID']
             )
             row[c] = res[0]
@@ -134,7 +134,7 @@ def get_data():
         args=(cols,)
     )
 
-    return data, serialized_data, domain_dims, serialization_mapping_df
+    return data, serialized_data, domain_dims, serial_mapping_df
 
 
 MP_list = []
@@ -148,13 +148,12 @@ with open('metapaths.txt','r') as fh:
 # --------------------------------------------- #
 
 
-data, serialized_data, domain_dims, serialization_mapping_df = get_data()
+data, serialized_data, domain_dims, serial_mapping_df = get_data()
 rw_obj = Random_Walk.RandomWalkGraph_v1()
 
 rw_obj.initialize(
     data_wdom = data,
-    data_serialized = serialized_data,
-    serialization_mapping =  serialization_mapping_df,
+    serial_mapping_df =  serial_mapping_df,
     domain_dims = domain_dims,
     id_col = id_col,
     MP_list = MP_list,
