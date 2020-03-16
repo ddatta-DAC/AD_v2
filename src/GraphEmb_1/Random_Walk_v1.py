@@ -241,7 +241,7 @@ class RandomWalkGraph_v1:
 
             # find the serilaized ids of the neighbors
             _tmp_df = Serial_mapping_df.loc[Serial_mapping_df['Domain'] == nbr_type].reset_index(drop=True)
-            _tmp_df = _tmp_df.sortby(values=['Entity_ID'])
+            _tmp_df = _tmp_df.sort_values(by=['Entity_ID'])
             _tmp_df['count'] = arr
 
             _count_dict = {k: v for k, v in zip(list(_tmp_df['Serial_ID']), list(_tmp_df['count']))}
