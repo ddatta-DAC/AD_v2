@@ -76,7 +76,7 @@ class Entity_Node:
             return
         unnorm_counts = list(unnorm_counts_dict.values())
         # Sample negative neighbors uniformly
-        t = np.logical_xor(unnorm_counts, np.ones(unnorm_counts.size, dtype=np.float))
+        t = np.logical_xor(unnorm_counts, np.ones(len(unnorm_counts), dtype=np.float))
         t = t.astype(np.float)
         t = t / sum(t)
         id_list = list(unnorm_counts_dict.keys())
@@ -156,7 +156,7 @@ class RandomWalkGraph_v1:
                         entity=_id
                     )
                     self.node_object_dict[_domain_name][_id] = _obj
-            self.update_node_obj_dict()
+            # self.update_node_obj_dict()
 
         return
 
@@ -248,11 +248,11 @@ class RandomWalkGraph_v1:
 
             obj.set_transition_prob(
                 nbr_type=nbr_type,
-                unnorm_counts=_count_dict
+                unnorm_counts_dict=_count_dict
             )
             obj.set_negative_neighbor(
                 nbr_type=nbr_type,
-                unnorm_counts=_count_dict
+                unnorm_counts_dict=_count_dict
             )
             return (e_idx, obj)
 
@@ -397,7 +397,7 @@ class RandomWalkGraph_v1:
                 # For the next step
                 next_nbr_domain = path_seq[i + 1]
                 nbr_s_id = cur_node_obj.sample_nbr(next_nbr_domain)
-
+                print(nbr_s_id)
                 nbr_e_id = Entity_ID_lookup(
                     next_nbr_domain,
                     nbr_s_id
