@@ -88,8 +88,11 @@ class Entity_Node:
 
     def sample_nbr(self, nbr_type):
         if nbr_type not in self.transition_dict.keys():
+
             print('Neighbor type not in transition dictionary!!')
             print(self.transition_dict.keys())
+            print(self.domain)
+            print(self.entity)
             exit(2)
             return None
         return self.transition_dict[nbr_type].sample_n(size=1)[0]
@@ -100,7 +103,7 @@ class Entity_Node:
         return self.negative_nbr_dict[nbr_type].sample_n(size=1)[0]
 
     def sample_multiple_negative_nbr(self, nbr_type, count):
-        if nbr_type not in self.nbr_types:
+        if nbr_type not in self.transition_dict.keys():
             return None
         return self.negative_nbr_dict[nbr_type].sample_n(size=count)
 
