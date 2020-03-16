@@ -126,7 +126,13 @@ class Net(nn.Module):
                 x_neg_context,
                 is_Negative=True
             )
-            n2 = torch.mean(
+            # ------------------
+            # https://arxiv.org/pdf/1402.3722v1.pdf
+            # See equation on page 4
+            # Negative samples distances are summed
+            # ------------------
+
+            n2 = torch.sum(
                 neg_1,
                 dim=1
             )

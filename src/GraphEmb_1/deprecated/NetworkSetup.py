@@ -80,83 +80,24 @@ set_up_config(args.DIR)
 def get_data():
     global SOURCE_DATA_DIR
     global DIR
-    global SAVE_DATA_DIR
-    global id_col
-
-    data = data_fetcher.get_train_x_csv(SOURCE_DATA_DIR, DIR)
+    records_x = data_fetcher.get_train_x_csv(SOURCE_DATA_DIR, DIR)
     domain_dims = data_fetcher.get_domain_dims(SOURCE_DATA_DIR, DIR)
     print(domain_dims)
+    return records_x, domain_dims
 
-    mapping_df_file = 'Serialized_Mapping.csv'
-    mapping_df_file = os.path.join(SAVE_DATA_DIR, mapping_df_file)
-
-    if not os.path.exists(mapping_df_file):
-        prev_count = 0
-        res = []
-        for dn, ds in domain_dims.items():
-            for eid in range(ds):
-                r = [dn, eid, eid + prev_count]
-                res.append(r)
-            prev_count += ds
-
-        serialization_mapping_df = pd.DataFrame(
-            data=res,
-            columns=['Domain', 'Entity_ID', 'Serial_ID']
-        )
-        print(os.getcwd())
-        print(mapping_df_file)
-        serialization_mapping_df.to_csv(
-            mapping_df_file,
-            index=False
-        )
-    else:
-        serialization_mapping_df = pd.read_csv(mapping_df_file, index_col=None)
-
-    def convert(_row, cols):
-        row = _row.copy()
-        for c in cols:
-            val = row[c]
-            _c = c.replace('.1', '')
-            res = list(
-                serialization_mapping_df.loc[
-                    (mapping_df['Domain'] == _c) &
-                    (mapping_df['Entity_ID'] == val)]
-                ['Serial_ID']
-            )
-            row[c] = res[0]
-        return row
-
-    cols = list(data.columns)
-
-    serialized_data = data.parallel_apply(
-        convert,
-        axis=1,
-        args=(cols,)
-    )
-
-    return data, serialized_data, domain_dims, serialization_mapping_df
-
-
-MP_list = []
-with open('metapaths.txt','r') as fh:
-    lines = fh.readlines()
-    for line in lines:
-        line = line.strip()
-        _list = line.split(',')
-        MP_list.append(_list)
-
-# --------------------------------------------- #
-
-
-data, serialized_data, domain_dims, serialization_mapping_df = get_data()
+records_x, domain_dims = get_data()
 rw_obj = Random_Walk.RandomWalkGraph_v1()
+MP_list = [
+    ['ShipperPanjivaID', 'PortOfLading', 'Carrier', 'PortOfUnlading', 'ConsigneePanjivaID'],
+    ['ShipperPanjivaID', 'ShipmentOrigin', 'HSCode', 'ShipmentDestination', 'ConsigneePanjivaID'],
+    ['ShipperPanjivaID', 'PortOfLading', 'HSCode', 'PortOfUnlading', 'ConsigneePanjivaID'],
+    ['ShipmentOrigin', 'PortOfLading', 'PortOfUnlading', 'ShipmentDestination'],
+    ]
 
 rw_obj.initialize(
-    data_wdom = data,
-    data_serialized = serialized_data,
-    serialization_mapping =  serialization_mapping_df,
-    domain_dims = domain_dims,
-    id_col = id_col,
+    records_x,
+    domain_dims,
+    id_col,
     MP_list = MP_list,
     save_data_dir = SAVE_DATA_DIR
 )
