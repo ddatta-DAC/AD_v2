@@ -162,5 +162,10 @@ rw_obj.initialize(
     MP_list = MP_list,
     save_data_dir = SAVE_DATA_DIR
 )
-rw_obj.generate_RandomWalks_w_neg_samples()
+rw_obj.generate_RandomWalks_w_neg_samples(
+    rw_count=25,
+    rw_length=100,
+    num_neg_samples=10
+)
+
 
