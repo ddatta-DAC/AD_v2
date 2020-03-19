@@ -23,3 +23,4 @@ src/**/__pycache__/**
 /src/data_preprocessor/.ipynb_checkpoints/
 /experimental/
 /src/GraphEmb_1/saved_data/
+/src/GraphEmb_1/entity2vec_gensim/data/
