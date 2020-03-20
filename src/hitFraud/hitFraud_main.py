@@ -15,8 +15,13 @@ try:
     from src.data_fetcher import data_fetcher_v2 as data_fetcher
 except:
     from data_fetcher import data_fetcher_v2 as data_fetcher
-domain_dims = None
+
 from sklearn.utils.sparsefuncs_fast import inplace_csr_row_normalize_l1
+from hashlib import md5
+
+domain_dims = None
+MODEL_DATA_DIR = None
+
 # ------------------------------------ #
 
 # Input :
@@ -92,6 +97,7 @@ def get_transition_matrix(domain1, domain2):
         return np.transpose(coOccDict[key])
 
 
+
 class MP_object:
     id = 0
     @staticmethod
@@ -100,10 +106,42 @@ class MP_object:
         MP_object.id = MP_object.id + 1
         return t
 
-    def __init__(self, MP_list):
+    @staticmethod
+    def get_signature(MP_list):
+
+
+        _signature = ''.join(sorted([''.join(_) for _ in MP_list]))
+        signature = str(md5(str.encode(_signature)).hexdigest())
+        return signature
+
+    @staticmethod
+    def GET_mp_obj(MP):
+        global MODEL_DATA_DIR
+        signature = MP_object.get_signature(MP)
+        saved_file_name = 'mp_object_' + signature + '.pkl'
+        saved_file_path = os.path.join(MODEL_DATA_DIR,saved_file_name)
+
+        if os.path.exists(saved_file_path):
+            print(signature)
+            with open(saved_file_path, "rb") as fh:
+                obj = pickle.load(fh)
+            return obj
+        else:
+            obj = MP_object(MP)
+            with open(saved_file_path,'wb') as fh:
+                pickle.dump(
+                    obj,
+                    fh,
+                    pickle.HIGHEST_PROTOCOL
+                )
+            return obj
+
+    def __init__(self, MP):
+
         global domain_dims
+
         # symmetric
-        self.mp = MP_list + MP_list[::-1][1:]
+        self.mp = MP + MP[::-1][1:]
         self.id = MP_object.assign_id()
 
         arr_list = []
@@ -114,13 +152,6 @@ class MP_object:
             arr_list.append(mat)
 
         domain_sizes = [ domain_dims[d]  for d in self.mp ]
-
-        # Calculate z
-        # z = D * P * y
-        # z is [n,1]
-        # y is [n,1]
-        # D is [n,k]
-        # P is [k,n]
         # P is the multiplication of all the matrices
 
         # optimize by breaking the multiplication into 2 parts
@@ -141,7 +172,6 @@ class MP_object:
                 mat_b = arr_list[_list_indices[1]]
                 return mat_a * mat_b
             else:
-
                 mat_a = mult(_list_indices[0])
                 mat_b = mult(_list_indices[1])
                 return mat_a * mat_b
@@ -158,6 +188,12 @@ class MP_object:
             n=self.P.shape[0]
         )
 
+    # Calculate z
+    # z = D * P * y
+    # z is [n,1]
+    # y is [n,1]
+    # D is [n,k]
+    # P is [k,n]
     def calc_z(self, y):
         n = y.shape[0]
         res =  self.D * self.P
@@ -173,7 +209,9 @@ def network_creation(
         id_col='PanjivaRecordID'
 ):
     global coOccDict
-    coOccDict_file = 'model_use_data/coOccDict.pkl'
+    global MODEL_DATA_DIR
+
+    coOccDict_file = os.path.join(MODEL_DATA_DIR, 'coOccDict.pkl')
     if os.path.exists(coOccDict_file):
         with open(coOccDict_file,'rb') as fh :
             coOccDict = pickle.load(fh)
@@ -185,17 +223,39 @@ def network_creation(
                 fh,
                 pickle.HIGHEST_PROTOCOL
             )
+    list_mp_obj =[]
     for mp in MP_list :
-        mp_obj = MP_object(mp)
+        mp_obj = MP_object.GET_mp_obj(mp)
+        list_mp_obj.append(mp_obj)
+
+    return list_mp_obj
+# --------------------------------------
 
 
-DIR ='us_import1'
+# --------------------------------------
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
+    default='us_import1'
+)
+args = parser.parse_args()
+DIR = args.DIR
+# --------------------------------------
+
+MODEL_DATA_DIR = os.path.join('model_use_data', DIR)
+if not os.path.exists(MODEL_DATA_DIR) :
+    os.mkdir(MODEL_DATA_DIR)
+
 get_domain_dims(DIR)
 train_x = get_training_data(DIR)
 MP_list = get_metapath_list()
 
-network_creation(
+list_mp_obj = network_creation(
     train_x,
     MP_list
 )
+
+
+
 
