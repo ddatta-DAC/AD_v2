@@ -18,9 +18,9 @@ import pandas as pd
 
 
 try:
-    import src.MEAD.MEAD_model as tf_model
+    from  src.MEAD import MEAD_model as tf_model
 except:
-    from .src.MEAD.MEAD_model import tf_model_3_withNorm as tf_model
+    from .src.MEAD import MEAD_model as tf_model
 
 
 try:
