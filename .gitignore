@@ -24,3 +24,4 @@ src/**/__pycache__/**
 /experimental/
 /src/GraphEmb_1/saved_data/
 /src/GraphEmb_1/entity2vec_gensim/data/
+/src/hitFraud/model_use_data/
