@@ -4,13 +4,7 @@ import math
 import tensorflow as tf
 import numpy as np
 import glob
-import pandas as pd
 import os
-from sklearn.manifold import TSNE
-
-from numpy.core._multiarray_umath import ndarray
-from sklearn.manifold import TSNE
-import sys
 from tensorflow.python.framework.graph_util import convert_variables_to_constants
 import time
 import inspect
@@ -18,7 +12,7 @@ from collections import OrderedDict
 import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
 import yaml
-from tensorflow.contrib.tensorboard.plugins import projector
+
 tf.random.set_random_seed(729)
 
 class model:
