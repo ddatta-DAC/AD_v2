@@ -49,7 +49,7 @@ __version__ = "5.0"
 __processor__ = 'embedding'
 _SAVE_DIR = 'save_dir'
 MODEL_NAME = None
-_DIR = None
+DIR = None
 DATA_DIR = None
 MODEL_OP_FILE_PATH = None
 CONFIG_FILE = 'config_1.yaml'
@@ -72,14 +72,15 @@ def get_domain_dims():
 
 def setup_general_config():
     global MODEL_NAME
-    global _DIR
+    global DIR
     global SAVE_DIR
     global OP_DIR
     global _SAVE_DIR
     global CONFIG
     global logger
-    SAVE_DIR = os.path.join(CONFIG['SAVE_DIR'], _DIR)
-    OP_DIR = os.path.join(CONFIG['OP_DIR'], _DIR)
+
+    SAVE_DIR = os.path.join(CONFIG['SAVE_DIR'], DIR)
+    OP_DIR = os.path.join(CONFIG['OP_DIR'], DIR)
     if not os.path.exists(CONFIG['SAVE_DIR']):
         os.mkdir(os.path.join(CONFIG['SAVE_DIR']))
 
@@ -102,7 +103,13 @@ def set_up_model(config, _dir):
     else:
         embedding_dims = [config[_dir]['op_dims']]
 
-    model_obj = tf_model.model(MODEL_NAME, SAVE_DIR, OP_DIR)
+
+
+    model_obj = tf_model.model(
+        MODEL_NAME,
+        SAVE_DIR,
+        OP_DIR
+    )
     model_obj.set_model_options(
         show_loss_figure=config[_dir]['show_loss_figure'],
         save_loss_figure=config[_dir]['save_loss_figure']
@@ -131,13 +138,13 @@ def get_trained_model(
     global logger
 
     num_neg_samples = train_x_neg.shape[1]
-    CONFIG[_DIR]['num_neg_samples'] = num_neg_samples
-    model_obj = set_up_model(CONFIG, _DIR)
+    CONFIG[DIR]['num_neg_samples'] = num_neg_samples
+    model_obj = set_up_model(CONFIG, DIR)
 
-    _use_pretrained = CONFIG[_DIR]['use_pretrained']
+    _use_pretrained = CONFIG[DIR]['use_pretrained']
 
     if _use_pretrained is True:
-        pretrained_file = CONFIG[_DIR]['saved_model_file']
+        pretrained_file = CONFIG[DIR]['saved_model_file']
 
         print('Pretrained File :', pretrained_file)
         saved_file_path = os.path.join(
@@ -176,16 +183,15 @@ def score_data(
 def main():
     global embedding_dims
     global SAVE_DIR
-    global _DIR
+    global DIR
     global DATA_DIR
     global CONFIG
     global CONFIG_FILE
     global MODEL_NAME
     global logger
 
-    DATA_DIR = os.path.join(CONFIG['DATA_DIR'], _DIR)
+    DATA_DIR = os.path.join(CONFIG['DATA_DIR'], DIR)
     setup_general_config()
-
 
     if not os.path.exists(os.path.join(SAVE_DIR, 'checkpoints')):
         os.mkdir(
@@ -199,15 +205,14 @@ def main():
 
     # ------------ #
     logger.info('-------------------')
-    logger.info('DIR ' + _DIR)
+    logger.info('DIR ' + DIR)
 
     train_x_pos, train_x_neg = data_fetcher.get_data_MEAD_train(
         CONFIG['DATA_DIR'],
-        _DIR
+        DIR
     )
-
-
-
+    print(train_x_neg)
+    exit(2)
     model_obj = get_trained_model(
         train_x_pos,
         train_x_neg
@@ -233,12 +238,12 @@ def main():
 with open(CONFIG_FILE) as f:
     CONFIG = yaml.safe_load(f)
 
-log_file = 'results_v2.log'
+log_file = 'MEAD_execution_log.log'
 
-_DIR = CONFIG['_DIR']
+DIR = CONFIG['DIR']
 logger = logging.getLogger('main')
 logger.setLevel(logging.INFO)
-OP_DIR = os.path.join(CONFIG['OP_DIR'], _DIR)
+OP_DIR = os.path.join(CONFIG['OP_DIR'], DIR)
 
 if not os.path.exists(CONFIG['OP_DIR']):
     os.mkdir(CONFIG['OP_DIR'])
@@ -250,6 +255,6 @@ handler = logging.FileHandler(os.path.join(OP_DIR, log_file))
 handler.setLevel(logging.INFO)
 logger.addHandler(handler)
 logger.info(' Info start ')
-logger.info(' -----> ' + _DIR)
+logger.info(' -----> ' + DIR)
 
 main()
