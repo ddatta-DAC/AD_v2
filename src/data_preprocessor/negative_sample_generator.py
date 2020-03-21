@@ -11,6 +11,7 @@ import yaml
 import math
 import multiprocessing as mp
 import argparse
+import shutil
 import multiprocessing
 try:
     from . import utils_preprocess as utils_local
@@ -542,6 +543,7 @@ def create_negative_samples_v1():
     new_df = None
     results = sorted(results)
 
+
     for _f in results:
         _df = pd.read_csv(_f, index_col=None)
 
@@ -550,7 +552,18 @@ def create_negative_samples_v1():
         else:
             new_df = new_df.append(_df, ignore_index=True)
 
+    try:
+        del new_df[id_col]
+    except:
+        pass
+
     new_df.to_csv(os.path.join(save_dir, 'negative_samples_v1.csv'), index=False)
+
+    try:
+        shutil.rmtree(os.path.join(save_dir, 'tmp'))
+    except:
+        pass
+
     return new_df
 
 
