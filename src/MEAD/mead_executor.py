@@ -20,7 +20,7 @@ import pandas as pd
 try:
     from  src.MEAD import MEAD_model as tf_model
 except:
-    from .src.MEAD import MEAD_model as tf_model
+    import MEAD_model as tf_model
 
 
 try:
@@ -124,7 +124,6 @@ def set_up_model(config, _dir):
     return model_obj
 
 def get_trained_model(
-        domain_dims,
         train_x_pos,
         train_x_neg
 ):
