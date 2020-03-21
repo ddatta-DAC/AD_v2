@@ -11,7 +11,7 @@ import yaml
 import math
 import multiprocessing as mp
 import argparse
-
+import multiprocessing
 try:
     from . import utils_preprocess as utils_local
 except:
@@ -68,7 +68,6 @@ def set_up_config(_DIR=None):
 
     num_jobs = CONFIG['num_jobs']
     num_jobs = max(mp.cpu_count(), num_jobs)
-
     return
 
 
@@ -384,7 +383,6 @@ def get_neg_sample_v1(
 ):
     global id_col
     global ns_id_col
-
     Pid_val = orig_row[id_col]
     num_features = len(feature_cols_id)
     num_randomizations = random.randint(1, int(num_features / 2))
@@ -406,14 +404,14 @@ def get_neg_sample_v1(
             new_row[_col] = _item_id
 
         _hash = utils_local.get_hash_aux(new_row, id_col)
-
         if not utils_local.is_duplicate(ref_df, _hash):
             new_row[ns_id_col] = int(str(Pid_val) + '01' + str(_k))
             break
         else:
             pass
-
     return new_row
+
+
 
 
 def create_negative_samples_v1_aux(
@@ -427,6 +425,7 @@ def create_negative_samples_v1_aux(
     global ns_id_col
     global id_col
     global num_neg_samples_v1
+    num_neg_samples = num_neg_samples_v1
 
     ns_id_col = 'NegSampleID'
     feature_cols_id = {
@@ -435,33 +434,37 @@ def create_negative_samples_v1_aux(
     }
 
     new_df = pd.DataFrame(
-        columns=list(ref_df.columns)
+        columns=list(df_chunk.columns)
     )
 
     new_df[ns_id_col] = 0
 
     for i, row in df_chunk.iterrows():
-        for _k in range(num_neg_samples_v1):
-            _res = get_neg_sample_v1(
-                _k,
+        for ns_idx in range(num_neg_samples):
+            ns_res = get_neg_sample_v1(
+                ns_idx,
                 ref_df,
                 column_valid_values,
                 row,
                 feature_cols_id
             )
             new_df = new_df.append(
-                _res,
+                ns_res,
                 ignore_index=True
             )
+    del new_df[id_col]
 
     if not os.path.exists(os.path.join(save_dir, 'tmp')):
         os.mkdir(os.path.join(save_dir, 'tmp'))
     f_name = os.path.join(save_dir, 'tmp', 'tmp_df_' + str(idx) + '.csv')
+
     new_df.to_csv(
         f_name,
-        index=None
+        index=False
     )
+
     return f_name
+
 
 
 def create_negative_samples_v1():
@@ -472,7 +475,10 @@ def create_negative_samples_v1():
     global num_neg_samples_v1
     global num_jobs
 
-    train_data_file = os.path.join(save_dir, 'train_data.csv')
+    train_data_file = os.path.join(
+        save_dir,
+        'train_data.csv'
+    )
 
     train_df = pd.read_csv(
         train_data_file,
@@ -499,21 +505,13 @@ def create_negative_samples_v1():
     ref_df = ref_df[_cols]
     ref_df = utils_local.add_hash(ref_df, id_col)
 
-    # feature_cols_id = {
-    #     e[0]: e[1]
-    #     for e in enumerate(feature_cols)
-    # }
-    # # get the domain dimensions
-    # with open(
-    #         os.path.join(save_dir, 'domain_dims.pkl'), 'rb'
-    # ) as fh:
-    #     domain_dims = pickle.load(fh)
-
-    # Store what are valid values for each columns
     column_valid_values = {}
 
     for _fc_name in feature_cols:
         column_valid_values[_fc_name] = list(set(list(train_df[_fc_name])))
+
+
+    num_jobs = multiprocessing.cpu_count()
 
     chunk_len = int(len(train_df) / (num_jobs - 1))
     list_df_chunks = np.split(
@@ -527,7 +525,6 @@ def create_negative_samples_v1():
     list_df_chunks.append(train_df.tail(end_len))
     for _l in range(len(list_df_chunks)):
         print(len(list_df_chunks[_l]), _l)
-
 
     results = Parallel(n_jobs=num_jobs)(
         delayed
@@ -552,7 +549,6 @@ def create_negative_samples_v1():
             new_df = _df
         else:
             new_df = new_df.append(_df, ignore_index=True)
-        print(' >> ', len(new_df))
 
     new_df.to_csv(os.path.join(save_dir, 'negative_samples_v1.csv'), index=False)
     return new_df
