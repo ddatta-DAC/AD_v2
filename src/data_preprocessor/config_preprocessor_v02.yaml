@@ -1,6 +1,6 @@
 'save_dir': './../../generated_data_v1'
 'DATA_SOURCE': './../../Data_Raw'
-'DIR': 'us_import3'
+'DIR': 'us_import1'
 'cleaned_csv_subdir': 'cleaned_csv'
 'train_data_file': 'train_data.csv'
 'test_data_file': 'test_data.csv'

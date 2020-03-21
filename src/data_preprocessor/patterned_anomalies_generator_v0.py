@@ -100,7 +100,8 @@ def generate_by_criteria(
         id_col='PanjivaRecordID'
     ):
     global co_occurrence_dict
-    print('  >> ', row)
+    global DATA_DIR
+
     is_duplicate = True
     trials = 0
     max_trials = 1000
@@ -161,6 +162,8 @@ Main processing function
 def main_process():
 
     global co_occurrence_dict
+    global DATA_DIR
+
     df_train, df_test, domain_dims = get_data()
     co_occurrence_dict = utils.get_coOccMatrix_dict(df_train, id_col='PanjivaRecordID')
 
@@ -238,7 +241,6 @@ def main_process():
         axis=1,
         args=(101, _fixed_set, _perturb_set, hash_ref_df,)
     )
-
 
     # ================================================ #
     # C2 :
@@ -330,22 +332,28 @@ def main_process():
     tmp = pd.DataFrame(columns=['ShipperPanjivaID'])
     tmp['ShipperPanjivaID'] = target_Shipper
     f_name = os.path.join(intermediate_data_loc,'gen_fraud_Shipper.csv')
-    tmp.to_csv(f_name, index=None)
+    tmp.to_csv(f_name, index=False)
 
     tmp = pd.DataFrame(columns=['ConsigneePanjivaID'])
     tmp['ConsigneePanjivaID'] = target_Consignee
     f_name = os.path.join(intermediate_data_loc, 'gen_fraud_Consignee.csv')
-    tmp.to_csv(f_name, index=None)
+    tmp.to_csv(f_name, index=False)
 
     tmp = pd.DataFrame(columns=['HSCode'])
     tmp['HSCode'] = target_HSCode
     f_name = os.path.join(intermediate_data_loc, 'gen_fraud_HSCode.csv')
-    tmp.to_csv(f_name, index=None)
+    tmp.to_csv(f_name, index=False)
 
     f_name = os.path.join(intermediate_data_loc, 'gen_fraud_PortOfLading_PortOfUnlading.csv')
-    target_PortOfLading_PortOfUnlading.to_csv( f_name , index=None)
+    target_PortOfLading_PortOfUnlading.to_csv(
+        f_name ,
+        index=False
+    )
     f_name = os.path.join(intermediate_data_loc, 'gen_fraud_ShipmentOrigin_ShipmentDestination.csv')
-    target_ShipmentOrigin_ShipmentDestination.to_csv(f_name, index=None)
+    target_ShipmentOrigin_ShipmentDestination.to_csv(
+        f_name,
+        index=False
+    )
 
     # -------------------------------------------------------- #
     # Generate anomalies that are not "interesting"
@@ -383,8 +391,12 @@ def main_process():
         args=(902, _fixed_set, _perturb_set, hash_ref_df,)
     )
 
-    rmv_list = list(df_train.merge(target_ShipmentOrigin_ShipmentDestination, how='inner',
-                                   on=['ShipmentOrigin', 'ShipmentDestination'])[id_col])
+    rmv_list = list(df_train.merge(
+        target_ShipmentOrigin_ShipmentDestination,
+        how='inner',
+        on=['ShipmentOrigin', 'ShipmentDestination']
+    )[id_col])
+
     a = df_test.loc[~df_test[id_col].isin(rmv_list)]
     a = a.loc[(~a['ShipperPanjivaID'].isin(target_Shipper))]
     a = a.sample(min(len(a), len(df_test)))
