@@ -453,7 +453,6 @@ def create_negative_samples_v1_aux(
                 ns_res,
                 ignore_index=True
             )
-    del new_df[id_col]
 
     if not os.path.exists(os.path.join(save_dir, 'tmp')):
         os.mkdir(os.path.join(save_dir, 'tmp'))
@@ -505,7 +504,6 @@ def create_negative_samples_v1():
     _cols = [id_col] + feature_cols
     ref_df = ref_df[_cols]
     ref_df = utils_local.add_hash(ref_df, id_col)
-
     column_valid_values = {}
 
     for _fc_name in feature_cols:
@@ -552,10 +550,6 @@ def create_negative_samples_v1():
         else:
             new_df = new_df.append(_df, ignore_index=True)
 
-    try:
-        del new_df[id_col]
-    except:
-        pass
 
     new_df.to_csv(os.path.join(save_dir, 'negative_samples_v1.csv'), index=False)
 
