@@ -294,29 +294,54 @@ parser.add_argument(
     '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
     default=None
 )
+parser.add_argument(
+    '--CREATE_MEAD_DATA', default=False, action='store_true',
+
+)
+
+parser.add_argument(
+    '--CREATE_TEST_MATRICES', default=False, action='store_true',
+
+)
+
+parser.add_argument(
+    '--CREATE_ANOMALY_MATRICES', default=False, action='store_true',
+)
+
 # ========================================================= #
 
 args = parser.parse_args()
 DIR = args.DIR
 set_up_config(DIR)
 
-create_mead_model_data(
-    save_dir=save_dir,
-    id_col=id_col,
-    ns_id_col=ns_id_col
-)
+CREATE_MEAD_DATA = args.CREATE_MEAD_DATA
+CREATE_TEST_MATRICES = args.CREATE_TEST_MATRICES
+CREATE_ANOMALY_MATRICES = args.CREATE_ANOMALY_MATRICES
 
-create_base_test_matrices(
-    save_dir,
-    id_col,
-)
 
-create_base_anomaly_matrices(
-    save_dir,
-    id_col
-)
+if CREATE_MEAD_DATA:
+    create_mead_model_data(
+        save_dir=save_dir,
+        id_col=id_col,
+        ns_id_col=ns_id_col
+    )
+
+# -----------------------------------  #
+if CREATE_TEST_MATRICES:
+    create_base_test_matrices(
+        save_dir,
+        id_col,
+    )
+
+if CREATE_ANOMALY_MATRICES:
+    create_base_anomaly_matrices(
+        save_dir,
+        id_col
+    )
 
 # --------------------------------- #
+
+
 # create_ape_model_data(
 #     term_2_col=term_2_col,
 #     term_4_col=term_4_col,
