@@ -228,11 +228,12 @@ def main():
         train_x_neg
     )
     scored_df = get_scored_data(model_obj)
-    score_data.to_csv(
-        os.path.join( RESULT_OP_DIR,'scored_test_data.csv')
+    scored_df.to_csv(
+        os.path.join( RESULT_OP_DIR,'scored_test_data.csv'),
+        index=False
     )
 
-    return
+    return scored_df
 
 
 def  get_scored_data(
