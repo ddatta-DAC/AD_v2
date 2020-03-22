@@ -1,27 +1,19 @@
-import operator
 import pickle
 import numpy as np
 import os
 import sys
-import time
-import pprint
 import inspect
-from collections import OrderedDict
-import matplotlib.pyplot as plt
 import yaml
-from sklearn.metrics import auc
-import logging
-import logging.handlers
+import argparse
+
 sys.path.append('./..')
 sys.path.append('./../../.')
 import pandas as pd
 
-
 try:
-    from  src.MEAD import MEAD_model as tf_model
+    from src.MEAD import MEAD_model as tf_model
 except:
     import MEAD_model as tf_model
-
 
 try:
     from src.Eval import eval_v1 as eval
@@ -59,39 +51,59 @@ CONFIG = None
 # ----------------------------------------- #
 
 def get_domain_dims():
-    global DATA_DIR
-    f_path = os.path.join(DATA_DIR, 'domain_dims.pkl')
+    global DATA_SOURCE_DIR
+    f_path = os.path.join(DATA_SOURCE_DIR, 'domain_dims.pkl')
     with open(f_path, 'rb') as fh:
         res = pickle.load(fh)
     return list(res.values())
 
 
 # ----------------------------------------- #
-# ---------               Model Config    --------- #
+# ---------               Model Config
+# _RESULT_OP_DIR : Save the output ( dataframe with ids )
 # ----------------------------------------- #
 
-def setup_general_config():
+def setup_general_config(
+        _DIR,
+        _RESULT_OP_DIR
+):
     global MODEL_NAME
     global DIR
-    global SAVE_DIR
+    global MODEL_DIR
     global OP_DIR
     global _SAVE_DIR
     global CONFIG
-    global logger
+    global RESULT_OP_DIR
 
-    SAVE_DIR = os.path.join(CONFIG['SAVE_DIR'], DIR)
+    DIR = _DIR
+    with open(CONFIG_FILE) as f:
+        CONFIG = yaml.safe_load(f)
+
+    if not os.path.exists(RESULT_OP_DIR):
+        os.mkdir(RESULT_OP_DIR)
+    RESULT_OP_DIR = os.path.join(RESULT_OP_DIR, DIR)
+    if not os.path.exists(RESULT_OP_DIR):
+        os.mkdir(RESULT_OP_DIR)
+
     OP_DIR = os.path.join(CONFIG['OP_DIR'], DIR)
-    if not os.path.exists(CONFIG['SAVE_DIR']):
-        os.mkdir(os.path.join(CONFIG['SAVE_DIR']))
+    if not os.path.exists(CONFIG['OP_DIR']):
+        os.mkdir(CONFIG['OP_DIR'])
+    if not os.path.exists(OP_DIR):
+        os.mkdir(OP_DIR)
 
-    if not os.path.exists(SAVE_DIR):
-        os.mkdir(os.path.join(SAVE_DIR))
+    MODEL_DIR = os.path.join(CONFIG['MODEL_DIR'], DIR)
+    if not os.path.exists(CONFIG['MODEL_DIR']):
+        os.mkdir(os.path.join(CONFIG['MODEL_DIR']))
+    if not os.path.exists(MODEL_DIR):
+        os.mkdir(os.path.join(MODEL_DIR))
     return
+
+
 # --------------------------------------------- #
 
 def set_up_model(config, _dir):
     global embedding_dims
-    global SAVE_DIR
+    global MODEL_DIR
     global OP_DIR
     global MODEL_NAME
     MODEL_NAME = config['MODEL_NAME']
@@ -103,13 +115,12 @@ def set_up_model(config, _dir):
     else:
         embedding_dims = [config[_dir]['op_dims']]
 
-
-
     model_obj = tf_model.model(
         MODEL_NAME,
-        SAVE_DIR,
+        MODEL_DIR,
         OP_DIR
     )
+
     model_obj.set_model_options(
         show_loss_figure=config[_dir]['show_loss_figure'],
         save_loss_figure=config[_dir]['save_loss_figure']
@@ -130,16 +141,20 @@ def set_up_model(config, _dir):
     model_obj.build_model()
     return model_obj
 
+
 def get_trained_model(
         train_x_pos,
         train_x_neg
 ):
     global CONFIG
-    global logger
+    global MODEL_DIR
 
     num_neg_samples = train_x_neg.shape[1]
     CONFIG[DIR]['num_neg_samples'] = num_neg_samples
-    model_obj = set_up_model(CONFIG, DIR)
+    model_obj = set_up_model(
+        CONFIG,
+        DIR
+    )
 
     _use_pretrained = CONFIG[DIR]['use_pretrained']
 
@@ -148,7 +163,7 @@ def get_trained_model(
 
         print('Pretrained File :', pretrained_file)
         saved_file_path = os.path.join(
-            SAVE_DIR,
+            MODEL_DIR,
             'checkpoints',
             pretrained_file
         )
@@ -167,57 +182,50 @@ def get_trained_model(
         )
     return model_obj
 
+
 def score_data(
-    model_obj,
-    data_x,
-    id_list
+        model_obj,
+        data_x,
+        id_list
 ):
     print(' Number of samples ', len(id_list))
     res = model_obj.get_event_score(data_x)
-    df_data =  np.vstack([id_list, res])
-    df = pd.DataFrame(data = df_data, columns= ['PanjivaRecordID', 'score'])
+    df_data = np.vstack([id_list, res])
+    df = pd.DataFrame(data=df_data, columns=['PanjivaRecordID', 'score'])
     df = df.sort_values(by=['score'])
     return df
 
 
 def main():
     global embedding_dims
-    global SAVE_DIR
+    global MODEL_DIR
     global DIR
-    global DATA_DIR
+    global DATA_SOURCE_DIR
     global CONFIG
     global CONFIG_FILE
     global MODEL_NAME
-    global logger
 
-    DATA_DIR = os.path.join(CONFIG['DATA_DIR'], DIR)
-    setup_general_config()
-
-    if not os.path.exists(os.path.join(SAVE_DIR, 'checkpoints')):
+    DATA_SOURCE_DIR = os.path.join(CONFIG['DATA_SOURCE_DIR'], DIR)
+    if not os.path.exists(os.path.join(MODEL_DIR, 'checkpoints')):
         os.mkdir(
-            os.path.join(SAVE_DIR, 'checkpoints')
+            os.path.join(MODEL_DIR, 'checkpoints')
         )
 
     # ------------ #
 
-    if not os.path.exists(os.path.join(SAVE_DIR, 'checkpoints')):
-        os.mkdir(os.path.join(SAVE_DIR, 'checkpoints'))
-
-    # ------------ #
-    logger.info('-------------------')
-    logger.info('DIR ' + DIR)
+    if not os.path.exists(os.path.join(MODEL_DIR, 'checkpoints')):
+        os.mkdir(os.path.join(MODEL_DIR, 'checkpoints'))
 
     train_x_pos, train_x_neg = data_fetcher.get_data_MEAD_train(
         CONFIG['DATA_DIR'],
         DIR
     )
-    print(train_x_neg)
-    exit(2)
+
     model_obj = get_trained_model(
         train_x_pos,
         train_x_neg
     )
-    logger.info('------- END ------------')
+
     # result_df = score_data(
     #     model_obj,
     #     test_data_x,
@@ -226,35 +234,26 @@ def main():
     # return result_df
 
 
-
-
-
-
-
 # ----------------------------------------------------------------- #
 # find out which model works best
 # ----------------------------------------------------------------- #
 
-with open(CONFIG_FILE) as f:
-    CONFIG = yaml.safe_load(f)
 
-log_file = 'MEAD_execution_log.log'
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
+    default=None
+)
+parser.add_argument(
+    '--RESULT_OP_DIR', default='./../../AD_system_output'
+)
 
-DIR = CONFIG['DIR']
-logger = logging.getLogger('main')
-logger.setLevel(logging.INFO)
-OP_DIR = os.path.join(CONFIG['OP_DIR'], DIR)
-
-if not os.path.exists(CONFIG['OP_DIR']):
-    os.mkdir(CONFIG['OP_DIR'])
-
-if not os.path.exists(OP_DIR):
-    os.mkdir(OP_DIR)
-
-handler = logging.FileHandler(os.path.join(OP_DIR, log_file))
-handler.setLevel(logging.INFO)
-logger.addHandler(handler)
-logger.info(' Info start ')
-logger.info(' -----> ' + DIR)
+args = parser.parse_args()
+_DIR = args.DIR
+_RESULT_OP_DIR = args.RESULT_OP_DIR
+setup_general_config(
+    _DIR=_DIR,
+    _RESULT_OP_DIR=_RESULT_OP_DIR
+)
 
 main()
