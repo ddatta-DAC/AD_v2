@@ -7,12 +7,7 @@ import glob
 import os
 from tensorflow.python.framework.graph_util import convert_variables_to_constants
 import time
-import inspect
-from collections import OrderedDict
 import matplotlib.pyplot as plt
-from sklearn.utils import shuffle
-import yaml
-
 tf.random.set_random_seed(729)
 
 class model:

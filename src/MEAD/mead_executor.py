@@ -46,7 +46,7 @@ DATA_DIR = None
 MODEL_OP_FILE_PATH = None
 CONFIG_FILE = 'config_1.yaml'
 CONFIG = None
-
+DATA_SOURCE_DIR = None
 
 # ----------------------------------------- #
 
@@ -187,6 +187,7 @@ def score_data(
         model_obj,
         data_x,
         id_list
+
 ):
     print(' Number of samples ', len(id_list))
     res = model_obj.get_event_score(data_x)
@@ -204,6 +205,7 @@ def main():
     global CONFIG
     global CONFIG_FILE
     global MODEL_NAME
+    global RESULT_OP_DIR
 
     DATA_SOURCE_DIR = os.path.join(CONFIG['DATA_SOURCE_DIR'], DIR)
     if not os.path.exists(os.path.join(MODEL_DIR, 'checkpoints')):
@@ -225,14 +227,39 @@ def main():
         train_x_pos,
         train_x_neg
     )
+    scored_df = get_scored_data(model_obj)
+    score_data.to_csv(
+        os.path.join( RESULT_OP_DIR,'scored_test_data.csv')
+    )
 
-    # result_df = score_data(
-    #     model_obj,
-    #     test_data_x,
-    #     test_id_list
-    # )
-    # return result_df
+    return
 
+
+def  get_scored_data(
+    model_obj
+):
+    global DIR
+    global DATA_SOURCE_DIR
+
+    test_data_df = data_fetcher.get_testing_data_as_DF(
+        CONFIG['DATA_DIR'],
+        DIR
+    )
+    df_copy = test_data_df.copy()
+    id_list = list(df_copy['PanjivaRecordID'])
+    del df_copy['PanjivaRecordID']
+    del df_copy['anomaly']
+    del df_copy['fraud']
+    data_test_x = df_copy.values
+
+    result_df = score_data(
+        model_obj,
+        data_test_x,
+        id_list
+    )
+    scores = list(result_df['score'])
+    test_data_df['score'] = scores
+    return test_data_df
 
 # ----------------------------------------------------------------- #
 # find out which model works best

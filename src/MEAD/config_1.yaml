@@ -2,16 +2,17 @@
 'DIR' : 'us_import1'
 'OP_DIR' : 'output'
 'SAVE_DIR' : 'save_dir'
+'MODEL_DIR' : 'model_save_dir'
 'MODEL_NAME' : 'model_mead'
 'log_file' : 'MEAD_execution_log.log'
-'num_jobs' : 4
+'num_jobs' : 8
 
 'us_import1':
   'learning_rate' : 0.0005
   'use_pretrained' : False
   'show_loss_figure' : False
-  'save_loss_figure' : False
-  'use_bias' : True
+  'save_loss_figure' : True
+  'use_bias' : False
   'saved_model_file' : False
   'num_epochs' : 25
   'op_dims' : 16
@@ -23,10 +24,10 @@
   'use_pretrained' : True
   'show_loss_figure' : False
   'save_loss_figure' : False
-  'use_bias' : True
-  'saved_model_file' : 'frozen_model_v1_214_1566057286.pb'
+  'use_bias' : False
+  'saved_model_file' : False
   'num_epochs' : 25
-  'op_dims' : 14
+  'op_dims' : 16
   'batchsize': 128
   'num_neg_samples' : 15
 
@@ -35,9 +36,9 @@
   'use_pretrained' : False
   'show_loss_figure' : False
   'save_loss_figure' : False
-  'use_bias' : True
+  'use_bias' : False
   'saved_model_file' : False
   'num_epochs' : 25
-  'op_dims' : 12
+  'op_dims' : 16
   'batchsize': 128
   'num_neg_samples' : 15

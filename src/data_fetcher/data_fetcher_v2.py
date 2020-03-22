@@ -232,7 +232,7 @@ def get_testing_data_as_DF(
         DATA_DIR,
         DIR,
         discriminate=True,
-        ratio=0.33
+        ratio=0.5
     )
     anomaly_F_x = anomaly_x[0]
     anomaly_NF_x = anomaly_x[1]
@@ -240,8 +240,13 @@ def get_testing_data_as_DF(
     anomaly_idList_F = anomaly_idList[0]
     anomaly_idList_NF = anomaly_idList[1]
 
-    cols = ['PanjivaRecordID'] + ['col_' + str(i) for i in range(1,test_x.shape[1]+1)]
+    cols = ['PanjivaRecordID'] + ['data_x_' + str(i) for i in range(1,test_x.shape[1]+1)]
 
+    tmp_df = get_train_x_csv(
+        DATA_DIR,
+        DIR
+    )
+    cols = list(tmp_df.columns)
     _df1 = pd.DataFrame(
         data = np.hstack([np.reshape(test_idList,[-1,1]), test_x]),
         columns = cols
@@ -262,15 +267,24 @@ def get_testing_data_as_DF(
     )
     _df3['anomaly'] = True
     _df3['fraud'] = False
+    if len(_df1) >  len(_df2) + len(_df3):
+        _df1 = _df1.sample(
+            len(_df2) + len(_df3)
+        )
+        DF = _df1.copy()
+        DF = DF.append(_df2, ignore_index=True)
+        DF = DF.append(_df3, ignore_index=True)
+    else :
+        DF = _df2.copy()
+        DF = DF.append(_df3, ignore_index=True)
+        DF = DF.sample(len(_df1))
+        DF = DF.append(_df1, ignore_index=True)
 
-    _df1 = _df1.sample(
-        len(_df1) + len(_df2)
-    )
-
-    DF = _df1.copy()
-    DF = DF.append(_df2,ignore_index=True)
-    DF = DF.append(_df3,ignore_index=True)
     return DF
 
 
 
+res =  get_testing_data_as_DF(
+    './../../generated_data_v1','us_import2'
+)
+print(res)
