@@ -191,6 +191,8 @@ def score_data(
 ):
     print(' Number of samples ', len(id_list))
     res = model_obj.get_event_score(data_x)
+    id_list = np.reshape(id_list, [-1, 1])
+
     df_data = np.hstack([id_list, res])
     df = pd.DataFrame(data=df_data, columns=['PanjivaRecordID', 'score'])
     df = df.sort_values(by=['score'])
