@@ -1,4 +1,5 @@
 'DATA_DIR': '../../generated_data_v1'
+'DATA_SOURCE_DIR' : '../../generated_data_v1'
 'DIR' : 'us_import1'
 'OP_DIR' : 'output'
 'SAVE_DIR' : 'save_dir'
