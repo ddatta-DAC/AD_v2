@@ -79,9 +79,9 @@ def setup_general_config(
     with open(CONFIG_FILE) as f:
         CONFIG = yaml.safe_load(f)
 
-    if not os.path.exists(RESULT_OP_DIR):
-        os.mkdir(RESULT_OP_DIR)
-    RESULT_OP_DIR = os.path.join(RESULT_OP_DIR, DIR)
+    if not os.path.exists(_RESULT_OP_DIR):
+        os.mkdir(_RESULT_OP_DIR)
+    RESULT_OP_DIR = os.path.join(_RESULT_OP_DIR, DIR)
     if not os.path.exists(RESULT_OP_DIR):
         os.mkdir(RESULT_OP_DIR)
 
