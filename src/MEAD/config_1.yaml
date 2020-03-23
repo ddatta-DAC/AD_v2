@@ -22,7 +22,7 @@
 
 'us_import2':
   'learning_rate' : 0.0005
-  'use_pretrained' : True
+  'use_pretrained' : False
   'show_loss_figure' : False
   'save_loss_figure' : False
   'use_bias' : False

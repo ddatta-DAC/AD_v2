@@ -195,7 +195,7 @@ def score_data(
 
     df_data = np.hstack([id_list, res])
     df = pd.DataFrame(data=df_data, columns=['PanjivaRecordID', 'score'])
-    df = df.sort_values(by=['score'])
+
     return df
 
 
@@ -262,6 +262,8 @@ def  get_scored_data(
     )
     scores = list(result_df['score'])
     test_data_df['score'] = scores
+    test_data_df = test_data_df.sort_values(by=['score'])
+
     return test_data_df
 
 # ----------------------------------------------------------------- #
