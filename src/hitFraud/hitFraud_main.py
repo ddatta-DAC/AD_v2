@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import sys
+from sklearn.ensemble import RandomForestClassifier
 
 sys.path.append('./../..')
 sys.path.append('./..')
@@ -181,41 +182,43 @@ class MP_object:
 
         self.P = mult(mult_order)
 
-
     # Calculate z
     # z = D * P * y
     # z is [n,1]
     # y is [n,1]
     # D is [n,k]
     # P is [k,n]
-    def calc_z(self, data):
-        y = np.reshape(list(data['y']),[-1,1])
+
+    def calc_z(
+            self,
+            data
+    ):
+        y = np.reshape(list(data['y']), [-1, 1])
         n = y.shape[0]
         starting_domain = self.mp[0]
         d = starting_domain
-        A_t_d = np.zeros(n, domain_dims[d])
+        A_t_d = np.zeros([n, domain_dims[d]])
         d_vals = list(data[d])
-        A_t_d[np.arange(n),d_vals] = 1
+        A_t_d[np.arange(n), d_vals] = 1
         A_t_d = csr_matrix(A_t_d)
         _P = self.P
-        _P = A_t_d * _P
-        _P = _P * A_t_d.transpose()
 
-        D = sparse.spdiags(
-            data=np.reciprocal(
-                np.reshape(
-                    np.sum(_P, axis=1),
-                    [-1])
-            ),
-            diags=0,
-            m=_P[0],
-            n=_P[0]
-        )
+        # D = sparse.spdiags(
+        #     data=np.reciprocal(
+        #         np.reshape(
+        #             np.sum(_P, axis=1),
+        #             [-1])
+        #     ),
+        #     diags=0,
+        #     m=_P[0],
+        #     n=_P[0]
+        # )
 
-        res = D * _P
-        res = res * y
-        res = res.todense()
-        res = np.reshape(res,[-1])
+        res = A_t_d * (_P * (A_t_d.transpose() * csr_matrix(y)))
+        res = res.toarray()
+        res = np.reshape(res, -1)
+
+        print('Res ::', res.shape)
         return res
 
 
@@ -255,7 +258,7 @@ def network_creation(
 def read_target_data(
         DATA_SOURCE, DIR
 ):
-    csv_f_name = 'scored_test_dat.csv'
+    csv_f_name = 'scored_test_data.csv'
     df = pd.read_csv(
         os.path.join(
             DATA_SOURCE,
@@ -266,6 +269,203 @@ def read_target_data(
 
 
 # --------------------------------------
+# Assign "human_labels"
+# checkpoints are 10%, 20%, 30%, 40%, 50%
+# -----------------------------------------------
+def exec_classifier(
+        list_mp_obj,
+        cur_checkpoint=10
+):
+    label_col = 'y'
+    id_col = 'PanjivaRecordID'
+    df = read_target_data(
+        DATA_SOURCE='./../../AD_system_output',
+        DIR='us_import1'
+    )
+    df=df.sample(4000)
+    record_count = len(df)
+
+    # count of how many labelled and unlabelled datapoints
+    l_count = int(record_count * cur_checkpoint / 100)
+    u_count = record_count - l_count
+
+    # The records are sorted by score
+    df_L = df.head(l_count).copy()
+    df_U = df.tail(u_count).copy()
+    labelled_instance_ids = list(df_L[id_col])
+    unlabelled_instance_ids = list(df_U[id_col])
+
+    def set_y(row):
+        if row['fraud'] == True:
+            return 1  # labelled True
+        elif row['fraud'] == False:
+            return -1  # labelled false
+        else:
+            return 0  # unknown
+
+    # Set labels for instances which have been "Labelled" by humans
+    df_L[label_col] = 0
+    df_U[label_col] = 0
+    df_L[label_col] = df_L.parallel_apply(set_y, axis=1)
+
+    df_known_y_values = df_L[[id_col, label_col]]
+
+    # df is the working dataframe
+    df_UL = df_L.append(df_U, ignore_index=True)
+    del df_UL['fraud']
+    del df_UL['anomaly']
+
+    # ---------------------------------------------------
+    # For each metapath calculate the meta path feature z
+    # ---------------------------------------------------
+    z_list = []
+    for mp_obj in list_mp_obj:
+        z = mp_obj.calc_z(df_UL)
+        _id = mp_obj.id
+        zcol = 'z' + str(_id)
+        z_list.append(zcol)
+        df_UL[zcol] = list(z)
+
+    one_hot_columns = list(domain_dims.keys())
+    clf_train_df = pd.get_dummies(
+        df_UL,
+        columns=one_hot_columns
+    )
+
+    # Train initial Classifier model
+    clf = RandomForestClassifier(
+        n_estimators=200,
+        n_jobs=-1,
+        verbose=1
+    )
+
+    # ----------------------------------------------------
+    # Train initial model only on the labelled data
+    # Input features should be  [ entities, score , {z} ]
+    # ----------------------------------------------------
+    clf_train_df_L = clf_train_df.loc[
+        clf_train_df[id_col].isin(labelled_instance_ids)
+    ]
+    clf_train_df_U = clf_train_df.loc[
+        clf_train_df[id_col].isin(unlabelled_instance_ids)
+    ]
+
+    y = list(clf_train_df_L[label_col])
+
+    tmp = clf_train_df_L.copy()
+    remove_cols = [id_col, label_col]
+    for rc in remove_cols:
+        del tmp[rc]
+
+    x = tmp.values
+    clf.fit(x, y)
+
+    # -----------------------------------------
+    # Bootstrap ::  obtain initial labels of U using the trained classifier
+    # Set z = 0
+    # -----------------------------------------
+
+    tmp = clf_train_df_U.copy()
+    for _zcol in z_list:
+        tmp[_zcol] = 0
+
+    for rc in remove_cols:
+        del tmp[rc]
+    x = tmp.values
+    pred_y = clf.predict(x)
+    pred_y = np.reshape(pred_y, -1)
+    clf_train_df_U[label_col] = pred_y
+
+    # Keep a df with entity ids for meta path feature calculations
+    df_U_copy = df_U.copy()
+    df_U_copy[label_col] = pred_y
+
+    df_itertative = df_L.copy().append(df_U_copy, ignore_index=True)
+
+    try:
+        del df_itertative['fraud']
+        del df_itertative['anomaly']
+    except:
+        pass
+
+    '''
+    Algorithm outline ::
+    Repeat : Till Convergence or iter > max_iter
+    Following ICA ( See Charu Aggarwal Text Pg 325, Ch 10 :  
+        at each step include the most confident labels
+    For abs(label_value) >  epsilon  ; 
+        set new_label = sign(label_val)
+        epsilon = 50th percentile of absolute label values
+    Clamp down known labels
+    
+    '''
+
+    def restore_known_labels(row, ref_df):
+        r = ref_df.loc[ref_df[id_col] == row[id_col]]
+        if len(r) > 0:
+            return list(r[label_col])[0]
+        else:
+            return row[label_col]
+
+    max_iter = 10
+    iter = 0
+
+    while True:
+        print(' Iteration :',iter)
+        # Recalculate z
+        for mp_obj in list_mp_obj:
+            z = mp_obj.calc_z(df_itertative)
+            _id = mp_obj.id
+            zcol = 'z' + str(_id)
+            df_itertative[zcol] = list(z)
+
+        # Retrain classifier
+        tmp_df = df_itertative.copy()
+        print('tmp_df columns ', tmp_df.columns)
+        for rc in remove_cols:
+            del tmp_df[rc]
+
+
+        tmp_df = pd.get_dummies(
+            tmp_df,
+            columns=one_hot_columns
+        )
+        x = tmp_df.values
+        pred_y = clf.predict(x)
+        pred_y = np.reshape(pred_y,[-1])
+        df_itertative['y'] = pred_y
+
+        # Clamp down the known labels
+        df_itertative[label_col] = df_itertative.parallel_apply(
+            restore_known_labels,
+            axis=1,
+            args=(df_known_y_values,)
+        )
+        df_iter_L = df_itertative.loc[df_itertative[id_col].isin(labelled_instance_ids)]
+        # Select the most confident labels
+        df_iter_U = df_itertative.loc[df_itertative[id_col].isin(unlabelled_instance_ids)]
+
+        epsilon = 0.05
+        # set labels per sign
+
+        def set_label_by_sign(row, epsilon):
+            if abs(row[label_col]) > epsilon:
+                return  np.sign(row[label_col])
+            else:
+                return 0
+
+        df_iter_U[label_col] = df_iter_U.parallel_apply(
+            set_label_by_sign, axis=1, args= (epsilon,)
+        )
+
+        df_itertative = df_iter_L.append(df_iter_U,ignore_index=True)
+        # check if any unlabelled nodes
+        if (iter > max_iter) and (0 not in list(df_itertative[label_col])):
+            break
+        iter += 1
+        if iter > 15 :
+            break
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -289,70 +489,6 @@ list_mp_obj = network_creation(
     MP_list
 )
 
-# Assign "human_labels"
-# checkpoints are 10%, 20%, 30%, 40%, 50%
-df = read_target_data(
-    DATA_SOURCE='./../../AD_system_output',
-    DIR=None
+exec_classifier(
+        list_mp_obj
 )
-record_count = len(df)
-cur_checkpoint = 10
-l_count = int(record_count * cur_checkpoint / 100)
-u_count = record_count - l_count
-labelled_df1 = df.head(l_count).copy()
-labelled_df2 = df.tail(u_count).copy()
-
-
-def set_y(row):
-    if row['fraud'] == True:
-        return 1  # labelled True
-    elif row['fraud'] == False:
-        return -1  # labelled false
-    else:
-        return 0  # unknown
-
-id_col = 'PanjivaRecordID'
-
-labelled_df1['y'] = 0
-labelled_df2['y'] = 0
-
-# Set labels for instances which have been "Labelled" by humans
-labelled_df1['y'] = labelled_df1.parallel_apply(set_y, axis=1)
-
-df = labelled_df1.append(labelled_df2,ignore_index=True)
-
-classif_features = []
-# calculate meta path features based on each of the metapths
-labelled_instance_ids = list(labelled_df1[id_col])
-unlabelled_instance_ids = list(labelled_df1[id_col])
-for mp_obj in list_mp_obj:
-    z = mp_obj.calc_z(df)
-    _id = mp_obj.id
-    zcol = z+str(_id)
-    df[zcol] = list(z)
-    classif_features.append(zcol)
-
-# Train model
-# Input features should be the entities and {z}
-one_hot_columns = list(domain_dims.keys())
-df = pd.get_dummies(
-    df,
-    columns = one_hot_columns
-)
-df_train = df.loc[df[id_col].isin(labelled_instance_ids)]
-from sklearn.ensemble import RandomForestClassifier
-clf = RandomForestClassifier(
-    n_estimators=200,
-    n_jobs=-1,
-    verbose=1
-)
-
-tmp = df_train.copy()
-del tmp[id_col]
-y = list(tmp['y'])
-del tmp[y]
-x = tmp.values
-clf.fit(X = x, y = y)
-
-
-# Train initial model only on the labelled data
