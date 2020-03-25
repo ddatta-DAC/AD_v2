@@ -5,7 +5,7 @@ import os
 import sys
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
-
+from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import precision_recall_fscore_support
@@ -17,6 +17,7 @@ from scipy import sparse
 import argparse
 import pickle
 from pandarallel import pandarallel
+import logging
 
 pandarallel.initialize()
 try:
@@ -28,9 +29,7 @@ from sklearn.utils.sparsefuncs_fast import inplace_csr_row_normalize_l1
 from hashlib import md5
 
 domain_dims = None
-MODEL_DATA_DIR = None
-
-
+Logging_Dir = 'Log'
 # ------------------------------------ #
 
 # Input :
@@ -40,6 +39,33 @@ MODEL_DATA_DIR = None
 # Stage 2
 # DataFrame of [ Test Transactions ids, Scores , Entities ]
 # ------------------------------------- #
+
+def get_logger():
+    global Logging_Dir
+    global DIR
+    logger = logging.getLogger('main')
+    logger.setLevel(logging.INFO)
+    OP_DIR = os.path.join(Logging_Dir, DIR)
+    log_file = 'results.log'
+    if not os.path.exists(Logging_Dir):
+        os.mkdir(Logging_Dir)
+
+    if not os.path.exists(OP_DIR):
+        os.mkdir(OP_DIR)
+    log_file_path = os.path.join(OP_DIR, log_file)
+    handler = logging.FileHandler(log_file_path)
+    handler.setLevel(logging.INFO)
+    logger.addHandler(handler)
+    return logger
+
+def close_logger(logger):
+
+    handlers = logger.handlers[:]
+    for handler in handlers:
+        handler.close()
+        logger.removeHandler(handler)
+    return
+
 
 def get_domain_dims(DIR):
     global domain_dims
@@ -208,17 +234,6 @@ class MP_object:
         A_t_d = csr_matrix(A_t_d)
         _P = self.P
 
-        # D = sparse.spdiags(
-        #     data=np.reciprocal(
-        #         np.reshape(
-        #             np.sum(_P, axis=1),
-        #             [-1])
-        #     ),
-        #     diags=0,
-        #     m=_P[0],
-        #     n=_P[0]
-        # )
-
         res = A_t_d * (_P * (A_t_d.transpose() * csr_matrix(y)))
         res = res.toarray()
         res = np.reshape(res, -1)
@@ -283,16 +298,20 @@ def exec_classifier(
         classifier_type=None
 ):
     global DIR
+    global LOGGER
 
-    cur_checkpoint = 10
+    cur_checkpoint = checkpoint
+    LOGGER.info(' ------------------  ')
+    LOGGER.info(' Current checkpoint (% of records already labelled) :: ' + str(checkpoint))
     label_col = 'y'
     id_col = 'PanjivaRecordID'
     df = read_target_data(
         DATA_SOURCE='./../../AD_system_output',
         DIR=DIR
     )
-    df_master = df.copy()
+    LOGGER.info('Size of Data set ::' + str(len(df)))
 
+    df_master = df.copy()
     record_count = len(df)
 
     # count of how many labelled and unlabelled datapoints
@@ -341,7 +360,7 @@ def exec_classifier(
         df_UL,
         columns=one_hot_columns
     )
-
+    clf = None
     # Train initial Classifier model
     if classifier_type == 'RF':
         clf = RandomForestClassifier(
@@ -354,7 +373,7 @@ def exec_classifier(
             kernel='poly',
             degree='4'
         )
-
+    LOGGER.info('Classifier :: ' + classifier_type)
     # ----------------------------------------------------
     # Train initial model only on the labelled data
     # Input features should be  [ entities, score , {z} ]
@@ -395,7 +414,6 @@ def exec_classifier(
     # Keep a df with entity ids for meta path feature calculations
     df_U_copy = df_U.copy()
     df_U_copy[label_col] = pred_y
-
     df_iterative = df_L.copy().append(df_U_copy, ignore_index=True)
 
     try:
@@ -505,12 +523,14 @@ def exec_classifier(
     df_eval = df_eval.sort_values(by=['score'],ascending=True)
     # Take next 20% of data
     for point in [10,20,30,40,50]:
+
         _count = int(len(df_master)*point/100)
         df_tmp = df_eval.head(_count)
         y_true = list(df_tmp[true_label_name])
         y_pred = list(df_tmp[label_col])
-        precision = precision_score(y_true, y_pred)
-        print('Precision at top {} % :: {}'.format(point, precision))
+        accuracy = accuracy_score(y_true, y_pred)
+        msg = 'Accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
+        LOGGER.info(msg)
 
     return
 
@@ -544,6 +564,9 @@ if not os.path.exists(MODEL_DATA_DIR):
     os.mkdir(MODEL_DATA_DIR)
 
 get_domain_dims(DIR)
+# ----------------------------------------
+LOGGER = get_logger()
+# ----------------------------------------
 train_x = get_training_data(DIR)
 MP_list = get_metapath_list()
 
@@ -551,9 +574,12 @@ list_mp_obj = network_creation(
     train_x,
     MP_list
 )
+set_checkpoints =[ 10,20,30,40,50 ]
+for checkpoint in set_checkpoints:
+    exec_classifier(
+        list_mp_obj,
+        checkpoint= checkpoint,
+        classifier_type = classifier_type
+    )
 
-exec_classifier(
-    list_mp_obj,
-    checkpoint= 10,
-    classifier_type = classifier_type
-)
+close_logger(LOGGER)
