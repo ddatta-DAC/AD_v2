@@ -240,13 +240,12 @@ def get_testing_data_as_DF(
     anomaly_idList_F = anomaly_idList[0]
     anomaly_idList_NF = anomaly_idList[1]
 
-    cols = ['PanjivaRecordID'] + ['data_x_' + str(i) for i in range(1,test_x.shape[1]+1)]
-
     tmp_df = get_train_x_csv(
         DATA_DIR,
         DIR
     )
     cols = list(tmp_df.columns)
+
     _df1 = pd.DataFrame(
         data = np.hstack([np.reshape(test_idList,[-1,1]), test_x]),
         columns = cols

@@ -1,9 +1,14 @@
+import math
 import pandas as pd
 import numpy as np
 import os
 import sys
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
 
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import precision_recall_fscore_support
 sys.path.append('./../..')
 sys.path.append('./..')
 from scipy.sparse import csr_matrix
@@ -274,15 +279,20 @@ def read_target_data(
 # -----------------------------------------------
 def exec_classifier(
         list_mp_obj,
-        cur_checkpoint=10
+        checkpoint=10,
+        classifier_type=None
 ):
+    global DIR
+
+    cur_checkpoint = 10
     label_col = 'y'
     id_col = 'PanjivaRecordID'
     df = read_target_data(
         DATA_SOURCE='./../../AD_system_output',
-        DIR='us_import1'
+        DIR=dir
     )
-    df=df.sample(4000)
+    df_master = df.copy()
+
     record_count = len(df)
 
     # count of how many labelled and unlabelled datapoints
@@ -333,23 +343,29 @@ def exec_classifier(
     )
 
     # Train initial Classifier model
-    clf = RandomForestClassifier(
-        n_estimators=200,
-        n_jobs=-1,
-        verbose=1
-    )
+    if classifier_type == 'RF':
+        clf = RandomForestClassifier(
+            n_estimators=200,
+            n_jobs=-1,
+            verbose=1
+        )
+    elif classifier_type == 'SVM':
+        clf = SVC(
+            kernel='poly',
+            degree='4'
+        )
 
     # ----------------------------------------------------
     # Train initial model only on the labelled data
     # Input features should be  [ entities, score , {z} ]
     # ----------------------------------------------------
+
     clf_train_df_L = clf_train_df.loc[
         clf_train_df[id_col].isin(labelled_instance_ids)
     ]
     clf_train_df_U = clf_train_df.loc[
         clf_train_df[id_col].isin(unlabelled_instance_ids)
     ]
-
     y = list(clf_train_df_L[label_col])
 
     tmp = clf_train_df_L.copy()
@@ -380,11 +396,11 @@ def exec_classifier(
     df_U_copy = df_U.copy()
     df_U_copy[label_col] = pred_y
 
-    df_itertative = df_L.copy().append(df_U_copy, ignore_index=True)
+    df_iterative = df_L.copy().append(df_U_copy, ignore_index=True)
 
     try:
-        del df_itertative['fraud']
-        del df_itertative['anomaly']
+        del df_iterative['fraud']
+        del df_iterative['anomaly']
     except:
         pass
 
@@ -397,7 +413,7 @@ def exec_classifier(
         set new_label = sign(label_val)
         epsilon = 50th percentile of absolute label values
     Clamp down known labels
-    
+
     '''
 
     def restore_known_labels(row, ref_df):
@@ -408,23 +424,31 @@ def exec_classifier(
             return row[label_col]
 
     max_iter = 10
-    iter = 0
+    iter = 1
+    epsilon = 0.5
+
+    def set_label_by_sign(row, epsilon):
+        if abs(row[label_col]) > epsilon:
+            return np.sign(row[label_col])
+        else:
+            return 0
+
+    # ----------------------------------
 
     while True:
-        print(' Iteration :',iter)
+        print(' Iteration :', iter)
         # Recalculate z
         for mp_obj in list_mp_obj:
-            z = mp_obj.calc_z(df_itertative)
+            z = mp_obj.calc_z(df_iterative)
             _id = mp_obj.id
             zcol = 'z' + str(_id)
-            df_itertative[zcol] = list(z)
+            df_iterative[zcol] = list(z)
 
         # Retrain classifier
-        tmp_df = df_itertative.copy()
-        print('tmp_df columns ', tmp_df.columns)
+        tmp_df = df_iterative.copy()
+
         for rc in remove_cols:
             del tmp_df[rc]
-
 
         tmp_df = pd.get_dummies(
             tmp_df,
@@ -432,51 +456,88 @@ def exec_classifier(
         )
         x = tmp_df.values
         pred_y = clf.predict(x)
-        pred_y = np.reshape(pred_y,[-1])
-        df_itertative['y'] = pred_y
+        pred_y = np.reshape(pred_y, [-1])
+        df_iterative['y'] = pred_y
 
         # Clamp down the known labels
-        df_itertative[label_col] = df_itertative.parallel_apply(
+        df_iterative.loc[:, label_col] = df_iterative.parallel_apply(
             restore_known_labels,
             axis=1,
             args=(df_known_y_values,)
         )
-        df_iter_L = df_itertative.loc[df_itertative[id_col].isin(labelled_instance_ids)]
+        df_iter_L = df_iterative.loc[df_iterative[id_col].isin(labelled_instance_ids)]
         # Select the most confident labels
-        df_iter_U = df_itertative.loc[df_itertative[id_col].isin(unlabelled_instance_ids)]
-
-        epsilon = 0.05
-        # set labels per sign
-
-        def set_label_by_sign(row, epsilon):
-            if abs(row[label_col]) > epsilon:
-                return  np.sign(row[label_col])
-            else:
-                return 0
-
-        df_iter_U[label_col] = df_iter_U.parallel_apply(
-            set_label_by_sign, axis=1, args= (epsilon,)
+        df_iter_U = df_iterative.loc[df_iterative[id_col].isin(unlabelled_instance_ids)]
+        # --------------------------
+        # set labels as per sign
+        # --------------------------
+        df_iter_U.loc[:, label_col] = df_iter_U.parallel_apply(
+            set_label_by_sign, axis=1, args=(epsilon,)
         )
+        epsilon = max(math.pow(epsilon, 0.75), 0.05)
+        df_iterative = df_iter_L.append(df_iter_U, ignore_index=True)
 
-        df_itertative = df_iter_L.append(df_iter_U,ignore_index=True)
         # check if any unlabelled nodes
-        if (iter > max_iter) and (0 not in list(df_itertative[label_col])):
+        if (iter > max_iter) and (0 not in list(df_iterative[label_col])):
             break
         iter += 1
-        if iter > 15 :
-            break
 
+    df_eval = df_iterative.loc[df_iterative[id_col].isin(unlabelled_instance_ids)]
+
+    # Add in actual label columns
+    def place_true_labels(row, ref_df):
+        _id = row[id_col]
+        r = list(df.loc[ref_df[id_col]==_id]['fraud'])[0]
+        if r is True:
+            return 1
+        else:
+            return -1
+    true_label_name = 'y_true'
+    df_eval.loc[:,true_label_name] = df_eval.parallel_apply(
+        place_true_labels,
+        axis=1,
+        args=(df_master,)
+    )
+
+    # We are trying to understand how input so far will improve the output in next stage
+    # So we try to see the metrics in the next 10% of the data
+
+    df_eval = df.sort_values(by=['score'],ascending=True)
+    # Take next 20% of data
+    for point in [10,20,30,40,50]:
+        _count = int(len(df_master)*point/100)
+        df_tmp = df_eval.head(_count)
+        from sklearn.metrics import precision_score
+        precision = precision_score(y_true=df_tmp[true_label_name], y_pred=df_tmp[label_col])
+        print('Precision at top {} % :: {}'.format(point, precision))
+
+    return
+
+
+
+
+
+
+# -------------------------------------------------------------------------------
+# Set up parameters
+# -------------------------------------------------------------------------------
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
     default='us_import1'
 )
+parser.add_argument(
+    '--classifier_type', choices=['SVM', 'RF'],
+    default='RF'
+)
 args = parser.parse_args()
 DIR = args.DIR
+classifier_type = args.classifier
 # --------------------------------------
 
 MODEL_DATA_DIR = os.path.join('model_use_data', DIR)
+
 if not os.path.exists(MODEL_DATA_DIR):
     os.mkdir(MODEL_DATA_DIR)
 
@@ -490,5 +551,7 @@ list_mp_obj = network_creation(
 )
 
 exec_classifier(
-        list_mp_obj
+    list_mp_obj,
+    checkpoint= 10,
+    classifier_type = classifier_type
 )
