@@ -533,7 +533,8 @@ parser.add_argument(
 )
 args = parser.parse_args()
 DIR = args.DIR
-classifier_type = args.classifier
+classifier_type = args.classifier_type
+
 # --------------------------------------
 
 MODEL_DATA_DIR = os.path.join('model_use_data', DIR)
