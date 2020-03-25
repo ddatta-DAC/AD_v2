@@ -493,7 +493,7 @@ def exec_classifier(
         else:
             return -1
     true_label_name = 'y_true'
-    df_eval.loc[:,true_label_name] = df_eval.parallel_apply(
+    df_eval[true_label_name] = df_eval.parallel_apply(
         place_true_labels,
         axis=1,
         args=(df_master,)
@@ -501,14 +501,15 @@ def exec_classifier(
 
     # We are trying to understand how input so far will improve the output in next stage
     # So we try to see the metrics in the next 10% of the data
-
-    df_eval = df.sort_values(by=['score'],ascending=True)
+    from sklearn.metrics import precision_score
+    df_eval = df_eval.sort_values(by=['score'],ascending=True)
     # Take next 20% of data
     for point in [10,20,30,40,50]:
         _count = int(len(df_master)*point/100)
         df_tmp = df_eval.head(_count)
-        from sklearn.metrics import precision_score
-        precision = precision_score(y_true=df_tmp[true_label_name], y_pred=df_tmp[label_col])
+        y_true = list(df_tmp[true_label_name])
+        y_pred = list(df_tmp[label_col])
+        precision = precision_score(y_true, y_pred)
         print('Precision at top {} % :: {}'.format(point, precision))
 
     return
