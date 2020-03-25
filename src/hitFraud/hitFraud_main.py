@@ -289,7 +289,7 @@ def exec_classifier(
     id_col = 'PanjivaRecordID'
     df = read_target_data(
         DATA_SOURCE='./../../AD_system_output',
-        DIR=dir
+        DIR=DIR
     )
     df_master = df.copy()
 
