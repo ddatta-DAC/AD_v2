@@ -164,6 +164,8 @@ def convert_to_ids(
 
     for col in sorted(feature_columns):
         vals = list(set(df[col]))
+        vals = list(sorted(vals))
+
         id2val_dict = {
             e[0]: e[1]
             for e in enumerate(vals, 0)
