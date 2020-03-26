@@ -283,7 +283,3 @@ def get_testing_data_as_DF(
 
 
 
-res =  get_testing_data_as_DF(
-    './../../generated_data_v1','us_import2'
-)
-print(res)
