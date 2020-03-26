@@ -291,7 +291,7 @@ def create_mead_model_data(
 # ========================================================= #
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
+    '--DIR', choices=['us_import1', 'us_import2', 'us_import3','us_import4'],
     default=None
 )
 parser.add_argument(
