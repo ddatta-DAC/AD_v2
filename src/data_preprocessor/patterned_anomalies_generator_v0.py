@@ -173,12 +173,12 @@ def main_process():
 
     # ----- Crteria 1 ------ #
     # Select pairs of ports such that their count in (15,85) percentile
-    # Select 10 % of such pairs
+    # Select 20 % of such pairs
     kk = df_train.groupby(['PortOfLading', 'PortOfUnlading']).size().reset_index(name='count')
     lb = np.percentile(list(kk['count']), 15)
     ub = np.percentile(list(kk['count']), 85)
     kk_1 = kk.loc[(kk['count'] >= lb) & (kk['count'] <= ub)]
-    kk_2 = kk_1.sample(frac=0.10)
+    kk_2 = kk_1.sample(frac=0.20)
     kk_2 = kk_2.reset_index(drop=True)
     del kk_2['count']
     target_PortOfLading_PortOfUnlading = kk_2
@@ -249,11 +249,11 @@ def main_process():
     # target ShipementDestination
     # target ShipmentOrigin
     # ================================================ #
-
+    _frac = 0.2
     hh = df_train.groupby(['HSCode']).size().reset_index(name='count')
     lb = np.percentile(list(hh['count']), 10)
     ub = np.percentile(list(hh['count']), 90)
-    _count = int(0.2 * len(hh))
+    _count = int(_frac * len(hh))
 
     candidate_HSCode = set(
         df_train.loc[
