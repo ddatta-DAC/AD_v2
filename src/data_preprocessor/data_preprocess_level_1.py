@@ -50,11 +50,11 @@ def get_regex(_type):
         if _type == 'test':
             return '.*((04)|(05))_2015.csv'
 
-    if DIR == 'us_import2':
+    if DIR == 'us_import4':
         if _type == 'train':
-            return '.*(((09|10|11|12)_2015)|(0[0]_2016)).csv'
+            return '.*((09|10|11|12)_2015.csv'
         if _type == 'test':
-            return '.*0[1-3]_2016.csv'
+            return '.*0[1-4]_2016.csv'
 
     if DIR == 'us_import3':
         if _type == 'train':
