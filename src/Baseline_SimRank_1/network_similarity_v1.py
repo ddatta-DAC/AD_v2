@@ -87,6 +87,7 @@ def get_domain_dims():
 
 def convert2_Serial_ID(_row, cols):
     global serial_mapping_df
+
     row = _row.copy()
     for c in cols:
         val = row[c]
@@ -96,7 +97,8 @@ def convert2_Serial_ID(_row, cols):
                 (serial_mapping_df['Entity_ID'] == val)]
             ['Serial_ID']
         )
-        row[c] = res[0]
+        if len(res) > 0 :
+            row[c] = res[0]
     return row
 
 def serialize_data( df ):
@@ -308,21 +310,22 @@ def get_graph_W_transaction_nodes(G, df):
     if G1 is not None:
         return G1
 
-    list_record_ids = list(df[id_col])
+    list_record_ids = list(sorted(df[id_col]))
     # Convert the transaction ids and add them to serial_mapping_df
     cur_serial_id = max(list(serial_mapping_df['Serial_ID']))+1
     list_node_serial_ids = []
-    serial_mapping_df = serial_mapping_df.copy()
+    _data = []
 
     for _id in list_record_ids:
-        serial_mapping_df = serial_mapping_df.append(
-            {'Domain':id_col,
-             'Entity_ID': _id,
-             'Serial_ID' : cur_serial_id},
-              ignore_index=True
-        )
+        _data.append([ id_col, _id, cur_serial_id ])
         list_node_serial_ids.append(cur_serial_id)
         cur_serial_id += 1
+
+    new_df = pd.DataFrame(data =_data, columns=['Domain', 'Entity_ID', 'Serial_ID'])
+    serial_mapping_df = serial_mapping_df.append(
+        new_df,
+        ignore_index=True
+    )
 
     G.add_nodes_from(list_node_serial_ids)
     # Now Serialized df is the test data
@@ -354,7 +357,7 @@ def get_graph_W_transaction_nodes(G, df):
         )
 
         def aux_f_02(row, d1, d2):
-            return (row[d1], row[d2,1])
+            return (row[d1], row[d2],1)
 
         res = tmp_df.parallel_apply(
             aux_f_02, axis=1, args=(domain_1, domain_2,)

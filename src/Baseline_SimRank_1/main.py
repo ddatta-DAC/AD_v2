@@ -10,6 +10,7 @@ import argparse
 import multiprocessing
 from pandarallel import pandarallel
 pandarallel.initialize()
+import networkx as nx
 
 try:
     from src.data_fetcher import data_fetcher_v2 as data_fetcher
