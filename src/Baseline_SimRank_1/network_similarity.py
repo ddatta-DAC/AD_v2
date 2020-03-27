@@ -15,6 +15,7 @@ from collections import defaultdict
 import multiprocessing
 sys.path.append('./../..')
 sys.path.append('./..')
+from joblib import Parallel, delayed
 from src.utils import coOccMatrixGenerator
 
 try:
@@ -165,7 +166,7 @@ def get_coOcc_dict(
 
 
 
-def save_graph(G, graph_file = 'nx_G1.pkl' ):
+def save_graph(G, graph_file = 'nx_G0.pkl' ):
     global model_data_use_DIR
 
     graph_obj_path = os.path.join(model_data_use_DIR,graph_file)
@@ -177,8 +178,12 @@ def read_graph( graph_file = 'nx_G1.pkl' ):
     global model_data_use_DIR
     graph_file = 'nx_G1.pkl'
     graph_obj_path = os.path.join(model_data_use_DIR, graph_file)
-    G = nx.read_gpickle(graph_obj_path)
-    return G
+    if os.path.exists(graph_obj_path):
+        G = nx.read_gpickle(graph_obj_path)
+        return G
+    else:
+        return None
+
 
 # ----------------------------------------------------------- #
 # Function to get initial graph (with nodes as entities)
@@ -188,6 +193,12 @@ def get_initial_graph(
         domain_dims
 ) :
     global nodeObj_Dict
+    graph_file = 'nx_G0.pkl'
+
+    G = read_graph(graph_file)
+    if G is not None:
+        return G
+
     nodeObj_Dict = get_base_nodeObj_dict ( domain_dims, DIR)
     print(domain_dims)
 
@@ -226,11 +237,17 @@ def get_initial_graph(
 
         G.add_weighted_edges_from(args)
         print('Number of nodes and edges :: ', G.number_of_nodes(), G.number_of_edges())
+        save_graph(G, graph_file)
         return G
 
 def add_transaction_nodes(df, G):
     global id_col
     global nodeObj_Dict
+    graph_file = 'nx_G1.pkl'
+    G = read_graph(graph_file)
+
+    if G is not None:
+        return G
 
     list_record_ids = list(df[id_col])
     create_transaction_nodes(list_record_ids)
@@ -240,15 +257,29 @@ def add_transaction_nodes(df, G):
     list_edge_types = read_schema()
     list_edge_types = [ _ for _ in list_edge_types if id_col in _ ]
 
+    num_jobs = multiprocessing.cpu_count()
     for edge in list_edge_types:
         domain_1 = edge[0]
         domain_2 = edge[1]
+        tmp_df = df[[domain_1,domain_2]]
 
+        def aux_func_01( row, domain_1,domain_2 ):
+            global nodeObj_Dict
+            i = nodeObj_Dict[domain_1][row[domain_1]]
+            j = nodeObj_Dict[domain_2][row[domain_2]]
+            return (i,j)
+
+        edge_list =  Parallel(num_jobs)(
+            delayed(aux_func_01)
+            (row,domain_1,domain_2,) for _,row in tmp_df.iterrows())
+        G.add_egdes_from(edge_list)
+    save_graph(G, graph_file  )
+    return G
 
 domain_dims = get_domain_dims(DIR)
-df = get_training_data(DIR)
+df = get_training_data(DIR, )
 G = get_initial_graph(df,domain_dims)
-save_graph(G)
+
 
 
 
