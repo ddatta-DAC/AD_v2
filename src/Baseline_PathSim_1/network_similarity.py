@@ -6,6 +6,8 @@
 # Email : ddatta@vt.edu
 # ---------------
 from scipy import sparse
+from scipy.sparse import load_npz
+from scipy.sparse import save_npz
 import argparse
 import pickle
 from hashlib import md5
@@ -40,11 +42,14 @@ domain_dims = None
 # ------------------------------------------------------------3
 # Call this to set up global variables
 # ------------------------------------------------------------
-def initialize(_dir, _model_use_data_DIR=None):
+def initialize(_dir, _model_use_data_DIR = None):
     global DIR
     global model_use_data_DIR
+    global domain_dims
 
     DIR = _dir
+    domain_dims = get_domain_dims(DIR)
+
     if _model_use_data_DIR is None:
         model_use_data_DIR = 'model_use_data'
     else:
@@ -226,7 +231,7 @@ class MP_object:
 
         for r1, r2 in zip(self.mp[:-1], self.mp[1:]):
             mat = get_transition_matrix(r1, r2)
-            mat = csr_matrix(mat)
+            mat = csr_matrix(mat, dtype=np.float16)
             matrix_list.append(mat)
 
         self.CM = matrix_multiply(matrix_list)
@@ -237,18 +242,32 @@ class MP_object:
             t_df,
             domain_dims
     ):
+        global model_use_data_DIR
+        f_name = 'sim_matrix_mp_' + str(self.id) + '.npz'
 
-        n = len(t_df)
-        print(domain_dims)
-        conn_domain = self.mp[0]
-        print(conn_domain)
-        A_t_d = np.zeros([n, domain_dims[conn_domain]])
-        d_vals = list(t_df[conn_domain])
-        A_t_d[np.arange(n), d_vals] = 1
-        A_t_d = csr_matrix(A_t_d)
-        M = A_t_d * (self.CM * A_t_d.transpose())
-        print(M.shape)
+        simMatrix_path = os.path.join(
+            model_use_data_DIR,
+            f_name
+        )
+        if os.path.exists(simMatrix_path):
+            simMatrix = load_npz(simMatrix_path)
+        else:
+            n = len(t_df)
+            print(domain_dims)
+            conn_domain = self.mp[0]
+            print(conn_domain)
+            A_t_d = np.zeros([n, domain_dims[conn_domain]])
+            d_vals = list(t_df[conn_domain])
+            A_t_d[np.arange(n), d_vals] = 1
+            A_t_d = csr_matrix(A_t_d ,  dtype=np.float16)
+            simMatrix = A_t_d * (self.CM * A_t_d.transpose())
+            save_npz(
+                simMatrix_path,
+                simMatrix
+            )
+        self.simMatrix = simMatrix
 
+        return
 
 
 # -------------------------------------------------------------------
@@ -288,7 +307,7 @@ def network_creation(
 DIR = 'us_import1'
 initialize(DIR)
 df = get_training_data(DIR)
-domain_dims = get_domain_dims(DIR)
+
 print(domain_dims)
 MP_list = get_metapath_list()
 list_mp_obj = network_creation(
@@ -305,5 +324,6 @@ for mp_obj in list_mp_obj:
         target_df,
         domain_dims
         )
+
 
 
