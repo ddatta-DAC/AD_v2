@@ -10,7 +10,7 @@ from joblib import Parallel, delayed
 from scipy.sparse import load_npz
 from scipy.sparse import save_npz
 import argparse
-import pickle
+from scipy.linalg.blas import sgemm
 from hashlib import md5
 from scipy.sparse import csr_matrix
 import pickle
@@ -201,6 +201,7 @@ class MP_object:
     def GET_mp_obj(MP):
         global model_use_data_DIR
         signature = MP_object.get_signature(MP)
+        print(signature)
         saved_file_name = 'mp_object_' + signature + '.pkl'
         saved_file_path = os.path.join(
             model_use_data_DIR,
@@ -208,7 +209,6 @@ class MP_object:
         )
 
         if os.path.exists(saved_file_path):
-            print(signature)
             with open(saved_file_path, "rb") as fh:
                 obj = pickle.load(fh)
             return obj
@@ -264,8 +264,10 @@ class MP_object:
             A_t_d = np.zeros([n, domain_dims[conn_domain]])
             d_vals = list(t_df[conn_domain])
             A_t_d[np.arange(n), d_vals] = 1
-            A_t_d = csr_matrix(A_t_d)
-            _simMatrix = A_t_d * (self.CM * A_t_d.transpose())
+
+            # A_t_d = csr_matrix(A_t_d)
+            P2 = sgemm(1, self.CM.toarray(), A_t_d.transpose())
+            _simMatrix = sgemm(1, A_t_d , P2 )
 
             D = _simMatrix.diagonal()
             simMatrix = _simMatrix.copy()
