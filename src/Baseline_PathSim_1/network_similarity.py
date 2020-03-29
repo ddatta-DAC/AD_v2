@@ -9,6 +9,9 @@ from scipy import sparse
 from joblib import Parallel, delayed
 from scipy.sparse import load_npz
 from scipy.sparse import save_npz
+from numpy import load as load_np
+from numpy import save as save_np
+
 import argparse
 from scipy.linalg.blas import sgemm
 from hashlib import md5
@@ -246,7 +249,7 @@ class MP_object:
     ):
         global id_col
         global model_use_data_DIR
-        f_name = 'sim_matrix_mp_' + str(self.id) + '.npz'
+        f_name = 'sim_matrix_mp_' + str(self.id) + '.npy'
 
         t_df = t_df.sort_values(by=[id_col],ascending=True)
         n = len(t_df)
@@ -255,7 +258,7 @@ class MP_object:
             f_name
         )
         if os.path.exists(simMatrix_path):
-            simMatrix = load_npz(simMatrix_path)
+            simMatrix = load_np(simMatrix_path)
 
         else:
             print( 'MetaPath :',self.mp)
@@ -286,7 +289,7 @@ class MP_object:
 
             _ = Parallel(n_jobs=n_jobs, require='sharedmem')(delayed(aux1)(i_j[0],i_j[1]) for i_j in args)
 
-            save_npz(
+            save_np(
                 simMatrix_path,
                 simMatrix
             )
