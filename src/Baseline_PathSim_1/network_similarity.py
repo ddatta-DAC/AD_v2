@@ -244,14 +244,14 @@ class MP_object:
             domain_dims
     ):
         global model_use_data_DIR
-        f_name = 'sim_matrix_mp_' + str(self.id) + '.npz'
+        f_name = 'sim_matrix_mp_' + str(self.id)
 
         simMatrix_path = os.path.join(
             model_use_data_DIR,
             f_name
         )
         if os.path.exists(simMatrix_path):
-            simMatrix = load_npz(simMatrix_path)
+            simMatrix = np.load(simMatrix_path)
         else:
             n = len(t_df)
             print(domain_dims)
@@ -262,14 +262,14 @@ class MP_object:
             A_t_d[np.arange(n), d_vals] = 1
             A_t_d = csr_matrix(A_t_d)
             simMatrix = A_t_d * (self.CM * A_t_d.transpose())
-            simMatrix = csr_matrix(simMatrix)
-            save_npz(
+            simMatrix = simMatrix.toarray()
+            np.save(
                 simMatrix_path,
                 simMatrix
             )
 
         self.simMatrix = simMatrix
-        D = simMatrix.diagonal()
+        # D = simMatrix.diagonal()
 
 
         return
@@ -325,15 +325,15 @@ def aux_set_PS ( mp_obj , target_df, domain_dims):
     mp_obj.calc_PathSim(target_df, domain_dims)
     return
 
-# for mp_obj in list_mp_obj:
-#     mp_obj.calc_PathSim(
-#         target_df,
-#         domain_dims
-#         )
-Parallel(n_jobs=2)(
-    delayed(
-        aux_set_PS
-    )( mp_obj, target_df, domain_dims ) for mp_obj in list_mp_obj)
+for mp_obj in list_mp_obj:
+    mp_obj.calc_PathSim(
+        target_df,
+        domain_dims
+        )
+# Parallel(n_jobs=2)(
+#     delayed(
+#         aux_set_PS
+#     )( mp_obj, target_df, domain_dims ) for mp_obj in list_mp_obj)
 
 
 
