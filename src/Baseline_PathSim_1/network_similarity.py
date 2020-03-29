@@ -33,14 +33,14 @@ REFRESH_NODES = False
 id_col = 'PanjivaRecordID'
 nodeObj_Dict = None
 model_use_data_DIR = None
-
+domain_dims = None
 
 # ---------------------------------------
 
 # ------------------------------------------------------------3
 # Call this to set up global variables
 # ------------------------------------------------------------
-def initialize(_dir, _model_use_data_DIR):
+def initialize(_dir, _model_use_data_DIR=None):
     global DIR
     global model_use_data_DIR
 
@@ -58,6 +58,35 @@ def initialize(_dir, _model_use_data_DIR):
     return
 
 
+def get_training_data(DIR):
+    SOURCE_DATA_DIR = './../../generated_data_v1'
+    data = data_fetcher.get_train_x_csv(SOURCE_DATA_DIR, DIR)
+    return data
+
+def get_domain_dims(DIR):
+
+    with open(
+            os.path.join(
+                './../../generated_data_v1',
+                DIR,
+                'domain_dims.pkl'
+            ), 'rb') as fh:
+        domain_dims = pickle.load(fh)
+    return domain_dims
+
+def read_target_data(
+        DATA_SOURCE, DIR
+):
+    csv_f_name = 'scored_test_data.csv'
+    df = pd.read_csv(
+        os.path.join(
+            DATA_SOURCE,
+            DIR,
+            csv_f_name), index_col=None
+    )
+    return df
+
+# -----------------------------------------------
 def matrix_multiply(
         matrix_list,
         _csr = True
@@ -94,7 +123,7 @@ def matrix_multiply(
 
         return aux(0, n - 1)
 
-    mult_order = optimal_parenthesization(list_dimensions)
+
 
     def aux_mul(a,b):
         if _csr:
@@ -121,6 +150,7 @@ def matrix_multiply(
             mat_b = mult(_list_indices[1])
             return aux_mul(mat_a, mat_b)
 
+    mult_order = optimal_parenthesization(list_dimensions)
     return  mult(mult_order)
 
 # -------------------------------------------------------------------
@@ -202,6 +232,22 @@ class MP_object:
         self.CM = matrix_multiply(matrix_list)
         return
 
+    def calc_PathSim(
+            self,
+            t_df,
+            domain_dims
+    ):
+
+        n = len(t_df)
+        print(domain_dims)
+        conn_domain = self.mp[0]
+        print(conn_domain)
+        A_t_d = np.zeros([n, domain_dims[conn_domain]])
+        d_vals = list(t_df[conn_domain])
+        A_t_d[np.arange(n), d_vals] = 1
+        A_t_d = csr_matrix(A_t_d)
+        M = A_t_d * (self.CM * A_t_d.transpose())
+        print(M.shape)
 
 
 
@@ -235,28 +281,29 @@ def network_creation(
 
 
 
-def get_training_data(DIR):
-    SOURCE_DATA_DIR = './../../generated_data_v1'
-    data = data_fetcher.get_train_x_csv(SOURCE_DATA_DIR, DIR)
-    return data
 
-def get_domain_dims(DIR):
-    global domain_dims
-    with open(
-            os.path.join(
-                './../../generated_data_v1/',
-                DIR,
-                'domain_dims.pkl'
-            ), 'rb') as fh:
-        domain_dims = pickle.load(fh)
-    return
+
 
 
 DIR = 'us_import1'
-initialize(DIR, None)
+initialize(DIR)
 df = get_training_data(DIR)
 domain_dims = get_domain_dims(DIR)
+print(domain_dims)
 MP_list = get_metapath_list()
-network_creation(
+list_mp_obj = network_creation(
     df,MP_list
 )
+
+target_df = read_target_data(
+    DATA_SOURCE='./../../AD_system_output',
+    DIR = DIR
+)
+
+for mp_obj in list_mp_obj:
+    mp_obj.calc_PathSim(
+        target_df,
+        domain_dims
+        )
+
+
