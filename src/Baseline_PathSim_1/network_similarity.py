@@ -266,7 +266,6 @@ class MP_object:
                 simMatrix
             )
         self.simMatrix = simMatrix
-
         return
 
 
@@ -319,11 +318,23 @@ target_df = read_target_data(
     DIR = DIR
 )
 
-for mp_obj in list_mp_obj:
-    mp_obj.calc_PathSim(
-        target_df,
-        domain_dims
-        )
+import joblib
+from joblib import Parallel,delayed
+
+def aux_set_PS ( mp_obj , target_df, domain_dims):
+    mp_obj.calc_PathSim(target_df, domain_dims)
+    return
+
+# for mp_obj in list_mp_obj:
+#     mp_obj.calc_PathSim(
+#         target_df,
+#         domain_dims
+#         )
+Parallel(n_jobs=multiprocessing.cpu_count())(
+    delayed(
+        aux_set_PS
+    )( mp_obj, target_df, domain_dims) for mp_obj in list_mp_obj)
+
 
 
 
