@@ -266,15 +266,20 @@ class MP_object:
             A_t_d = csr_matrix(A_t_d)
             simMatrix = A_t_d * (self.CM * A_t_d.transpose())
             # simMatrix = simMatrix.toarray()
+
+            print(' >>> ', simMatrix.shape)
+            D = simMatrix.diagonal()
+            for i in range(n):
+                for j in range(i):
+
+                    if i == j : continue
+                    simMatrix[i,j] = 2 * simMatrix[i,j]/ (D[i] + D[j])
+                    simMatrix[j,i] = simMatrix[i,j]
+
             save_npz(
                 simMatrix_path,
                 simMatrix
             )
-            D = simMatrix.diagonal()
-            for i in range(n):
-                for j in range(i):
-                    simMatrix[i][j] = 2 * simMatrix[i][j]/ (D[i] + D[j])
-                    simMatrix[j][i] = simMatrix[i][j]
         self.simMatrix = simMatrix
         return
 
