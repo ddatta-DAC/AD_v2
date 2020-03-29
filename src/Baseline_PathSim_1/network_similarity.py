@@ -19,6 +19,8 @@ import pandas as pd
 import numpy as np
 from collections import defaultdict
 import multiprocessing
+import joblib
+from joblib import Parallel,delayed
 
 sys.path.append('./../..')
 sys.path.append('./..')
@@ -69,7 +71,6 @@ def get_training_data(DIR):
     return data
 
 def get_domain_dims(DIR):
-
     with open(
             os.path.join(
                 './../../generated_data_v1',
@@ -261,6 +262,7 @@ class MP_object:
             A_t_d[np.arange(n), d_vals] = 1
             A_t_d = csr_matrix(A_t_d)
             simMatrix = A_t_d * (self.CM * A_t_d.transpose())
+            simMatrix = csr_matrix(simMatrix)
             save_npz(
                 simMatrix_path,
                 simMatrix
@@ -303,10 +305,6 @@ def network_creation(
 
 
 
-
-
-
-
 DIR = 'us_import1'
 initialize(DIR)
 df = get_training_data(DIR)
@@ -322,8 +320,6 @@ target_df = read_target_data(
     DIR = DIR
 )
 
-import joblib
-from joblib import Parallel,delayed
 
 def aux_set_PS ( mp_obj , target_df, domain_dims):
     mp_obj.calc_PathSim(target_df, domain_dims)
