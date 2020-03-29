@@ -192,7 +192,7 @@ class MP_object:
 
     @staticmethod
     def get_signature(MP_list):
-        _signature = ''.join(sorted([''.join(_) for _ in MP_list]))
+        _signature = ''.join([''.join(_) for _ in MP_list])
         signature = str(md5(str.encode(_signature)).hexdigest())
         return signature
 
@@ -243,17 +243,20 @@ class MP_object:
             t_df,
             domain_dims
     ):
+        global id_col
         global model_use_data_DIR
         f_name = 'sim_matrix_mp_' + str(self.id) + '.npz'
 
+        t_df = t_df.sort_values(by=[id_col],ascending=True)
+        n = len(t_df)
         simMatrix_path = os.path.join(
             model_use_data_DIR,
             f_name
         )
         if os.path.exists(simMatrix_path):
             simMatrix = load_npz(simMatrix_path)
+
         else:
-            n = len(t_df)
             print(domain_dims)
             conn_domain = self.mp[0]
             print(conn_domain)
@@ -267,11 +270,12 @@ class MP_object:
                 simMatrix_path,
                 simMatrix
             )
-
+            D = simMatrix.diagonal()
+            for i in range(n):
+                for j in range(i):
+                    simMatrix[i][j] = 2 * simMatrix[i][j]/ (D[i] + D[j])
+                    simMatrix[j][i] = simMatrix[i][j]
         self.simMatrix = simMatrix
-        # D = simMatrix.diagonal()
-
-
         return
 
 
@@ -319,7 +323,7 @@ target_df = read_target_data(
     DATA_SOURCE='./../../AD_system_output',
     DIR = DIR
 )
-
+target_df = target_df.head(1000)
 
 def aux_set_PS ( mp_obj , target_df, domain_dims):
     mp_obj.calc_PathSim(target_df, domain_dims)
@@ -329,7 +333,7 @@ for mp_obj in list_mp_obj:
     mp_obj.calc_PathSim(
         target_df,
         domain_dims
-        )
+    )
 
 
 
