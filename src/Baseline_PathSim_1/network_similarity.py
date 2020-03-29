@@ -6,6 +6,7 @@
 # Email : ddatta@vt.edu
 # ---------------
 from scipy import sparse
+from joblib import Parallel, delayed
 from scipy.sparse import load_npz
 from scipy.sparse import save_npz
 import argparse
@@ -257,29 +258,37 @@ class MP_object:
             simMatrix = load_npz(simMatrix_path)
 
         else:
-            print(domain_dims)
+            print( 'MetaPath :',self.mp)
             conn_domain = self.mp[0]
-            print(conn_domain)
+
             A_t_d = np.zeros([n, domain_dims[conn_domain]])
             d_vals = list(t_df[conn_domain])
             A_t_d[np.arange(n), d_vals] = 1
             A_t_d = csr_matrix(A_t_d)
-            simMatrix = A_t_d * (self.CM * A_t_d.transpose())
-            # simMatrix = simMatrix.toarray()
+            _simMatrix = A_t_d * (self.CM * A_t_d.transpose())
 
-            print(' >>> ', simMatrix.shape)
-            D = simMatrix.diagonal()
-            for i in range(n):
-                for j in range(i):
+            D = _simMatrix.diagonal()
+            simMatrix = _simMatrix.copy()
 
-                    if i == j or simMatrix[i,j] == 0.0 : continue
-                    simMatrix[i,j] = 2 * simMatrix[i,j]/ (D[i] + D[j])
-                    simMatrix[j,i] = simMatrix[i,j]
+            args = [(i, j) for i, j in zip(*_simMatrix.nonzero())]
+            n_jobs = multiprocessing.cpu_count()
+            # Parallelize !!
+            def aux1(i,j):
+                v_d = (D[i] + D[j])
+                if v_d == 0:
+                    simMatrix[i, j] = 0
+                    return
+                val = 2 * _simMatrix[i, j] / v_d
+                simMatrix[i, j] = val
+                return
+
+            _ = Parallel(n_jobs=n_jobs, require='sharedmem')(delayed(aux1)(i_j[0],i_j[1]) for i_j in args)
 
             save_npz(
                 simMatrix_path,
                 simMatrix
             )
+
         self.simMatrix = simMatrix
         return
 
