@@ -231,7 +231,7 @@ class MP_object:
 
         for r1, r2 in zip(self.mp[:-1], self.mp[1:]):
             mat = get_transition_matrix(r1, r2)
-            mat = csr_matrix(mat, dtype=np.float16)
+            mat = csr_matrix(mat)
             matrix_list.append(mat)
 
         self.CM = matrix_multiply(matrix_list)
@@ -259,13 +259,17 @@ class MP_object:
             A_t_d = np.zeros([n, domain_dims[conn_domain]])
             d_vals = list(t_df[conn_domain])
             A_t_d[np.arange(n), d_vals] = 1
-            A_t_d = csr_matrix(A_t_d ,  dtype=np.float16)
+            A_t_d = csr_matrix(A_t_d)
             simMatrix = A_t_d * (self.CM * A_t_d.transpose())
             save_npz(
                 simMatrix_path,
                 simMatrix
             )
+
         self.simMatrix = simMatrix
+        D = simMatrix.diagonal()
+
+
         return
 
 
@@ -333,7 +337,7 @@ def aux_set_PS ( mp_obj , target_df, domain_dims):
 Parallel(n_jobs=multiprocessing.cpu_count())(
     delayed(
         aux_set_PS
-    )( mp_obj, target_df, domain_dims) for mp_obj in list_mp_obj)
+    )( mp_obj, target_df, domain_dims ) for mp_obj in list_mp_obj)
 
 
 
