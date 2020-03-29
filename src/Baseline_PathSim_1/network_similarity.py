@@ -121,5 +121,74 @@ def matrix_multiply(
 
 # -------------------------------------------------------------------
 
+class MP_object:
+    id = 0
+    @staticmethod
+    def assign_id():
+        t = MP_object.id
+        MP_object.id = MP_object.id + 1
+        return t
 
+    @staticmethod
+    def get_signature(MP_list):
+        _signature = ''.join(sorted([''.join(_) for _ in MP_list]))
+        signature = str(md5(str.encode(_signature)).hexdigest())
+        return signature
+
+    @staticmethod
+    def GET_mp_obj(MP):
+        global model_use_data_DIR
+        signature = MP_object.get_signature(MP)
+        saved_file_name = 'mp_object_' + signature + '.pkl'
+        saved_file_path = os.path.join(model_use_data_DIR, saved_file_name)
+
+        if os.path.exists(saved_file_path):
+            print(signature)
+            with open(saved_file_path, "rb") as fh:
+                obj = pickle.load(fh)
+            return obj
+        else:
+            obj = MP_object(MP)
+            with open(saved_file_path, 'wb') as fh:
+                pickle.dump(
+                    obj,
+                    fh,
+                    pickle.HIGHEST_PROTOCOL
+                )
+            return obj
+
+    def __init__(self, MP):
+        global domain_dims
+
+        # set up the commuting matrix for PathSim
+
+
+
+# -------------------------------------------------------------------
+def network_creation(
+        train_x_df,
+        MP_list,
+        id_col='PanjivaRecordID'
+):
+    global coOccDict
+    global MODEL_DATA_DIR
+
+    coOccDict_file = os.path.join(MODEL_DATA_DIR, 'coOccDict.pkl')
+    if os.path.exists(coOccDict_file):
+        with open(coOccDict_file, 'rb') as fh:
+            coOccDict = pickle.load(fh)
+    else:
+        coOccDict = coOccMatrixGenerator.get_coOccMatrix_dict(train_x_df, id_col)
+        with open(coOccDict_file, 'wb') as fh:
+            pickle.dump(
+                coOccDict,
+                fh,
+                pickle.HIGHEST_PROTOCOL
+            )
+    list_mp_obj = []
+    for mp in MP_list:
+        mp_obj = MP_object.GET_mp_obj(mp)
+        list_mp_obj.append(mp_obj)
+
+    return list_mp_obj
 
