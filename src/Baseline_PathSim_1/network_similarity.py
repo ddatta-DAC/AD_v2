@@ -272,7 +272,7 @@ class MP_object:
             for i in range(n):
                 for j in range(i):
 
-                    if i == j : continue
+                    if i == j or simMatrix[i,j] == 0.0 : continue
                     simMatrix[i,j] = 2 * simMatrix[i,j]/ (D[i] + D[j])
                     simMatrix[j,i] = simMatrix[i,j]
 
