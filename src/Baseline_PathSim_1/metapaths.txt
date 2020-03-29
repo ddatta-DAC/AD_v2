@@ -8,3 +8,5 @@ ConsigneePanjivaID,PortOfUnlading,HSCode
 ConsigneePanjivaID,PortOfUnlading,Carrier
 ShipperPanjivaID,PortOfLading,HSCode
 ShipperPanjivaID,PortOfLading,Carrier
+ConsigneePanjivaID,HSCode,ShipperPanjivaID
+ShipperPanjivaID,HSCode,ConsigneePanjivaID

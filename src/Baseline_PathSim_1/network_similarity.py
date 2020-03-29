@@ -5,7 +5,11 @@
 # Author : Debanjan Datta
 # Email : ddatta@vt.edu
 # ---------------
-
+from scipy import sparse
+import argparse
+import pickle
+from hashlib import md5
+from scipy.sparse import csr_matrix
 import pickle
 import sys
 import os
@@ -120,6 +124,27 @@ def matrix_multiply(
     return  mult(mult_order)
 
 # -------------------------------------------------------------------
+def get_transition_matrix(domain1, domain2):
+    global coOccDict
+    if domain1 < domain2:
+        key = domain1 + '_+_' + domain2
+        return coOccDict[key]
+    else:
+        key = domain2 + '_+_' + domain1
+        return np.transpose(coOccDict[key])
+
+# ---------------------------------------------------------------------
+def get_metapath_list():
+    MP_list = []
+    with open('metapaths.txt', 'r') as fh:
+        lines = fh.readlines()
+        for line in lines:
+            line = line.strip()
+            _list = line.split(',')
+            _list = [_.strip() for _ in _list]
+            MP_list.append(_list)
+    return MP_list
+#-----------------------------------------------------------------------
 
 class MP_object:
     id = 0
@@ -140,7 +165,10 @@ class MP_object:
         global model_use_data_DIR
         signature = MP_object.get_signature(MP)
         saved_file_name = 'mp_object_' + signature + '.pkl'
-        saved_file_path = os.path.join(model_use_data_DIR, saved_file_name)
+        saved_file_path = os.path.join(
+            model_use_data_DIR,
+            saved_file_name
+        )
 
         if os.path.exists(saved_file_path):
             print(signature)
@@ -160,7 +188,20 @@ class MP_object:
     def __init__(self, MP):
         global domain_dims
 
+        self.mp = MP + MP[::-1][1:]
+        self.id = MP_object.assign_id()
+
         # set up the commuting matrix for PathSim
+        matrix_list = []
+
+        for r1, r2 in zip(self.mp[:-1], self.mp[1:]):
+            mat = get_transition_matrix(r1, r2)
+            mat = csr_matrix(mat)
+            matrix_list.append(mat)
+
+        self.CM = matrix_multiply(matrix_list)
+        return
+
 
 
 
@@ -171,9 +212,9 @@ def network_creation(
         id_col='PanjivaRecordID'
 ):
     global coOccDict
-    global MODEL_DATA_DIR
+    global model_use_data_DIR
 
-    coOccDict_file = os.path.join(MODEL_DATA_DIR, 'coOccDict.pkl')
+    coOccDict_file = os.path.join(model_use_data_DIR, 'coOccDict.pkl')
     if os.path.exists(coOccDict_file):
         with open(coOccDict_file, 'rb') as fh:
             coOccDict = pickle.load(fh)
@@ -192,3 +233,30 @@ def network_creation(
 
     return list_mp_obj
 
+
+
+def get_training_data(DIR):
+    SOURCE_DATA_DIR = './../../generated_data_v1'
+    data = data_fetcher.get_train_x_csv(SOURCE_DATA_DIR, DIR)
+    return data
+
+def get_domain_dims(DIR):
+    global domain_dims
+    with open(
+            os.path.join(
+                './../../generated_data_v1/',
+                DIR,
+                'domain_dims.pkl'
+            ), 'rb') as fh:
+        domain_dims = pickle.load(fh)
+    return
+
+
+DIR = 'us_import1'
+initialize(DIR, None)
+df = get_training_data(DIR)
+domain_dims = get_domain_dims(DIR)
+MP_list = get_metapath_list()
+network_creation(
+    df,MP_list
+)
