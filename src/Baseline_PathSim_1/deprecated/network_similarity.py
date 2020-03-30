@@ -56,7 +56,7 @@ def initialize(
     domain_dims = get_domain_dims(DIR)
 
     if _model_use_data_DIR is None:
-        model_use_data_DIR = 'model_use_data'
+        model_use_data_DIR = '../model_use_data'
     else:
         model_use_data_DIR = _model_use_data_DIR
 
@@ -81,14 +81,14 @@ def initialize(
 
 
 def get_training_data(DIR):
-    SOURCE_DATA_DIR = './../../generated_data_v1'
+    SOURCE_DATA_DIR = '../../../generated_data_v1'
     data = data_fetcher.get_train_x_csv(SOURCE_DATA_DIR, DIR)
     return data
 
 def get_domain_dims(DIR):
     with open(
             os.path.join(
-                './../../generated_data_v1',
+                '../../../generated_data_v1',
                 DIR,
                 'domain_dims.pkl'
             ), 'rb') as fh:
@@ -179,7 +179,7 @@ def get_transition_matrix(domain1, domain2):
 # ---------------------------------------------------------------------
 def get_metapath_list():
     MP_list = []
-    with open('metapaths.txt', 'r') as fh:
+    with open('../metapaths.txt', 'r') as fh:
         lines = fh.readlines()
         for line in lines:
             line = line.strip()
@@ -187,10 +187,13 @@ def get_metapath_list():
             _list = [_.strip() for _ in _list]
             MP_list.append(_list)
     return MP_list
+
+
 #-----------------------------------------------------------------------
 
 class MP_object:
     id = 0
+
     @staticmethod
     def assign_id():
         t = MP_object.id
@@ -215,6 +218,7 @@ class MP_object:
         )
 
         if os.path.exists(saved_file_path):
+            print('File exists!')
             with open(saved_file_path, "rb") as fh:
                 obj = pickle.load(fh)
             return obj
@@ -407,7 +411,6 @@ def process_target_data(
     return
 
 # ------------------------------------------- #
-
 
 
 
