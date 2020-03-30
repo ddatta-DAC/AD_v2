@@ -9,6 +9,7 @@
 import pandas as pd
 import numpy as np
 import os
+from multiprocessing import Pool
 import sys
 from numpy import load as load_np
 from numpy import save as save_np
@@ -64,6 +65,32 @@ REFRESH_NODES = False
 nodeObj_Dict = None
 model_use_data_DIR = None
 list_MP_OBJ = None
+
+# ------------------------------------------------------------
+# ---------         First function to be executed
+# Call this to set up global variables
+# ------------------------------------------------------------
+
+def setup():
+    global DIR
+    global config_file
+    global model_use_data_DIR
+    global TARGET_DATA_SOURCE
+    global domain_dims
+    global KNN_k
+    global data_max_size
+    with open(config_file) as f:
+        CONFIG = yaml.safe_load(f)
+
+    data_max_size = CONFIG['data_max_size']
+    KNN_k = CONFIG['KNN_k']
+    model_use_data_DIR = CONFIG['model_use_data_DIR']
+    if not os.path.exists(model_use_data_DIR):
+        os.mkdir(model_use_data_DIR)
+    if not os.path.exists(os.path.join(model_use_data_DIR, DIR)):
+        os.mkdir(os.path.join(model_use_data_DIR, DIR))
+    model_use_data_DIR = os.path.join(model_use_data_DIR, DIR)
+    domain_dims = get_domain_dims(DIR)
 
 
 # ---------------------------------------
@@ -373,6 +400,11 @@ def set_up_closest_K_by_RecordID(
 
 # ------------------------------------------ #
 
+def aux_precompute_PathSimCalc( args ):
+    mp_obj = args[0]
+    _df = args[1]
+    _dd = args[2]
+    mp_obj.calc_PathSim(_df,_dd)
 
 def process_target_data(
         target_df,
@@ -383,6 +415,11 @@ def process_target_data(
     global list_MP_OBJ
 
     record_2_serial_ID_df = _record_2_serial_ID_df
+
+    args = [(_obj , target_df.copy(), domain_dims.copy()) for _obj in list_MP_OBJ]
+    n_jobs = multiprocessing.cpu_count()
+    with Pool(n_jobs) as p:
+        res = p.map(aux_precompute_PathSimCalc ,args)
 
     for mp_obj in list_MP_OBJ:
         mp_obj.calc_PathSim(
@@ -399,7 +436,7 @@ def process_target_data(
     #                  (set_up_closest_K_by_RecordID)
     #                  (_record_ID, K) for _record_ID in target_df[id_col]
     #                  )
-    from multiprocessing import Pool
+
     args = [(_record_ID, K,save_Dir) for _record_ID in list(target_df[id_col])]
     with Pool(n_jobs) as p:
         res = p.map(set_up_closest_K_by_RecordID ,args)
@@ -417,31 +454,6 @@ def network_initialize():
     list_MP_OBJ = list_mp_obj
     return
 
-# ------------------------------------------------------------
-# ---------         First function to be executed
-# Call this to set up global variables
-# ------------------------------------------------------------
-
-def setup():
-    global DIR
-    global config_file
-    global model_use_data_DIR
-    global TARGET_DATA_SOURCE
-    global domain_dims
-    global KNN_k
-    global data_max_size
-    with open(config_file) as f:
-        CONFIG = yaml.safe_load(f)
-
-    data_max_size = CONFIG['data_max_size']
-    KNN_k = CONFIG['KNN_k']
-    model_use_data_DIR = CONFIG['model_use_data_DIR']
-    if not os.path.exists(model_use_data_DIR):
-        os.mkdir(model_use_data_DIR)
-    if not os.path.exists(os.path.join(model_use_data_DIR, DIR)):
-        os.mkdir(os.path.join(model_use_data_DIR, DIR))
-    model_use_data_DIR = os.path.join(model_use_data_DIR, DIR)
-    domain_dims = get_domain_dims(DIR)
 
 
 
