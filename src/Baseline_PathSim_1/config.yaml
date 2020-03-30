@@ -1,1 +1,3 @@
-
+'KNN_k' : 250
+'model_use_data_DIR' : model_use_data
+'data_max_size' : 10000

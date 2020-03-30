@@ -11,6 +11,7 @@ import multiprocessing
 from pandarallel import pandarallel
 pandarallel.initialize()
 import networkx as nx
+import yaml
 
 try:
     from src.data_fetcher import data_fetcher_v2 as data_fetcher
@@ -18,21 +19,36 @@ except:
     from data_fetcher import data_fetcher_v2 as data_fetcher
 
 try:
-    from . import network_similarity_v1 as NS
+    from . import network_similarity as NS
 except:
-    import network_similarity_v1 as NS
+    import network_similarity as NS
 
 
 # --------------------------------------------
 
 DIR = None
-model_use_data_DIR = 'model_use_data'
+model_use_data_DIR = None
 TARGET_DATA_SOURCE = './../../AD_system_output'
+CONFIG = None
+config_file = 'config.yaml'
+KNN_k = None
+id_col = 'PanjivaRecordID'
+data_max_size = None
+
 
 def setup():
     global DIR
+    global config_file
     global model_use_data_DIR
     global TARGET_DATA_SOURCE
+    global KNN_k
+    global data_max_size
+    with open(config_file) as f:
+        CONFIG = yaml.safe_load(f)
+
+    data_max_size = CONFIG['data_max_size']
+    KNN_k =  CONFIG['KNN_k']
+    model_use_data_DIR = CONFIG['model_use_data_DIR']
     NS.initialize(DIR, model_use_data_DIR)
 
 
@@ -70,7 +86,7 @@ def read_target_data():
 
     csv_f_name = 'scored_test_data.csv'
     df = pd.read_csv(
-        os.path.join(
+            os.path.join(
             TARGET_DATA_SOURCE,
             DIR,
             csv_f_name), index_col=None
@@ -79,20 +95,9 @@ def read_target_data():
 
 # -----------------------------------
 
-def get_tranasaction_pair_similarity():
-    import networkx as nx
 
-    global TARGET_DATA_SOURCE
-    domain_dims = get_domain_dims(DIR)
-    df = get_training_data(DIR)
-    G = NS.get_initial_graph(df, domain_dims)
-    test_data_df = read_target_data(
-        TARGET_DATA_SOURCE,
-        DIR
-    )
-    G = NS.get_graph_W_transaction_nodes(G,test_data_df)
-    print(nx.simrank_similarity(G,10,100))
-    return
+
+
 
 # -----------------------------------
 
@@ -108,10 +113,35 @@ parser.add_argument(
 args = parser.parse_args()
 DIR = args.DIR
 classifier_type = args.classifier_type
+
+# -----------------------------------------
 setup()
-print (NS.model_use_data_DIR)
 domain_dims = get_domain_dims(DIR)
 df = get_training_data(DIR)
-G = NS.get_initial_graph(df, domain_dims)
-df_test = read_target_data()
-G = NS.get_graph_W_transaction_nodes(G, df_test)
+target_df = read_target_data()
+target_df = target_df.head(data_max_size)
+target_df = target_df.sort_values(
+    by = [id_col]
+)
+
+record_2_serial_ID = {
+    e[0]:e[1] for e in enumerate(list(target_df[id_col]))
+}
+record_2_serial_ID_df = pd.DataFrame(
+    record_2_serial_ID.items(), columns=[id_col,'Serial_ID']
+)
+record_2_serial_file = os.path.join(model_use_data_DIR, 'record_2_serial_ID.csv')
+record_2_serial_ID_df.to_csv(
+    record_2_serial_file, index=False
+)
+
+NS.initialize(
+    DIR,
+    model_use_data_DIR
+)
+
+NS.process_target_data(
+    target_df,
+    record_2_serial_ID_df,
+    KNN_k
+)

@@ -42,16 +42,21 @@ id_col = 'PanjivaRecordID'
 nodeObj_Dict = None
 model_use_data_DIR = None
 domain_dims = None
+list_MP_OBJ = None
 
 # ---------------------------------------
 
 # ------------------------------------------------------------3
 # Call this to set up global variables
 # ------------------------------------------------------------
-def initialize(_dir, _model_use_data_DIR = None):
+def initialize(
+        _dir,
+        _model_use_data_DIR = None
+):
     global DIR
     global model_use_data_DIR
     global domain_dims
+    global list_MP_OBJ
 
     DIR = _dir
     domain_dims = get_domain_dims(DIR)
@@ -66,6 +71,18 @@ def initialize(_dir, _model_use_data_DIR = None):
     if not os.path.exists(os.path.join(model_use_data_DIR, DIR)):
         os.mkdir(os.path.join(model_use_data_DIR, DIR))
     model_use_data_DIR = os.path.join(model_use_data_DIR, DIR)
+
+
+    # -------------------------
+    # Execute #
+    # -------------------------
+    train_df = get_training_data(DIR)
+    MP_list = get_metapath_list()
+    list_mp_obj = network_creation(
+        train_df,
+        MP_list
+    )
+    list_MP_OBJ  = list_mp_obj
     return
 
 
@@ -84,17 +101,7 @@ def get_domain_dims(DIR):
         domain_dims = pickle.load(fh)
     return domain_dims
 
-def read_target_data(
-        DATA_SOURCE, DIR
-):
-    csv_f_name = 'scored_test_data.csv'
-    df = pd.read_csv(
-        os.path.join(
-            DATA_SOURCE,
-            DIR,
-            csv_f_name), index_col=None
-    )
-    return df
+
 
 # -----------------------------------------------
 def matrix_multiply(
@@ -327,32 +334,78 @@ def network_creation(
     return list_mp_obj
 
 # ------------------------------------------ #
+def set_up_closest_K_by_RecordID(
+    Record_ID,
+    K = 100
+):
+    global list_mp_obj
+    global id_col
+    global model_use_data_DIR
+    save_Dir = 'KNN'
 
-DIR = 'us_import1'
-initialize(DIR)
-df = get_training_data(DIR)
+    f_name = str(Record_ID) + '.csv'
+    f_path = os.path.join( model_use_data_DIR, save_Dir, f_name)
+    R2S_df = record_2_serial_ID_df.copy()
+    serialID = list(
+        R2S_df.loc[R2S_df[id_col] == Record_ID]['Serial_ID']
+    )[0]
+    sim_values  = []
+    for mp_obj in list_mp_obj:
+        _id = mp_obj.id
+        sim_vals = mp_obj.simMatrix[serialID,:]
+        sim_values.append(sim_vals)
 
-print(domain_dims)
-MP_list = get_metapath_list()
-list_mp_obj = network_creation(
-    df,MP_list
-)
+    sim_values = np.vstack(sim_values)
+    sim_values =  np.median(sim_values, axis=0)
+    res_df = pd.DataFrame(
+        data =  sim_values,
+        columns = ['score']
+    )
+    res_df = res_df.reset_index(drop=True)
+    res_df['Serial_ID'] = res_df.index
 
-target_df = read_target_data(
-    DATA_SOURCE='./../../AD_system_output',
-    DIR = DIR
-)
-target_df = target_df.head(1000)
+    # place the id col
+    def aux_place_Record_ID(row):
+        sID = row['Serial_ID']
+        return list(R2S_df.loc[R2S_df['Serial_ID'] == sID][id_col])[0]
 
-def aux_set_PS ( mp_obj , target_df, domain_dims):
-    mp_obj.calc_PathSim(target_df, domain_dims)
+    res_df[id_col] = res_df.apply(
+        aux_place_Record_ID,
+        axis=1
+    )
+    res_df = res_df.sort_values(by =['score'],ascending=False)
+    res_df = res_df.head(K)
+    res_df.to_csv(f_path,index=None)
     return
 
-for mp_obj in list_mp_obj:
-    mp_obj.calc_PathSim(
+
+
+# ------------------------------------------ #
+
+
+def process_target_data(
         target_df,
-        domain_dims
+        _record_2_serial_ID_df,
+        K = 100
+):
+    global record_2_serial_ID_df
+    record_2_serial_ID_df = _record_2_serial_ID_df
+    global list_MP_OBJ
+    for mp_obj in list_MP_OBJ:
+        mp_obj.calc_PathSim(
+            target_df,
+            domain_dims
+        )
+
+
+    Parallel((delayed)
+             (set_up_closest_K_by_RecordID)
+             (_record_ID, K) for _record_ID in target_df[id_col]
     )
+
+
+# ------------------------------------------- #
+
 
 
 
