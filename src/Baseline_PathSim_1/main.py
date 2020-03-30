@@ -47,32 +47,26 @@ except:
 #     import network_similarity as NS
 
 
+# --------------------------------------------
+# Global variables
+# ----------------------------------------------
+
+
+DIR = None
+TARGET_DATA_SOURCE = './../../AD_system_output'
+CONFIG = None
+config_file = 'config.yaml'
+KNN_k = None
+id_col = 'PanjivaRecordID'
+data_max_size = None
 nodeObj_dict_file = 'nodeObj_dict.pkl'
 REFRESH_NODES = False
-id_col = 'PanjivaRecordID'
 nodeObj_Dict = None
 model_use_data_DIR = None
 list_MP_OBJ = None
 
 
 # ---------------------------------------
-
-# ------------------------------------------------------------3
-# Call this to set up global variables
-# ------------------------------------------------------------
-def network_initialize():
-    global list_MP_OBJ
-    train_df = get_training_data(DIR)
-    MP_list = get_metapath_list()
-    list_mp_obj = network_creation(
-        train_df,
-        MP_list
-    )
-
-    list_MP_OBJ = list_mp_obj
-    return
-
-
 def get_training_data(DIR):
     SOURCE_DATA_DIR = './../../generated_data_v1'
     data = data_fetcher.get_train_x_csv(SOURCE_DATA_DIR, DIR)
@@ -412,20 +406,22 @@ def process_target_data(
 
     return
 
-# --------------------------------------------
-# Global variables
-# ----------------------------------------------
-DIR = None
-model_use_data_DIR = None
-TARGET_DATA_SOURCE = './../../AD_system_output'
-CONFIG = None
-config_file = 'config.yaml'
-KNN_k = None
-id_col = 'PanjivaRecordID'
-data_max_size = None
+def network_initialize():
+    global list_MP_OBJ
+    train_df = get_training_data(DIR)
+    MP_list = get_metapath_list()
+    list_mp_obj = network_creation(
+        train_df,
+        MP_list
+    )
+    list_MP_OBJ = list_mp_obj
+    return
 
+# ------------------------------------------------------------
+# ---------         First function to be executed
+# Call this to set up global variables
+# ------------------------------------------------------------
 
-# --------- First function to be executed --------------- #
 def setup():
     global DIR
     global config_file
@@ -450,29 +446,14 @@ def setup():
 
 
 # --------------------------------------------------------- #
-
-
-# def get_training_data(DIR):
-#     SOURCE_DATA_DIR = './../../generated_data_v1'
-#     data = data_fetcher.get_train_x_csv(SOURCE_DATA_DIR, DIR)
-#     return data
-#
-#
-# def get_domain_dims(DIR):
-#     with open(
-#             os.path.join(
-#                 './../../generated_data_v1/',
-#                 DIR,
-#                 'domain_dims.pkl'
-#             ), 'rb') as fh:
-#         domain_dims = pickle.load(fh)
-#     return domain_dims
-
+# Read data that is output of the Anomaly Detection system
+# --------------------------------------------------------- #
 
 def read_target_data():
     global DIR
     global TARGET_DATA_SOURCE
     global data_max_size
+    global id_col
 
     csv_f_name = 'scored_test_data.csv'
     df = pd.read_csv(
@@ -487,6 +468,30 @@ def read_target_data():
     )
     return df
 
+
+def get_record_2_serial_ID_df(target_df):
+    global id_col
+    global model_use_data_DIR
+    record_2_serial_file = os.path.join(model_use_data_DIR, 'record_2_serial_ID.csv')
+
+    if os.path.exists(record_2_serial_file):
+        record_2_serial_ID_df = pd.read_csv(
+            record_2_serial_file,
+            index_col=None
+        )
+        return record_2_serial_ID_df
+
+    record_2_serial_ID = {
+        e[1]: e[0] for e in enumerate(list(target_df[id_col]), 0)
+    }
+    record_2_serial_ID_df = pd.DataFrame(
+        record_2_serial_ID.items(), columns=[id_col, 'Serial_ID']
+    )
+
+    record_2_serial_ID_df.to_csv(
+        record_2_serial_file, index=False
+    )
+    return record_2_serial_ID_df
 
 # -----------------------------------
 # ---------------
@@ -525,20 +530,7 @@ network_initialize( )
 
 target_df = read_target_data()
 
-
-record_2_serial_ID = {
-    e[1]: e[0] for e in enumerate(list(target_df[id_col]),0)
-}
-record_2_serial_ID_df = pd.DataFrame(
-    record_2_serial_ID.items(), columns=[id_col, 'Serial_ID']
-)
-record_2_serial_file = os.path.join(model_use_data_DIR, 'record_2_serial_ID.csv')
-record_2_serial_ID_df.to_csv(
-    record_2_serial_file, index=False
-)
-
-
-
+record_2_serial_ID_df = get_record_2_serial_ID_df(target_df)
 process_target_data(
     target_df,
     record_2_serial_ID_df,
