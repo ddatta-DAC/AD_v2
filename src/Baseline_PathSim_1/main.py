@@ -10,7 +10,6 @@ import argparse
 import multiprocessing
 from pandarallel import pandarallel
 pandarallel.initialize()
-import networkx as nx
 import yaml
 
 try:

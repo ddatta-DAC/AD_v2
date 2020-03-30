@@ -5,14 +5,8 @@
 # Author : Debanjan Datta
 # Email : ddatta@vt.edu
 # ---------------
-from scipy import sparse
-from joblib import Parallel, delayed
-from scipy.sparse import load_npz
-from scipy.sparse import save_npz
 from numpy import load as load_np
 from numpy import save as save_np
-
-import argparse
 from scipy.linalg.blas import sgemm
 from hashlib import md5
 from scipy.sparse import csr_matrix
@@ -21,10 +15,10 @@ import sys
 import os
 import pandas as pd
 import numpy as np
-from collections import defaultdict
 import multiprocessing
 import joblib
 from joblib import Parallel,delayed
+from collections import defaultdict
 
 sys.path.append('./../..')
 sys.path.append('./..')
@@ -72,9 +66,8 @@ def initialize(
         os.mkdir(os.path.join(model_use_data_DIR, DIR))
     model_use_data_DIR = os.path.join(model_use_data_DIR, DIR)
 
-
     # -------------------------
-    # Execute #
+    # Execute
     # -------------------------
     train_df = get_training_data(DIR)
     MP_list = get_metapath_list()
@@ -82,7 +75,8 @@ def initialize(
         train_df,
         MP_list
     )
-    list_MP_OBJ  = list_mp_obj
+
+    list_MP_OBJ = list_mp_obj
     return
 
 
@@ -180,6 +174,8 @@ def get_transition_matrix(domain1, domain2):
         key = domain2 + '_+_' + domain1
         return np.transpose(coOccDict[key])
 
+# ---------------------------------------------------------------------
+# Read in the meta paths
 # ---------------------------------------------------------------------
 def get_metapath_list():
     MP_list = []
@@ -360,7 +356,7 @@ def set_up_closest_K_by_RecordID(
         sim_values.append(sim_vals)
 
     sim_values = np.vstack(sim_values)
-    sim_values =  np.median(sim_values, axis=0)
+    sim_values = np.median(sim_values, axis=0)
     res_df = pd.DataFrame(
         data =  sim_values,
         columns = ['score']
@@ -393,8 +389,10 @@ def process_target_data(
         K = 100
 ):
     global record_2_serial_ID_df
-    record_2_serial_ID_df = _record_2_serial_ID_df
     global list_MP_OBJ
+
+    record_2_serial_ID_df = _record_2_serial_ID_df
+
     for mp_obj in list_MP_OBJ:
         mp_obj.calc_PathSim(
             target_df,
