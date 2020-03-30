@@ -401,12 +401,12 @@ def process_target_data(
             domain_dims
         )
 
-
-    Parallel((delayed)
+    n_jobs = multiprocessing.cpu_count()
+    Parallel(n_jobs)((delayed)
              (set_up_closest_K_by_RecordID)
              (_record_ID, K) for _record_ID in target_df[id_col]
     )
-
+    return
 
 # ------------------------------------------- #
 
