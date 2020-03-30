@@ -8,17 +8,21 @@
 'log_file' : 'MEAD_execution_log.log'
 'num_jobs' : 8
 
+'farud_ratio' : 0.5
+'anomaly_ratio' : 0.4
+
 'us_import1':
   'learning_rate' : 0.0005
   'use_pretrained' : True
   'show_loss_figure' : False
   'save_loss_figure' : True
-  'use_bias' : False
+  'use_bias' : Falseus
   'saved_model_file' : 'frozen_model_mead16_1584989948.pb'
   'num_epochs' : 25
   'op_dims' : 16
   'batchsize': 128
   'num_neg_samples' : 15
+  'test_data_size' : 40000
 
 'us_import2':
   'learning_rate' : 0.0005
@@ -31,6 +35,7 @@
   'op_dims' : 16
   'batchsize': 128
   'num_neg_samples' : 15
+  'test_data_size' : 60000
 
 'us_import3':
   'learning_rate' : 0.0005
@@ -43,3 +48,4 @@
   'op_dims' : 16
   'batchsize': 128
   'num_neg_samples' : 15
+  'test_data_size' : 80000
