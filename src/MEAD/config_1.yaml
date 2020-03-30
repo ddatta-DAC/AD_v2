@@ -8,7 +8,7 @@
 'log_file' : 'MEAD_execution_log.log'
 'num_jobs' : 8
 
-'farud_ratio' : 0.5
+'fraud_ratio' : 0.5
 'anomaly_ratio' : 0.4
 
 'us_import1':
