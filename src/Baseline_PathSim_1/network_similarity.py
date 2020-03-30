@@ -344,7 +344,11 @@ def set_up_closest_K_by_RecordID(
     save_Dir = 'KNN'
 
     f_name = str(Record_ID) + '.csv'
-    f_path = os.path.join( model_use_data_DIR, save_Dir, f_name)
+    save_Dir = os.path.join(model_use_data_DIR, save_Dir)
+    if os.path.exists(save_Dir):
+        os.mkdir( save_Dir )
+    f_path = os.path.join(save_Dir, f_name)
+
     R2S_df = record_2_serial_ID_df.copy()
     serialID = list(
         R2S_df.loc[R2S_df[id_col] == Record_ID]['Serial_ID']
