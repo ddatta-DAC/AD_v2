@@ -280,6 +280,7 @@ class MP_object:
         )
         if os.path.exists(simMatrix_path):
             simMatrix = load_np(simMatrix_path)
+            print(simMatrix.shape)
 
         else:
             print('MetaPath :', self.mp)
@@ -309,7 +310,11 @@ class MP_object:
                 simMatrix[i, j] = val
                 return
 
-            _ = Parallel(n_jobs=n_jobs, require='sharedmem')(delayed(aux1)(i_j[0], i_j[1]) for i_j in args)
+            _ = Parallel(
+                n_jobs=n_jobs,
+                require='sharedmem')(
+                delayed(aux1)(i_j[0], i_j[1]) for i_j in args
+            )
 
             save_np(
                 simMatrix_path,
@@ -353,12 +358,13 @@ def network_creation(
 def set_up_closest_K_by_RecordID(
         args
 ):
-    Record_ID = args[0]
-    K =  args[1]
-    save_Dir = args[2]
     global list_MP_OBJ
     global id_col
     global model_use_data_DIR
+
+    Record_ID = args[0]
+    K =  args[1]
+    save_Dir = args[2]
 
     f_name = str(Record_ID) + '.csv'
     f_path = os.path.join(save_Dir, f_name)
@@ -415,28 +421,23 @@ def process_target_data(
     global list_MP_OBJ
 
     record_2_serial_ID_df = _record_2_serial_ID_df
-
     args = [(_obj , target_df.copy(), domain_dims.copy()) for _obj in list_MP_OBJ]
     n_jobs = multiprocessing.cpu_count()
     with Pool(n_jobs) as p:
         res = p.map(aux_precompute_PathSimCalc ,args)
 
-    for mp_obj in list_MP_OBJ:
-        mp_obj.calc_PathSim(
-            target_df,
-            domain_dims
-        )
+    # for mp_obj in list_MP_OBJ:
+    #     mp_obj.calc_PathSim(
+    #         target_df,
+    #         domain_dims
+    #     )
+
     save_Dir = 'KNN'
     save_Dir = os.path.join(model_use_data_DIR, save_Dir)
     if not os.path.exists(save_Dir):
         os.mkdir(save_Dir)
 
     n_jobs = multiprocessing.cpu_count()
-    # Parallel(n_jobs,require='sharedmem')((delayed)
-    #                  (set_up_closest_K_by_RecordID)
-    #                  (_record_ID, K) for _record_ID in target_df[id_col]
-    #                  )
-
     args = [(_record_ID, K,save_Dir) for _record_ID in list(target_df[id_col])]
     with Pool(n_jobs) as p:
         res = p.map(set_up_closest_K_by_RecordID ,args)
@@ -485,13 +486,6 @@ def get_record_2_serial_ID_df(target_df):
     global id_col
     global model_use_data_DIR
     record_2_serial_file = os.path.join(model_use_data_DIR, 'record_2_serial_ID.csv')
-
-    if os.path.exists(record_2_serial_file):
-        record_2_serial_ID_df = pd.read_csv(
-            record_2_serial_file,
-            index_col=None
-        )
-        return record_2_serial_ID_df
 
     record_2_serial_ID = {
         e[1]: e[0] for e in enumerate(list(target_df[id_col]), 0)
