@@ -873,7 +873,7 @@ if FLAG_network_setup_needed:
     process_target_data(
         target_df,
         record_2_serial_ID_df,
-        10
+        100
     )
 
 set_checkpoints = [ 10,20,30,40,50 ]
