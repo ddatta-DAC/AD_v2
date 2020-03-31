@@ -409,6 +409,7 @@ def aux_precompute_PathSimCalc( args ):
     _df = args[1]
     _dd = args[2]
     mp_obj.calc_PathSim(_df,_dd)
+    return mp_obj
 
 def process_target_data(
         target_df,
@@ -421,14 +422,10 @@ def process_target_data(
     record_2_serial_ID_df = _record_2_serial_ID_df
     args = [(_obj , target_df.copy(), domain_dims.copy()) for _obj in list_MP_OBJ]
     n_jobs = multiprocessing.cpu_count()
+
     with Pool(n_jobs) as p:
         res = p.map(aux_precompute_PathSimCalc ,args)
-
-    # for mp_obj in list_MP_OBJ:
-    #     mp_obj.calc_PathSim(
-    #         target_df,
-    #         domain_dims
-    #     )
+    list_MP_OBJ = res
 
     save_Dir = 'KNN'
     save_Dir = os.path.join(model_use_data_DIR, save_Dir)
@@ -438,7 +435,7 @@ def process_target_data(
     n_jobs = multiprocessing.cpu_count()
     args = [(_record_ID, K,save_Dir) for _record_ID in list(target_df[id_col])]
     with Pool(n_jobs) as p:
-        res = p.map(set_up_closest_K_by_RecordID ,args)
+        res = p.map(set_up_closest_K_by_RecordID, args)
 
     return
 
