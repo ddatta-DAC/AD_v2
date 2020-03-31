@@ -574,7 +574,7 @@ def execute_iterative_classification(
 
     LOGGER.info( " K = " + str(k))
     LOGGER.info("Length of data :: " + str(len(df)))
-    LOGGER.info("Current percentahe of data labelled  :: " + str(cur_checkpoint))
+    LOGGER.info("Current percentage of data labelled  :: " + str(cur_checkpoint))
     def set_y(row):
         if row['fraud']:
             return 1  # labelled True
@@ -640,17 +640,21 @@ def execute_iterative_classification(
     df_iter = df_master.copy()
     df_iter_L = df_iter.loc[df_iter[id_col].isin(labelled_instance_ids)]
     df_iter_U = df_iter.loc[df_iter[id_col].isin(unlabelled_instance_ids)]
-    pandarallel.initialize()
+
     df_iter_L[label_col] = df_iter_L.parallel_apply(
-        set_y,axis=1
+        set_y,
+        axis=1
     )
     fixed_values_df = pd.DataFrame(df_iter_L[[id_col,label_col]],copy=True)
     df_iter_U[label_col] = 0
     df_iter = df_iter_L.append(df_iter_U,ignore_index=True)
 
     clf_train_df = df_L.copy()
-    pandarallel.initialize()
-    clf_train_df[label_col] = clf_train_df.parallel_apply(set_y,axis=1)
+
+    clf_train_df[label_col] = clf_train_df.parallel_apply(
+        set_y,
+        axis=1
+    )
     Y = list(clf_train_df[label_col])
 
     remove_cols = [label_col,'anomaly','fraud',id_col]
@@ -695,6 +699,7 @@ def execute_iterative_classification(
     while num_iter < max_iter:
         zero_count = len(df_iter.loc[df_iter[label_col] == 0])
         if zero_count == 0:
+            print('Breaking ...')
             break
 
         num_iter +=1
@@ -733,7 +738,6 @@ def execute_iterative_classification(
         new_pred_Y = clf.predict(new_test_X)
         new_pred_Y = np.reshape(new_pred_Y,-1)
 
-
         updater_df = pd.DataFrame(
             data = np.stack([new_unknown_label_ids, new_pred_Y],axis=1),
             columns = [id_col, label_col]
@@ -760,31 +764,32 @@ def execute_iterative_classification(
             axis=1,
             args=(updater_df,)
         )
-
+        print(" Placed newly predicted (clf) labels ")
         # Use the currently predicted and known labels to update the labels("unknown")
         _ref_df = df_iter.copy()
-        pandarallel.initialize()
+
         df_iter[label_col] = df_iter.parallel_apply(
             update_label,
             axis=1,
             args=(_ref_df, epsilon, k,)
         )
+        print(" Updated labels using KNN ")
 
         # clamp down original known labels
-        pandarallel.initialize()
+
         df_iter = df_iter.parallel_apply(
             func_assign,
             axis=1,
             args=(fixed_values_df,)
         )
-
+        print(" Placed back original known labels ")
         # update epsilon
-        epsilon = max(0.05, epsilon *0.75)
+        epsilon = max(0.05, epsilon * 0.75)
 
+    print ('Starting evaluation ')
 
     # ------- Evaluate -------- #
     true_label_name = 'y_true'
-    anomaly_label_name = 'y_anomaly'
 
     def place_true_labels(row, ref_df):
         _id = row[id_col]
@@ -818,8 +823,6 @@ def execute_iterative_classification(
         df_eval.sort_values(by=['score'], ascending=True),
         copy=True
     )
-
-    print(df_eval1[label_col])
 
 
     for point in [10, 20, 30, 40, 50]:
