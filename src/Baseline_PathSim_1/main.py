@@ -22,10 +22,12 @@ from sklearn.svm import SVC
 sys.path.append('.')
 sys.path.append('./..')
 sys.path.append('./../..')
-from joblib import Parallel, delayed
 import pickle
+import logging
 import argparse
 import multiprocessing
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
 from pandarallel import pandarallel
 pandarallel.initialize()
 import yaml
@@ -62,7 +64,9 @@ REFRESH_NODES = False
 nodeObj_Dict = None
 model_use_data_DIR = None
 list_MP_OBJ = None
-
+domain_dims = None
+KNN_dir = None
+Logging_Dir = 'Log'
 # ------------------------------------------------------------
 # ---------         First function to be executed
 # Call this to set up global variables
@@ -76,6 +80,8 @@ def setup():
     global domain_dims
     global KNN_k
     global data_max_size
+    global KNN_dir
+
     with open(config_file) as f:
         CONFIG = yaml.safe_load(f)
 
@@ -88,9 +94,38 @@ def setup():
         os.mkdir(os.path.join(model_use_data_DIR, DIR))
     model_use_data_DIR = os.path.join(model_use_data_DIR, DIR)
     domain_dims = get_domain_dims(DIR)
-
+    KNN_dir = 'KNN'
+    KNN_dir = os.path.join(model_use_data_DIR, KNN_dir)
 
 # ---------------------------------------
+
+def get_logger():
+    global Logging_Dir
+    global DIR
+    logger = logging.getLogger('main')
+    logger.setLevel(logging.INFO)
+    OP_DIR = os.path.join(Logging_Dir, DIR)
+    log_file = 'results.log'
+    if not os.path.exists(Logging_Dir):
+        os.mkdir(Logging_Dir)
+
+    if not os.path.exists(OP_DIR):
+        os.mkdir(OP_DIR)
+    log_file_path = os.path.join(OP_DIR, log_file)
+    handler = logging.FileHandler(log_file_path)
+    handler.setLevel(logging.INFO)
+    logger.addHandler(handler)
+    return logger
+
+def close_logger(logger):
+
+    handlers = logger.handlers[:]
+    for handler in handlers:
+        handler.close()
+        logger.removeHandler(handler)
+    return
+
+
 def get_training_data(DIR):
     SOURCE_DATA_DIR = './../../generated_data_v1'
     data = data_fetcher.get_train_x_csv(SOURCE_DATA_DIR, DIR)
@@ -418,6 +453,10 @@ def process_target_data(
 ):
     global record_2_serial_ID_df
     global list_MP_OBJ
+    global KNN_dir
+
+    if not os.path.exists(KNN_dir):
+        os.mkdir(KNN_dir)
 
     record_2_serial_ID_df = _record_2_serial_ID_df
     args = [(_obj , target_df.copy(), domain_dims.copy()) for _obj in list_MP_OBJ]
@@ -427,16 +466,12 @@ def process_target_data(
         res = p.map(aux_precompute_PathSimCalc ,args)
     list_MP_OBJ = res
 
-    save_Dir = 'KNN'
-    save_Dir = os.path.join(model_use_data_DIR, save_Dir)
-    if not os.path.exists(save_Dir):
-        os.mkdir(save_Dir)
+
 
     n_jobs = multiprocessing.cpu_count()
-    args = [(_record_ID, K,save_Dir) for _record_ID in list(target_df[id_col])]
+    args = [(_record_ID, K,KNN_dir) for _record_ID in list(target_df[id_col])]
     with Pool(n_jobs) as p:
         res = p.map(set_up_closest_K_by_RecordID, args)
-
     return
 
 def network_initialize():
@@ -492,6 +527,11 @@ def get_record_2_serial_ID_df(target_df):
     global model_use_data_DIR
     record_2_serial_file = os.path.join(model_use_data_DIR, 'record_2_serial_ID.csv')
 
+    if os.path.exists(record_2_serial_file):
+        return pd.read_csv(
+            record_2_serial_file, index_col=None
+        )
+
     record_2_serial_ID = {
         e[1]: e[0] for e in enumerate(list(target_df[id_col]), 0)
     }
@@ -516,6 +556,293 @@ def get_record_2_serial_ID_df(target_df):
 # Sign ( lambda * Weighted(similarity based) of labels of its K nearest (labelled) neighbors + (1-lambda) predicted label )
 # ----------------
 
+# ------------------------------------------
+# Asssumption that input dataframe is sorted by scores (ascending)
+# ------------------------------------------
+def execute_iterative_classification(
+    df,
+    cur_checkpoint =10
+):
+    global id_col
+    global domain_dims
+    global classifier_type
+    global LOGGER
+
+    label_col = 'y'
+    epsilon = 0.25
+    k = 10
+
+    LOGGER.info( " K = " + str(k))
+    LOGGER.info("Length of data :: " + str(len(df)))
+    LOGGER.info("Current percentahe of data labelled  :: " + str(cur_checkpoint))
+    def set_y(row):
+        if row['fraud']:
+            return 1  # labelled True
+        elif not row['fraud']:
+            return -1  # labelled false
+        else:
+            return 0  # unknown
+
+    def update_label(row, ref_df, epsilon, _k):
+        _id = row[id_col]
+        lamdba = 0.1
+        ref_df = ref_df[[id_col,label_col]]
+        f_path = os.path.join(KNN_dir,str(_id) + '.csv')
+        _sim_df = pd.read_csv(f_path,index_col=None)
+        _sim_df = _sim_df.merge(ref_df,
+            on=id_col, how ='left'
+        )
+        _sim_df = _sim_df.head(_k+1)
+        _sim_df = _sim_df.tail(_k)
+        _l = list(_sim_df[label_col])
+        _s = list(_sim_df['score'])
+        res = np.sum(np.multiply(_l,_s))/ np.sum(_s)
+        res = lamdba * row[label_col] + (1-lamdba) * res
+        if np.abs(res) >= epsilon :
+            return np.sign(res)
+        else :
+            return 0
+
+    # ---------------------------------------------------- #
+
+    clf = None
+    # Train initial Classifier model
+    if classifier_type == 'RF':
+        clf = RandomForestClassifier(
+            n_estimators=50,
+            n_jobs=-1,
+            verbose=1,
+            warm_start=False
+        )
+    elif classifier_type == 'SVM':
+        clf = SVC(
+            kernel='poly',
+            degree='4'
+        )
+
+    df_master = df.copy()
+    record_count = len(df)
+
+    # count of how many labelled and unlabelled data points
+    l_count = int(record_count * cur_checkpoint / 100)
+    u_count = record_count - l_count
+    one_hot_columns = list(domain_dims.keys())
+    df = pd.get_dummies(
+        df,
+        columns=one_hot_columns
+    )
+    df_L = df.head(l_count).copy()
+    df_U = df.tail(u_count).copy()
+
+    labelled_instance_ids = list(df_L[id_col])
+    unlabelled_instance_ids = list(df_U[id_col])
+
+    df_iter = df_master.copy()
+    df_iter_L = df_iter.loc[df_iter[id_col].isin(labelled_instance_ids)]
+    df_iter_U = df_iter.loc[df_iter[id_col].isin(unlabelled_instance_ids)]
+    df_iter_L[label_col] = df_iter_L.parallel_apply(
+        set_y,axis=1
+    )
+    fixed_values_df = pd.DataFrame(df_iter_L[[id_col,label_col]],copy=True)
+    df_iter_U[label_col] = 0
+    df_iter = df_iter_L.append(df_iter_U,ignore_index=True)
+
+    clf_train_df = df_L.copy()
+    clf_train_df[label_col] = clf_train_df.parallel_apply(set_y,axis=1)
+    Y = list(clf_train_df[label_col])
+
+    remove_cols = [label_col,'anomaly','fraud',id_col]
+    for rc in remove_cols:
+        try:
+            del clf_train_df[rc]
+        except:
+            pass
+
+    X = clf_train_df.values
+    clf.fit(X,Y)
+    clf_test_df = df_U.copy()
+    for rc in remove_cols:
+        try:
+            del clf_test_df[rc]
+        except:
+            pass
+
+
+    X_test = clf_test_df.values
+    Y_pred = clf.predict(X_test)
+    Y_pred = np.reshape(Y_pred,-1)
+    clf_test_df[label_col] = Y_pred
+    df_iter_U[label_col] = Y_pred
+
+    # ----------------------------------------------
+    # Obtain updated label
+    # lv = Neighbor similarity_score * label
+    # Updated label = Sign(lv) if |lv| > epsilon
+    # ----------------------------------------------
+
+    df_iter_U[label_col] = df_iter_U.parallel_apply(
+        update_label,
+        axis=1,
+        args=(df_iter.copy(), epsilon, k,)
+    )
+    df_iter = df_iter_L.append(df_iter_U, ignore_index=True)
+
+    num_iter = 0
+    max_iter = 25
+
+    while num_iter < max_iter:
+        zero_count = len(df_iter.loc[df_iter[label_col] == 0])
+        if zero_count == 0:
+            break
+
+        num_iter +=1
+        print(' Iteration :: ', num_iter)
+        # now re train classifier
+        new_clf_df = pd.get_dummies(
+            df_iter.copy(),
+            columns=one_hot_columns
+        )
+
+        new_known_label_ids = list(
+            df_iter.loc[df_iter[label_col]!=0][id_col]
+        )
+
+        new_clf_train_df = new_clf_df.loc[
+            new_clf_df[id_col].isin(new_known_label_ids)
+        ]
+        new_clf_test_df = new_clf_df.loc[
+            ~new_clf_df[id_col].isin(new_known_label_ids)
+        ]
+        new_train_Y = list(new_clf_train_df[label_col])
+        new_unknown_label_ids = list(new_clf_test_df[id_col])
+
+        for rc in remove_cols:
+            try:
+                del new_clf_train_df[rc]
+                del new_clf_test_df[rc]
+            except:
+                pass
+
+
+        new_train_X = new_clf_train_df.values
+        new_test_X  = new_clf_test_df.values
+
+        clf.fit(new_train_X,new_train_Y)
+        new_pred_Y = clf.predict(new_test_X)
+        new_pred_Y = np.reshape(new_pred_Y,-1)
+
+
+        updater_df = pd.DataFrame(
+            data = np.stack([new_unknown_label_ids, new_pred_Y],axis=1),
+            columns = [id_col, label_col]
+        )
+
+        # ----------------------------------
+        # Assign new labels in df_iter
+        # ---------------------------------
+        def func_assign(_row, ref_df):
+            row = _row.copy()
+            _res = list(
+                ref_df.loc[ref_df[id_col] == row[id_col]][label_col])
+            if len(_res) > 0:
+                row[label_col] = _res[0]
+            return row
+
+        # --------------------------
+        # Update df_iter
+        # --------------------------
+        # Place newly predicted (clf) labels
+        df_iter = df_iter.parallel_apply(
+            func_assign,
+            axis=1,
+            args=(updater_df,)
+        )
+
+        # Use the currently predicted and known labels to update the labels("unknown")
+        _ref_df = df_iter.copy()
+        df_iter[label_col] = df_iter.parallel_apply(
+            update_label,
+            axis=1,
+            args=(_ref_df, epsilon, k,)
+        )
+
+        # clamp down original known labels
+        df_iter = df_iter.parallel_apply(
+            func_assign,
+            axis=1,
+            args=(fixed_values_df,)
+        )
+
+        # update epsilon
+        epsilon = max(0.05, epsilon *0.75)
+
+
+    # ------- Evaluate -------- #
+    true_label_name = 'y_true'
+    anomaly_label_name = 'y_anomaly'
+
+    def place_true_labels(row, ref_df):
+        _id = row[id_col]
+        r = list(df.loc[ref_df[id_col]==_id]['fraud'])[0]
+        if r :
+            return 1
+        else:
+            return -1
+
+    df_eval = pd.DataFrame(
+        df_iter.loc[df_iter[id_col].isin(unlabelled_instance_ids)],
+        copy=True
+    )
+
+    for dd in domain_dims.keys():
+        del df_eval[dd]
+
+
+    df_eval[true_label_name] = df_eval.parallel_apply(
+        place_true_labels,
+        axis=1,
+        args=(df_master,)
+    )
+
+    df_eval1 = pd.DataFrame(
+        df_eval.sort_values(by=[label_col], ascending=False),
+        copy=True
+    )
+
+    df_eval2 = pd.DataFrame(
+        df_eval.sort_values(by=['score'], ascending=True),
+        copy=True
+    )
+
+    print(df_eval1[label_col])
+
+
+    for point in [10, 20, 30, 40, 50]:
+        _count = int(len(df_master) * point / 100)
+        df_tmp = df_eval1.head(_count)
+        y_true = list(df_tmp[true_label_name])
+        y_pred = list(df_tmp[label_col])
+        accuracy = round(accuracy_score(y_true, y_pred),2)
+        precision = round(precision_score(y_true, y_pred))
+        msg = '[   With Input] Precision at Top (next)  {} % :: {}'.format(point, precision)
+        LOGGER.info(msg)
+        print(msg)
+
+        # --------------------
+        # If we consider all the records till this point as anomalies
+        # df_eval2 is sorted by score
+        # --------------------
+        df_tmp = df_eval2.head(_count)
+        y_true = list(df_tmp[true_label_name])
+        y_pred = [1] * len(df_tmp)
+
+        accuracy = round(accuracy_score(y_true, y_pred),2)
+        precision = round(precision_score(y_true, y_pred))
+
+        msg = '[Without Input] Precision at Top (next)  {} % :: {}'.format(point, precision)
+        print(msg)
+
+        LOGGER.info(msg)
 
 # -----------------------------------
 
@@ -534,47 +861,26 @@ classifier_type = args.classifier_type
 
 # -----------------------------------------
 
-
 setup()
+LOGGER = get_logger()
 train_df = get_training_data(DIR)
-network_initialize( )
-
+FLAG_network_setup_needed =  not os.path.exists(KNN_dir)
 target_df = read_target_data()
 record_2_serial_ID_df = get_record_2_serial_ID_df(target_df)
-process_target_data(
-    target_df,
-    record_2_serial_ID_df,
-    KNN_k
-)
 
-
-# ------------------------------------------
-def execute_iterative_classification(df):
-    clf = None
-    # Train initial Classifier model
-    if classifier_type == 'RF':
-        clf = RandomForestClassifier(
-            n_estimators=200,
-            n_jobs=-1,
-            verbose=1
-        )
-    elif classifier_type == 'SVM':
-        clf = SVC(
-            kernel='poly',
-            degree='4'
-        )
-
-    cur_checkpoint =10
-    df_master = df.copy()
-
-    record_count = len(df)
-
-    # count of how many labelled and unlabelled datapoints
-    l_count = int(record_count * cur_checkpoint / 100)
-    u_count = record_count - l_count
-
-    one_hot_columns = list(domain_dims.keys())
-    clf_train_df = pd.get_dummies(
-        df_UL,
-        columns=one_hot_columns
+if FLAG_network_setup_needed:
+    network_initialize( )
+    process_target_data(
+        target_df,
+        record_2_serial_ID_df,
+        10
     )
+
+set_checkpoints = [ 10,20,30,40,50 ]
+for checkpoint in set_checkpoints:
+    execute_iterative_classification(
+        target_df,
+        cur_checkpoint = 10
+    )
+
+close_logger(LOGGER)
