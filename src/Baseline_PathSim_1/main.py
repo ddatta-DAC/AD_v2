@@ -640,6 +640,7 @@ def execute_iterative_classification(
     df_iter = df_master.copy()
     df_iter_L = df_iter.loc[df_iter[id_col].isin(labelled_instance_ids)]
     df_iter_U = df_iter.loc[df_iter[id_col].isin(unlabelled_instance_ids)]
+    pandarallel.initialize()
     df_iter_L[label_col] = df_iter_L.parallel_apply(
         set_y,axis=1
     )
@@ -648,6 +649,7 @@ def execute_iterative_classification(
     df_iter = df_iter_L.append(df_iter_U,ignore_index=True)
 
     clf_train_df = df_L.copy()
+    pandarallel.initialize()
     clf_train_df[label_col] = clf_train_df.parallel_apply(set_y,axis=1)
     Y = list(clf_train_df[label_col])
 
@@ -679,7 +681,7 @@ def execute_iterative_classification(
     # lv = Neighbor similarity_score * label
     # Updated label = Sign(lv) if |lv| > epsilon
     # ----------------------------------------------
-
+    pandarallel.initialize()
     df_iter_U[label_col] = df_iter_U.parallel_apply(
         update_label,
         axis=1,
@@ -752,6 +754,7 @@ def execute_iterative_classification(
         # Update df_iter
         # --------------------------
         # Place newly predicted (clf) labels
+        pandarallel.initialize()
         df_iter = df_iter.parallel_apply(
             func_assign,
             axis=1,
@@ -760,6 +763,7 @@ def execute_iterative_classification(
 
         # Use the currently predicted and known labels to update the labels("unknown")
         _ref_df = df_iter.copy()
+        pandarallel.initialize()
         df_iter[label_col] = df_iter.parallel_apply(
             update_label,
             axis=1,
@@ -767,6 +771,7 @@ def execute_iterative_classification(
         )
 
         # clamp down original known labels
+        pandarallel.initialize()
         df_iter = df_iter.parallel_apply(
             func_assign,
             axis=1,
@@ -805,7 +810,7 @@ def execute_iterative_classification(
     )
 
     df_eval1 = pd.DataFrame(
-        df_eval.sort_values(by=[label_col], ascending=False),
+        df_eval.sort_values(by=[label_col,'score'], ascending=[False,True]),
         copy=True
     )
 
@@ -822,12 +827,19 @@ def execute_iterative_classification(
         df_tmp = df_eval1.head(_count)
         y_true = list(df_tmp[true_label_name])
         y_pred = list(df_tmp[label_col])
-        accuracy = round(accuracy_score(y_true, y_pred),2)
-        precision = round(precision_score(y_true, y_pred))
-        msg = '[   With Input] Precision at Top (next)  {} % :: {}'.format(point, precision)
+
+        accuracy = round(accuracy_score(y_true, y_pred), 2)
+        msg = '[   With Input] accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
         LOGGER.info(msg)
         print(msg)
-
+        correct = 0
+        for i, j in zip(y_true, y_pred):
+            if i == 1 and i == j:
+                correct += 1
+        precision = round(correct / _count,2)
+        msg = '[   With Input] precision at Top (next)  {} % :: {}'.format(point, precision)
+        LOGGER.info(msg)
+        print(msg)
         # --------------------
         # If we consider all the records till this point as anomalies
         # df_eval2 is sorted by score
@@ -837,12 +849,17 @@ def execute_iterative_classification(
         y_pred = [1] * len(df_tmp)
 
         accuracy = round(accuracy_score(y_true, y_pred),2)
-        precision = round(precision_score(y_true, y_pred))
-
-        msg = '[Without Input] Precision at Top (next)  {} % :: {}'.format(point, precision)
-        print(msg)
-
+        msg = '[Without Input] accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
         LOGGER.info(msg)
+        print(msg)
+        correct = 0
+        for i, j in zip(y_true, y_pred):
+            if i == 1 and i == j:
+                correct += 1
+        precision = round(correct / _count , 2)
+        msg = '[Without Input] precision at Top (next)  {} % :: {}'.format(point, precision)
+        LOGGER.info(msg)
+        print(msg)
 
 # -----------------------------------
 
