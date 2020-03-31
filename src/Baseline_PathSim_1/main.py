@@ -6,22 +6,19 @@
 # Email : ddatta@vt.edu
 # ---------------
 
-import pandas as pd
-import numpy as np
-import os
+
 from multiprocessing import Pool
-import sys
 from numpy import load as load_np
 from numpy import save as save_np
 from scipy.linalg.blas import sgemm
 from hashlib import md5
 from scipy.sparse import csr_matrix
-import pickle
 import sys
 import os
 import pandas as pd
 import numpy as np
-import multiprocessing
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
 sys.path.append('.')
 sys.path.append('./..')
 sys.path.append('./../..')
@@ -278,9 +275,12 @@ class MP_object:
             model_use_data_DIR,
             f_name
         )
+        self.simMatrix = None
+
         if os.path.exists(simMatrix_path):
             simMatrix = load_np(simMatrix_path)
             print(simMatrix.shape)
+            self.simMatrix = simMatrix
 
         else:
             print('MetaPath :', self.mp)
@@ -315,13 +315,13 @@ class MP_object:
                 require='sharedmem')(
                 delayed(aux1)(i_j[0], i_j[1]) for i_j in args
             )
-
+            self.simMatrix = simMatrix
             save_np(
                 simMatrix_path,
                 simMatrix
             )
 
-        self.simMatrix = simMatrix
+
         return
 
 
@@ -545,10 +545,41 @@ train_df = get_training_data(DIR)
 network_initialize( )
 
 target_df = read_target_data()
-
 record_2_serial_ID_df = get_record_2_serial_ID_df(target_df)
 process_target_data(
     target_df,
     record_2_serial_ID_df,
     KNN_k
 )
+
+
+# ------------------------------------------
+def execute_iterative_classification(df):
+    clf = None
+    # Train initial Classifier model
+    if classifier_type == 'RF':
+        clf = RandomForestClassifier(
+            n_estimators=200,
+            n_jobs=-1,
+            verbose=1
+        )
+    elif classifier_type == 'SVM':
+        clf = SVC(
+            kernel='poly',
+            degree='4'
+        )
+
+    cur_checkpoint =10
+    df_master = df.copy()
+
+    record_count = len(df)
+
+    # count of how many labelled and unlabelled datapoints
+    l_count = int(record_count * cur_checkpoint / 100)
+    u_count = record_count - l_count
+
+    one_hot_columns = list(domain_dims.keys())
+    clf_train_df = pd.get_dummies(
+        df_UL,
+        columns=one_hot_columns
+    )
