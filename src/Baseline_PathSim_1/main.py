@@ -734,7 +734,7 @@ def execute_iterative_classification(
         new_train_X = new_clf_train_df.values
         new_test_X  = new_clf_test_df.values
 
-        clf.fit(new_train_X,new_train_Y)
+        # clf.fit(new_train_X,new_train_Y)
         new_pred_Y = clf.predict(new_test_X)
         new_pred_Y = np.reshape(new_pred_Y,-1)
 
