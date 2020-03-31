@@ -585,7 +585,7 @@ def execute_iterative_classification(
 
     def update_label(row, ref_df, epsilon, _k):
         _id = row[id_col]
-        lamdba = 0.1
+        lamdba = 0.3
         ref_df = ref_df[[id_col,label_col]]
         f_path = os.path.join(KNN_dir,str(_id) + '.csv')
         _sim_df = pd.read_csv(f_path,index_col=None)
@@ -734,7 +734,7 @@ def execute_iterative_classification(
         new_train_X = new_clf_train_df.values
         new_test_X  = new_clf_test_df.values
 
-        # clf.fit(new_train_X,new_train_Y)
+        clf.fit(new_train_X,new_train_Y)
         new_pred_Y = clf.predict(new_test_X)
         new_pred_Y = np.reshape(new_pred_Y,-1)
 
@@ -831,11 +831,14 @@ def execute_iterative_classification(
         msg = '[   With Input] accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
         LOGGER.info(msg)
         print(msg)
-        correct = 0
+        TP = 0
+        TP_FN = 0
         for i, j in zip(y_true, y_pred):
             if i == 1 and i == j:
-                correct += 1
-        precision = round(correct / _count,2)
+                TP += 1
+            if i == 1 : TP_FN += 1
+
+        precision = round(TP / TP_FN,2)
         msg = '[   With Input] precision at Top (next)  {} % :: {}'.format(point, precision)
         LOGGER.info(msg)
         print(msg)
@@ -851,11 +854,13 @@ def execute_iterative_classification(
         msg = '[Without Input] accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
         LOGGER.info(msg)
         print(msg)
-        correct = 0
+        TP = 0
+        TP_FN = 0
         for i, j in zip(y_true, y_pred):
             if i == 1 and i == j:
-                correct += 1
-        precision = round(correct / _count , 2)
+                TP += 1
+            if i == 1: TP_FN += 1
+        precision = round(TP / TP_FN , 2)
         msg = '[Without Input] precision at Top (next)  {} % :: {}'.format(point, precision)
         LOGGER.info(msg)
         print(msg)
