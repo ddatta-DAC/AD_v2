@@ -248,7 +248,7 @@ class MP_object:
 
         self.mp = MP + MP[::-1][1:]
         self.id = MP_object.assign_id()
-
+        self.simMatrix = None
         # set up the commuting matrix for PathSim
         matrix_list = []
 
@@ -281,7 +281,6 @@ class MP_object:
             simMatrix = load_np(simMatrix_path)
             print(simMatrix.shape)
             self.simMatrix = simMatrix
-
         else:
             print('MetaPath :', self.mp)
             conn_domain = self.mp[0]
@@ -320,7 +319,6 @@ class MP_object:
                 simMatrix_path,
                 simMatrix
             )
-
 
         return
 
@@ -376,7 +374,7 @@ def set_up_closest_K_by_RecordID(
 
     sim_values = []
     for mp_obj in list_MP_OBJ:
-        _id = mp_obj.id
+
         sim_vals = mp_obj.simMatrix[serialID, :]
         sim_values.append(sim_vals)
 
