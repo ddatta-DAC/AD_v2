@@ -475,9 +475,19 @@ def read_target_data():
             DIR,
             csv_f_name), index_col=None
     )
-    df = df.sample(data_max_size)
+    # Check if previously target data has been read and calculations made
+    f_path =  os.path.join(
+        model_use_data_DIR, 'record_2_serial_ID.csv'
+    )
+    if os.path.exists( f_path):
+        tmp_df = pd.read_csv(f_path, index_col=None)
+        valid_ids = list(tmp_df[id_col])
+        df = df.loc[df[id_col].isin(valid_ids)]
+    else:
+        df = df.sample(data_max_size)
+
     df = df.sort_values(
-        by=[id_col]
+        by=['score']
     )
     return df
 
