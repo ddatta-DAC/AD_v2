@@ -791,10 +791,8 @@ def execute_iterative_classification(
     # ------- Evaluate -------- #
     true_label_name = 'y_true'
 
-    def place_true_labels(row, ref_df):
-        _id = row[id_col]
-        r = list(df.loc[ref_df[id_col]==_id]['fraud'])[0]
-        if r :
+    def place_true_labels(val):
+        if val :
             return 1
         else:
             return -1
@@ -808,10 +806,8 @@ def execute_iterative_classification(
         del df_eval[dd]
 
 
-    df_eval[true_label_name] = df_eval.parallel_apply(
-        place_true_labels,
-        axis=1,
-        args=(df_master,)
+    df_eval[true_label_name] = df_eval['fraud'].parallel_apply(
+        place_true_labels
     )
 
     df_eval1 = pd.DataFrame(
