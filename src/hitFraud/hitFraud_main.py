@@ -589,8 +589,10 @@ DIR = args.DIR
 classifier_type = args.classifier_type
 
 # --------------------------------------
-
-MODEL_DATA_DIR = os.path.join('model_use_data', DIR)
+MODEL_DATA_DIR = 'model_use_data'
+if not os.path.exists(MODEL_DATA_DIR):
+    os.mkdir(MODEL_DATA_DIR)
+MODEL_DATA_DIR = os.path.join(MODEL_DATA_DIR, DIR)
 
 if not os.path.exists(MODEL_DATA_DIR):
     os.mkdir(MODEL_DATA_DIR)
