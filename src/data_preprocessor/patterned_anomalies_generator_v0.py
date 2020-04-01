@@ -190,7 +190,7 @@ def main_process():
         how='inner'
     )
     # Now we have the list of Shippers and Consignee who do business with them are actually suspicious
-    # Assumption these are comapnes that trade along the route described by ('PortOfLading', 'PortOfUnlading')
+    # Assumption these are companies that trade along the route described by ('PortOfLading', 'PortOfUnlading')
 
     _frac = 0.15
     candidate_Shipper = list(set(pp['ShipperPanjivaID']))
