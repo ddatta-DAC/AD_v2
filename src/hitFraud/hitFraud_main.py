@@ -528,8 +528,8 @@ def exec_classifier(
         y_true = list(df_tmp[true_label_name])
         y_pred =  [1] * len(df_tmp)
         accuracy = round(accuracy_score(y_true, y_pred),2)
-        msg = 'Accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
-        msg = '[ Without Input] accuracy at Top (next)  {} % :: {}'.format(point, precision)
+
+        msg = '[ Without Input] accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
         LOGGER.info(msg)
 
         TP = 0
@@ -547,8 +547,7 @@ def exec_classifier(
         y_true = list(df_tmp[true_label_name])
         y_pred = list(df_tmp[label_col])
         accuracy = round(accuracy_score(y_true, y_pred), 2)
-        msg = 'Accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
-        msg = '[  With Input] accuracy at Top (next)  {} % :: {}'.format(point, precision)
+        msg = '[  With Input] accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
         LOGGER.info(msg)
 
         TP = 0
