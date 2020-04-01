@@ -1,0 +1,230 @@
+ K = 10
+Length of data :: 2500
+Current percentage of data labelled  :: 10
+[   With Input] accuracy at Top (next)  10 % :: 0.75
+[   With Input] precision at Top (next)  10 % :: 0.0
+[Without Input] accuracy at Top (next)  10 % :: 0.25
+[Without Input] precision at Top (next)  10 % :: 0.25
+[   With Input] accuracy at Top (next)  20 % :: 0.77
+[   With Input] precision at Top (next)  20 % :: 0.0
+[Without Input] accuracy at Top (next)  20 % :: 0.23
+[Without Input] precision at Top (next)  20 % :: 0.23
+[   With Input] accuracy at Top (next)  30 % :: 0.79
+[   With Input] precision at Top (next)  30 % :: 0.0
+[Without Input] accuracy at Top (next)  30 % :: 0.21
+[Without Input] precision at Top (next)  30 % :: 0.21
+[   With Input] accuracy at Top (next)  40 % :: 0.8
+[   With Input] precision at Top (next)  40 % :: 0.0
+[Without Input] accuracy at Top (next)  40 % :: 0.2
+[Without Input] precision at Top (next)  40 % :: 0.2
+[   With Input] accuracy at Top (next)  50 % :: 0.8
+[   With Input] precision at Top (next)  50 % :: 0.0
+[Without Input] accuracy at Top (next)  50 % :: 0.2
+[Without Input] precision at Top (next)  50 % :: 0.2
+ K = 10
+Length of data :: 2500
+Current percentage of data labelled  :: 10
+[   With Input] accuracy at Top (next)  10 % :: 0.75
+[   With Input] precision at Top (next)  10 % :: 0.0
+[Without Input] accuracy at Top (next)  10 % :: 0.25
+[Without Input] precision at Top (next)  10 % :: 0.25
+[   With Input] accuracy at Top (next)  20 % :: 0.77
+[   With Input] precision at Top (next)  20 % :: 0.0
+[Without Input] accuracy at Top (next)  20 % :: 0.23
+[Without Input] precision at Top (next)  20 % :: 0.23
+[   With Input] accuracy at Top (next)  30 % :: 0.79
+[   With Input] precision at Top (next)  30 % :: 0.0
+[Without Input] accuracy at Top (next)  30 % :: 0.21
+[Without Input] precision at Top (next)  30 % :: 0.21
+[   With Input] accuracy at Top (next)  40 % :: 0.8
+[   With Input] precision at Top (next)  40 % :: 0.0
+[Without Input] accuracy at Top (next)  40 % :: 0.2
+[Without Input] precision at Top (next)  40 % :: 0.2
+[   With Input] accuracy at Top (next)  50 % :: 0.8
+[   With Input] precision at Top (next)  50 % :: 0.0
+[Without Input] accuracy at Top (next)  50 % :: 0.2
+[Without Input] precision at Top (next)  50 % :: 0.2
+ K = 10
+Length of data :: 2500
+Current percentage of data labelled  :: 10
+[   With Input] accuracy at Top (next)  10 % :: 0.75
+[   With Input] precision at Top (next)  10 % :: 0.0
+[Without Input] accuracy at Top (next)  10 % :: 0.25
+[Without Input] precision at Top (next)  10 % :: 0.25
+[   With Input] accuracy at Top (next)  20 % :: 0.77
+[   With Input] precision at Top (next)  20 % :: 0.0
+[Without Input] accuracy at Top (next)  20 % :: 0.23
+[Without Input] precision at Top (next)  20 % :: 0.23
+[   With Input] accuracy at Top (next)  30 % :: 0.79
+[   With Input] precision at Top (next)  30 % :: 0.0
+[Without Input] accuracy at Top (next)  30 % :: 0.21
+[Without Input] precision at Top (next)  30 % :: 0.21
+[   With Input] accuracy at Top (next)  40 % :: 0.8
+[   With Input] precision at Top (next)  40 % :: 0.0
+[Without Input] accuracy at Top (next)  40 % :: 0.2
+[Without Input] precision at Top (next)  40 % :: 0.2
+[   With Input] accuracy at Top (next)  50 % :: 0.8
+[   With Input] precision at Top (next)  50 % :: 0.0
+[Without Input] accuracy at Top (next)  50 % :: 0.2
+[Without Input] precision at Top (next)  50 % :: 0.2
+ K = 10
+Length of data :: 2500
+Current percentage of data labelled  :: 10
+[   With Input] accuracy at Top (next)  10 % :: 0.75
+[   With Input] precision at Top (next)  10 % :: 0.0
+[Without Input] accuracy at Top (next)  10 % :: 0.25
+[Without Input] precision at Top (next)  10 % :: 0.25
+[   With Input] accuracy at Top (next)  20 % :: 0.77
+[   With Input] precision at Top (next)  20 % :: 0.0
+[Without Input] accuracy at Top (next)  20 % :: 0.23
+[Without Input] precision at Top (next)  20 % :: 0.23
+[   With Input] accuracy at Top (next)  30 % :: 0.79
+[   With Input] precision at Top (next)  30 % :: 0.0
+[Without Input] accuracy at Top (next)  30 % :: 0.21
+[Without Input] precision at Top (next)  30 % :: 0.21
+[   With Input] accuracy at Top (next)  40 % :: 0.8
+[   With Input] precision at Top (next)  40 % :: 0.0
+[Without Input] accuracy at Top (next)  40 % :: 0.2
+[Without Input] precision at Top (next)  40 % :: 0.2
+[   With Input] accuracy at Top (next)  50 % :: 0.8
+[   With Input] precision at Top (next)  50 % :: 0.0
+[Without Input] accuracy at Top (next)  50 % :: 0.2
+[Without Input] precision at Top (next)  50 % :: 0.2
+ K = 10
+Length of data :: 2500
+Current percentage of data labelled  :: 10
+[   With Input] accuracy at Top (next)  10 % :: 0.75
+[   With Input] precision at Top (next)  10 % :: 0.0
+[Without Input] accuracy at Top (next)  10 % :: 0.25
+[Without Input] precision at Top (next)  10 % :: 0.25
+[   With Input] accuracy at Top (next)  20 % :: 0.77
+[   With Input] precision at Top (next)  20 % :: 0.0
+[Without Input] accuracy at Top (next)  20 % :: 0.23
+[Without Input] precision at Top (next)  20 % :: 0.23
+[   With Input] accuracy at Top (next)  30 % :: 0.79
+[   With Input] precision at Top (next)  30 % :: 0.0
+[Without Input] accuracy at Top (next)  30 % :: 0.21
+[Without Input] precision at Top (next)  30 % :: 0.21
+[   With Input] accuracy at Top (next)  40 % :: 0.8
+[   With Input] precision at Top (next)  40 % :: 0.0
+[Without Input] accuracy at Top (next)  40 % :: 0.2
+[Without Input] precision at Top (next)  40 % :: 0.2
+[   With Input] accuracy at Top (next)  50 % :: 0.8
+[   With Input] precision at Top (next)  50 % :: 0.0
+[Without Input] accuracy at Top (next)  50 % :: 0.2
+[Without Input] precision at Top (next)  50 % :: 0.2
+ K = 10
+Length of data :: 2500
+Current percentage of data labelled  :: 10
+[   With Input] accuracy at Top (next)  10 % :: 0.75
+[   With Input] precision at Top (next)  10 % :: 0.0
+[Without Input] accuracy at Top (next)  10 % :: 0.25
+[Without Input] precision at Top (next)  10 % :: 1.0
+[   With Input] accuracy at Top (next)  20 % :: 0.77
+[   With Input] precision at Top (next)  20 % :: 0.0
+[Without Input] accuracy at Top (next)  20 % :: 0.23
+[Without Input] precision at Top (next)  20 % :: 1.0
+[   With Input] accuracy at Top (next)  30 % :: 0.79
+[   With Input] precision at Top (next)  30 % :: 0.0
+[Without Input] accuracy at Top (next)  30 % :: 0.21
+[Without Input] precision at Top (next)  30 % :: 1.0
+[   With Input] accuracy at Top (next)  40 % :: 0.8
+[   With Input] precision at Top (next)  40 % :: 0.0
+[Without Input] accuracy at Top (next)  40 % :: 0.2
+[Without Input] precision at Top (next)  40 % :: 1.0
+[   With Input] accuracy at Top (next)  50 % :: 0.8
+[   With Input] precision at Top (next)  50 % :: 0.0
+[Without Input] accuracy at Top (next)  50 % :: 0.2
+[Without Input] precision at Top (next)  50 % :: 1.0
+ K = 10
+Length of data :: 2500
+Current percentage of data labelled  :: 10
+[   With Input] accuracy at Top (next)  10 % :: 0.75
+[   With Input] precision at Top (next)  10 % :: 0.0
+[Without Input] accuracy at Top (next)  10 % :: 0.25
+[Without Input] precision at Top (next)  10 % :: 1.0
+[   With Input] accuracy at Top (next)  20 % :: 0.77
+[   With Input] precision at Top (next)  20 % :: 0.0
+[Without Input] accuracy at Top (next)  20 % :: 0.23
+[Without Input] precision at Top (next)  20 % :: 1.0
+[   With Input] accuracy at Top (next)  30 % :: 0.79
+[   With Input] precision at Top (next)  30 % :: 0.0
+[Without Input] accuracy at Top (next)  30 % :: 0.21
+[Without Input] precision at Top (next)  30 % :: 1.0
+[   With Input] accuracy at Top (next)  40 % :: 0.8
+[   With Input] precision at Top (next)  40 % :: 0.0
+[Without Input] accuracy at Top (next)  40 % :: 0.2
+[Without Input] precision at Top (next)  40 % :: 1.0
+[   With Input] accuracy at Top (next)  50 % :: 0.8
+[   With Input] precision at Top (next)  50 % :: 0.0
+[Without Input] accuracy at Top (next)  50 % :: 0.2
+[Without Input] precision at Top (next)  50 % :: 1.0
+ K = 10
+Length of data :: 2500
+Current percentage of data labelled  :: 10
+[   With Input] accuracy at Top (next)  10 % :: 0.75
+[   With Input] precision at Top (next)  10 % :: 0.0
+[Without Input] accuracy at Top (next)  10 % :: 0.25
+[Without Input] precision at Top (next)  10 % :: 1.0
+[   With Input] accuracy at Top (next)  20 % :: 0.77
+[   With Input] precision at Top (next)  20 % :: 0.0
+[Without Input] accuracy at Top (next)  20 % :: 0.23
+[Without Input] precision at Top (next)  20 % :: 1.0
+[   With Input] accuracy at Top (next)  30 % :: 0.79
+[   With Input] precision at Top (next)  30 % :: 0.0
+[Without Input] accuracy at Top (next)  30 % :: 0.21
+[Without Input] precision at Top (next)  30 % :: 1.0
+[   With Input] accuracy at Top (next)  40 % :: 0.8
+[   With Input] precision at Top (next)  40 % :: 0.0
+[Without Input] accuracy at Top (next)  40 % :: 0.2
+[Without Input] precision at Top (next)  40 % :: 1.0
+[   With Input] accuracy at Top (next)  50 % :: 0.8
+[   With Input] precision at Top (next)  50 % :: 0.0
+[Without Input] accuracy at Top (next)  50 % :: 0.2
+[Without Input] precision at Top (next)  50 % :: 1.0
+ K = 10
+Length of data :: 2500
+Current percentage of data labelled  :: 10
+[   With Input] accuracy at Top (next)  10 % :: 0.75
+[   With Input] precision at Top (next)  10 % :: 0.0
+[Without Input] accuracy at Top (next)  10 % :: 0.25
+[Without Input] precision at Top (next)  10 % :: 1.0
+[   With Input] accuracy at Top (next)  20 % :: 0.77
+[   With Input] precision at Top (next)  20 % :: 0.0
+[Without Input] accuracy at Top (next)  20 % :: 0.23
+[Without Input] precision at Top (next)  20 % :: 1.0
+[   With Input] accuracy at Top (next)  30 % :: 0.79
+[   With Input] precision at Top (next)  30 % :: 0.0
+[Without Input] accuracy at Top (next)  30 % :: 0.21
+[Without Input] precision at Top (next)  30 % :: 1.0
+[   With Input] accuracy at Top (next)  40 % :: 0.8
+[   With Input] precision at Top (next)  40 % :: 0.0
+[Without Input] accuracy at Top (next)  40 % :: 0.2
+[Without Input] precision at Top (next)  40 % :: 1.0
+[   With Input] accuracy at Top (next)  50 % :: 0.8
+[   With Input] precision at Top (next)  50 % :: 0.0
+[Without Input] accuracy at Top (next)  50 % :: 0.2
+[Without Input] precision at Top (next)  50 % :: 1.0
+ K = 10
+Length of data :: 2500
+Current percentage of data labelled  :: 10
+[   With Input] accuracy at Top (next)  10 % :: 0.75
+[   With Input] precision at Top (next)  10 % :: 0.0
+[Without Input] accuracy at Top (next)  10 % :: 0.25
+[Without Input] precision at Top (next)  10 % :: 1.0
+[   With Input] accuracy at Top (next)  20 % :: 0.77
+[   With Input] precision at Top (next)  20 % :: 0.0
+[Without Input] accuracy at Top (next)  20 % :: 0.23
+[Without Input] precision at Top (next)  20 % :: 1.0
+[   With Input] accuracy at Top (next)  30 % :: 0.79
+[   With Input] precision at Top (next)  30 % :: 0.0
+[Without Input] accuracy at Top (next)  30 % :: 0.21
+[Without Input] precision at Top (next)  30 % :: 1.0
+[   With Input] accuracy at Top (next)  40 % :: 0.8
+[   With Input] precision at Top (next)  40 % :: 0.0
+[Without Input] accuracy at Top (next)  40 % :: 0.2
+[Without Input] precision at Top (next)  40 % :: 1.0
+[   With Input] accuracy at Top (next)  50 % :: 0.8
+[   With Input] precision at Top (next)  50 % :: 0.0
+[Without Input] accuracy at Top (next)  50 % :: 0.2
+[Without Input] precision at Top (next)  50 % :: 1.0
