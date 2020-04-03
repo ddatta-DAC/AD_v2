@@ -57,7 +57,7 @@ class Entity_Node:
         # -------------------
         p = [math.pow(_ / max(norm_prob), 0.75) for _ in norm_prob]
         p = [_ / sum(p) for _ in p]
-        id_list = list(unnorm_counts_dict.keys())
+
         # prob_dist = {e[0]: e[1] for e in enumerate(p)}
         # set up the prob distribution dictionary as { key=serialized_id  : value=prob}
 
@@ -334,7 +334,7 @@ class RandomWalkGraph_v1:
         return
 
     # ----------------------
-    # Takes 3 arguments:
+    # Takes 4 arguments:
     # 1. entity id of starting node, belonging to domain of 1st type in metapath
     # 2. actual meta path (symmetric)
     # 3. rw_count
