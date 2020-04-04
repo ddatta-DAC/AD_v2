@@ -204,6 +204,17 @@ def convert_to_ids(
             fh,
             pickle.HIGHEST_PROTOCOL
         )
+
+    file = 'col_val2id_dict.pkl'
+    f_path = os.path.join(save_dir, file)
+
+    with open(f_path, 'wb') as fh:
+        pickle.dump(
+            col_val2id_dict,
+            fh,
+            pickle.HIGHEST_PROTOCOL
+        )
+
     return df, col_val2id_dict
 
 

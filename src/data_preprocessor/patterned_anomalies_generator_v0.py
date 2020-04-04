@@ -175,8 +175,8 @@ def main_process():
     # Select pairs of ports such that their count in (15,85) percentile
     # Select 20 % of such pairs
     kk = df_train.groupby(['PortOfLading', 'PortOfUnlading']).size().reset_index(name='count')
-    lb = np.percentile(list(kk['count']), 15)
-    ub = np.percentile(list(kk['count']), 85)
+    lb = np.percentile(list(kk['count']), 25)
+    ub = np.percentile(list(kk['count']), 75)
     kk_1 = kk.loc[(kk['count'] >= lb) & (kk['count'] <= ub)]
     kk_2 = kk_1.sample(frac=0.20)
     kk_2 = kk_2.reset_index(drop=True)
@@ -192,7 +192,7 @@ def main_process():
     # Now we have the list of Shippers and Consignee who do business with them are actually suspicious
     # Assumption these are companies that trade along the route described by ('PortOfLading', 'PortOfUnlading')
 
-    _frac = 0.15
+    _frac = 0.20
     candidate_Shipper = list(set(pp['ShipperPanjivaID']))
     _count1 = int(_frac * domain_dims['ShipperPanjivaID'])
     _count1 = min(_count1, len(candidate_Shipper))
@@ -251,8 +251,8 @@ def main_process():
     # ================================================ #
     _frac = 0.2
     hh = df_train.groupby(['HSCode']).size().reset_index(name='count')
-    lb = np.percentile(list(hh['count']), 10)
-    ub = np.percentile(list(hh['count']), 90)
+    lb = np.percentile(list(hh['count']), 25)
+    ub = np.percentile(list(hh['count']), 75)
     _count = int(_frac * len(hh))
 
     candidate_HSCode = set(
@@ -275,9 +275,9 @@ def main_process():
     qq = qq.loc[qq['HSCode'].isin(target_HSCode)]
     qq_1 = qq.groupby(['ShipmentOrigin', 'ShipmentDestination']).size().reset_index(name='count')
 
-    lb = np.percentile(list(qq_1['count']), 15)
-    ub = np.percentile(list(qq_1['count']), 85)
-    _count = int(0.25 * len(qq_1))
+    lb = np.percentile(list(qq_1['count']), 25)
+    ub = np.percentile(list(qq_1['count']), 75)
+    _count = int(0.20 * len(qq_1))
 
     target_ShipmentOrigin_ShipmentDestination = qq_1.loc[
         (qq_1['count'] >= lb) &
