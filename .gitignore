@@ -30,3 +30,4 @@ src/**/__pycache__/**
 /AD_system_output/
 /src/Baseline_SimRank_1/model_use_data/
 /src/Baseline_PathSim_1/model_use_data/
+/src/GraphEmb_2/model_use_data/
