@@ -243,16 +243,23 @@ def  get_scored_data(
 ):
     global DIR
     global DATA_SOURCE_DIR
+    global CONFIG
 
-    test_data_df = data_fetcher.get_testing_data_as_DF(
+    test_data_df = data_fetcher.get_Stage2_data_as_DF(
         CONFIG['DATA_DIR'],
-        DIR
+        DIR,
+        fraud_ratio = CONFIG['fraud_ratio'],
+        anomaly_ratio = CONFIG['anomaly_ratio'],
+        total_size = CONFIG[DIR]['test_data_size']
     )
+
+
     df_copy = test_data_df.copy()
     id_list = list(df_copy['PanjivaRecordID'])
     del df_copy['PanjivaRecordID']
     del df_copy['anomaly']
     del df_copy['fraud']
+
     data_test_x = df_copy.values
 
     result_df = score_data(

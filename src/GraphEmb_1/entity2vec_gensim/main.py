@@ -23,7 +23,7 @@ except:
 
 # ----------------------------- #
 domain_dims = None
-SOURCE_DATA_DIR = './../../../generated_data_v1'
+SOURCE_DATA_DIR_1 = './../../../generated_data_v1'
 MODEL_INP_DATA_DIR = './data'
 id_col = 'PanjivaRecordID'
 coOccDict = None
@@ -31,15 +31,16 @@ serial_mapping_df = None
 
 
 def get_data():
-    global SOURCE_DATA_DIR
+    global SOURCE_DATA_DIR_1
     global DIR
     global MODEL_INP_DATA_DIR
     global id_col
     global coOccDict
     global serial_mapping_df
     global domain_dims
-    data = data_fetcher.get_train_x_csv(SOURCE_DATA_DIR, DIR)
-    domain_dims = data_fetcher.get_domain_dims(SOURCE_DATA_DIR, DIR)
+
+    data = data_fetcher.get_train_x_csv(SOURCE_DATA_DIR_1, DIR)
+    domain_dims = data_fetcher.get_domain_dims(SOURCE_DATA_DIR_1, DIR)
     print(domain_dims)
 
     coOccDict_file = os.path.join(MODEL_INP_DATA_DIR, 'co_occ_dict.pkl')
@@ -146,7 +147,7 @@ def parse_into_sentence(data_df):
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
-    default=None
+    default='us_import1'
 )
 
 args = parser.parse_args()
