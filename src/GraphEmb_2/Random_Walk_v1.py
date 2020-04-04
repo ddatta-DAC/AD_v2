@@ -17,7 +17,7 @@ import multiprocessing
 # ---- Global object ----- #
 NODE_OBJECT_DICT = None
 Serial_mapping_df = None
-
+NO_REFRESH = True
 
 # ------------------------- #
 
@@ -145,12 +145,14 @@ class RandomWalkGraph_v1:
             self,
             domain_dims
     ):
-        NO_REFRESH = True
+        global NO_REFRESH
+
         print('File :: ', self.node_obj_dict_file)
 
         if NO_REFRESH and os.path.exists(self.node_obj_dict_file):
             with open(self.node_obj_dict_file, "rb") as fh:
                 self.node_object_dict = pickle.load(fh)
+                return 1
         else:
             self.node_object_dict = {}
             # ------------------
@@ -164,9 +166,8 @@ class RandomWalkGraph_v1:
                         entity=_id
                     )
                     self.node_object_dict[_domain_name][_id] = _obj
-            # self.update_node_obj_dict()
 
-        return
+            return 2
 
     # ---------------------------------------------- #
     # Initialize the model
@@ -178,7 +179,7 @@ class RandomWalkGraph_v1:
             serial_mapping_df,
             domain_dims,
             id_col='PanjivaRecordID',
-            MP_list=None,
+            MP_list = None,
             save_data_dir=None,
             saved_file_name='node_obj_dict.pkl'
     ):
@@ -188,11 +189,14 @@ class RandomWalkGraph_v1:
         Serial_mapping_df = serial_mapping_df
         self.n_jobs = multiprocessing.cpu_count()
         self.MP_list = MP_list
+        self.coOCcMatrix_dict = coOccMatrixDict
         self.domain_dims = domain_dims
         self.id_col = id_col
         self.save_data_dir = save_data_dir
         self.saved_file_name = saved_file_name
-        _signature = ''.join(sorted([''.join(_) for _ in MP_list]))
+        _signature = ''.join(
+            ([''.join(_) for _ in MP_list])
+        )
 
         self.signature = str(md5(str.encode(_signature)).hexdigest())
         self.saved_file_name = saved_file_name.replace(
@@ -204,19 +208,22 @@ class RandomWalkGraph_v1:
             self.save_data_dir,
             self.saved_file_name
         )
-
-        if os.path.exists(self.node_obj_dict_file):
-            print('Node dict file exists :: ', self.saved_file_name)
-            with open(self.node_obj_dict_file, "rb") as fh:
-                self.node_object_dict = pickle.load(fh)
-                NODE_OBJECT_DICT = self.node_object_dict
-            return
-
+        # ---------------------------------------- #
+        # Check if already pre-computed dictionary and transitions.
+        # ---------------------------------------- #
+        # if os.path.exists(self.node_obj_dict_file):
+        #     print('Node dict file exists :: ', self.saved_file_name)
+        #     with open(self.node_obj_dict_file, "rb") as fh:
+        #         self.node_object_dict = pickle.load(fh)
+        #         NODE_OBJECT_DICT = self.node_object_dict
+        #
+        #     return
         # ----------------------------------------- #
 
-        self.coOCcMatrix_dict = coOccMatrixDict
-        self.get_node_obj_dict(domain_dims)
+        return_value = self.get_node_obj_dict(domain_dims)
         NODE_OBJECT_DICT = self.node_object_dict
+
+        if return_value == 1 : return
 
         # ----------------------------------------- #
         # set up transition probabilities
@@ -261,7 +268,7 @@ class RandomWalkGraph_v1:
                 relations.append(_1 + '_+_' + _2)
         relations = set(relations)
         relations = [_.split('_+_') for _ in relations]
-        print('Distinct ', relations)
+        print('Number of distinct relations :: ', len(relations) )
 
         for R in relations:
             print(' Relation :: ', R)
@@ -319,6 +326,7 @@ class RandomWalkGraph_v1:
                 self.node_object_dict[domain_j][e_j] = obj_j
 
         self.update_node_obj_dict()
+        NODE_OBJECT_DICT = self.node_object_dict
         return
 
     # ----------------------
