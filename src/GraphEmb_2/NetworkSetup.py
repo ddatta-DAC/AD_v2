@@ -207,7 +207,7 @@ rw_obj.initialize(
 )
 
 rw_obj.generate_RandomWalks_w_neg_samples(
-    rw_count=25,
-    rw_length=100,
+    rw_count=10,
+    rw_length=120,
     num_neg_samples=10
 )
