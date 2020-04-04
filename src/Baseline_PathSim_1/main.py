@@ -846,10 +846,10 @@ def execute_iterative_classification(
         # If we consider all the records till this point as anomalies
         # df_eval2 is sorted by score
         # --------------------
+
         df_tmp = df_eval2.head(_count)
         y_true = list(df_tmp[true_label_name])
         y_pred = [1] * len(df_tmp)
-
         accuracy = round(accuracy_score(y_true, y_pred),2)
         msg = '[Without Input] accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
         LOGGER.info(msg)
