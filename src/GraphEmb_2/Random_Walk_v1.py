@@ -145,15 +145,17 @@ class RandomWalkGraph_v1:
             self,
             domain_dims
     ):
+        NO_REFRESH = True
         print('File :: ', self.node_obj_dict_file)
 
-        NO_REFRESH = True
         if NO_REFRESH and os.path.exists(self.node_obj_dict_file):
             with open(self.node_obj_dict_file, "rb") as fh:
                 self.node_object_dict = pickle.load(fh)
         else:
             self.node_object_dict = {}
-            # Create node objects for only node types in the path
+            # ------------------
+            # Create node Objects for only node types in the path
+            # ------------------
             for _domain_name in domain_dims.keys():
                 self.node_object_dict[_domain_name] = {}
                 for _id in range(domain_dims[_domain_name]):
@@ -166,7 +168,8 @@ class RandomWalkGraph_v1:
 
         return
 
-
+    # ---------------------------------------------- #
+    # Initialize the model
     # ---------------------------------------------- #
 
     def initialize(
