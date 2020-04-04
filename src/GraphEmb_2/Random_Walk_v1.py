@@ -117,6 +117,7 @@ def get_coOccMatrixkey(a, b):
 
 
 class RandomWalkGraph_v1:
+    Serial_2_Entity_ID_dict = {}
     def __init__(self):
         self.df_x = None
         self.MP_list = []
@@ -186,7 +187,6 @@ class RandomWalkGraph_v1:
         global NODE_OBJECT_DICT
         global Serial_mapping_df
 
-        Serial_mapping_df = serial_mapping_df
         self.n_jobs = multiprocessing.cpu_count()
         self.MP_list = MP_list
         self.coOCcMatrix_dict = coOccMatrixDict
@@ -203,6 +203,8 @@ class RandomWalkGraph_v1:
             '.',
             '_' + self.signature + '.'
         )
+        Serial_mapping_df = serial_mapping_df
+        RandomWalkGraph_v1.setup_Entity_ID_lookup()
 
         self.node_obj_dict_file = os.path.join(
             self.save_data_dir,
@@ -240,14 +242,18 @@ class RandomWalkGraph_v1:
             else:
                 arr = matrix[:, e_idx]
 
-            # find the serilaized ids of the neighbors
+            # -----------------------------
+            # Find the Serialized ids of the neighbors
+            # -----------------------------
             _tmp_df = Serial_mapping_df.loc[
                 Serial_mapping_df['Domain'] == nbr_type
                 ].reset_index(drop=True)
             _tmp_df = _tmp_df.sort_values(by=['Entity_ID'])
             _tmp_df['count'] = arr
 
-            _count_dict = {k: v for k, v in zip(list(_tmp_df['Serial_ID']), list(_tmp_df['count']))}
+            _count_dict = { k: v for k, v in zip(
+                list(_tmp_df['Serial_ID']), list(_tmp_df['count']))
+            }
 
             obj.set_transition_prob(
                 nbr_type=nbr_type,
@@ -329,6 +335,26 @@ class RandomWalkGraph_v1:
         NODE_OBJECT_DICT = self.node_object_dict
         return
 
+    @staticmethod
+    def setup_Entity_ID_lookup():
+        global Serial_mapping_df
+        RandomWalkGraph_v1.Serial_2_Entity_ID_dict = {}
+        for domain in set(Serial_mapping_df['Domain']):
+            RandomWalkGraph_v1.Serial_2_Entity_ID_dict[domain] = {}
+            tmp = Serial_mapping_df.loc[
+                (Serial_mapping_df['Domain'] == domain)]
+            s_id_list = list(tmp['Serial_ID'])
+            e_id_list = list(tmp['Entity_ID'])
+            for _si, _ej in zip(s_id_list, e_id_list):
+                RandomWalkGraph_v1.Serial_2_Entity_ID_dict[domain][_si] = _ej
+
+
+    @staticmethod
+    def Entity_ID_lookup(domain, serial_id):
+        global Serial_mapping_df
+        return RandomWalkGraph_v1.Serial_2_Entity_ID_dict[domain][serial_id]
+
+
     # ----------------------
     # Takes 4 arguments:
     # 1. entity id of starting node, belonging to domain of 1st type in metapath
@@ -343,11 +369,6 @@ class RandomWalkGraph_v1:
         global NODE_OBJECT_DICT
         global Serial_mapping_df
 
-        def Entity_ID_lookup(domain, serial_id):
-            return list(Serial_mapping_df.loc[
-                            (Serial_mapping_df['Domain'] == domain) &
-                            (Serial_mapping_df['Serial_ID'] == serial_id)
-                            ]['Entity_ID'])[0]
 
         start_node_entity_idx = args[0]
         mp = args[1]
@@ -411,7 +432,7 @@ class RandomWalkGraph_v1:
                 if nbr_s_id is None:
                     return None
 
-                nbr_e_id = Entity_ID_lookup(
+                nbr_e_id = RandomWalkGraph_v1.Entity_ID_lookup(
                     next_nbr_domain,
                     nbr_s_id
                 )
@@ -454,7 +475,7 @@ class RandomWalkGraph_v1:
     # ------------------------------------
     def generate_RandomWalks_w_neg_samples(
             self,
-            mp=None,
+            mp = None,
             rw_count=250,
             rw_length=100,
             num_neg_samples=10
@@ -472,9 +493,9 @@ class RandomWalkGraph_v1:
         else:
             MP_list = list(self.MP_list)
 
-        print(' Meta paths ', self.MP_list)
-        num_jobs = max(5, self.n_jobs)
-        print(' Number of jobs ', num_jobs)
+        num_jobs = max(10, self.n_jobs)
+        print('[INFO] Meta paths ', self.MP_list)
+        print('[INFO] Number of jobs ', num_jobs)
 
         _dir = os.path.join(
             self.save_data_dir,

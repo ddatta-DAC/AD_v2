@@ -200,11 +200,11 @@ def main_process():
     target_Shipper = np.random.choice(candidate_Shipper, size=_count1, replace=False)
     pp_1 = pp.loc[pp['ShipperPanjivaID'].isin(target_Shipper)]
 
-    candidate_Shipper = list(set(pp_1['ConsigneePanjivaID']))
+    candidate_Consignee = list(set(pp_1['ConsigneePanjivaID']))
     _count2 = int(_frac * domain_dims['ConsigneePanjivaID'])
-    _count2 = min(_count2, len(candidate_Shipper))
+    _count2 = min(_count2, len(candidate_Consignee))
 
-    target_Consignee = np.random.choice(candidate_Shipper, size=_count2, replace=False)
+    target_Consignee = np.random.choice(candidate_Consignee, size=_count2, replace=False)
     print('Number of interesting shippers ', len(target_Shipper))
     print('Number of interesting consignee ', len(target_Consignee))
 
