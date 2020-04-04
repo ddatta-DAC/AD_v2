@@ -29,3 +29,4 @@ src/**/__pycache__/**
 /src/MEAD/save_dir/
 /AD_system_output/
 /src/Baseline_SimRank_1/model_use_data/
+/src/Baseline_PathSim_1/model_use_data/

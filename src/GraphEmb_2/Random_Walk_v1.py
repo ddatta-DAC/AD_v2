@@ -5,7 +5,7 @@ from pandarallel import pandarallel
 from joblib import Parallel, delayed
 
 pandarallel.initialize(progress_bar=True, verbose=1)
-from src.utils import coOccMatrixGenerator as cMg
+
 from vose_sampler import VoseAlias
 import pickle
 import math
@@ -17,6 +17,7 @@ import multiprocessing
 # ---- Global object ----- #
 NODE_OBJECT_DICT = None
 Serial_mapping_df = None
+NO_REFRESH = True
 
 # ------------------------- #
 
@@ -38,7 +39,7 @@ class Entity_Node:
     # Add transition probabilities to neighbors
     # Input :
     # nbr_type : domain name
-    # unnorm_counts_dict
+    # un normalized counts_dict
     # ----------------
     def set_transition_prob(
             self,
@@ -88,7 +89,6 @@ class Entity_Node:
 
     def sample_nbr(self, nbr_type):
         if nbr_type not in self.transition_dict.keys():
-
             print('Neighbor type not in transition dictionary!!')
             print(self.transition_dict.keys())
             print(self.domain, 'Nbr type', nbr_type)
@@ -109,7 +109,7 @@ class Entity_Node:
 
 # ----------------------------------------------------------------- #
 
-def get_key(a, b):
+def get_coOccMatrixkey(a, b):
     if a < b:
         return '_+_'.join([a, b])
     else:
@@ -145,15 +145,19 @@ class RandomWalkGraph_v1:
             self,
             domain_dims
     ):
+        global NO_REFRESH
+
         print('File :: ', self.node_obj_dict_file)
 
-        NO_REFRESH = True
         if NO_REFRESH and os.path.exists(self.node_obj_dict_file):
             with open(self.node_obj_dict_file, "rb") as fh:
                 self.node_object_dict = pickle.load(fh)
+                return 1
         else:
             self.node_object_dict = {}
-            # Create node objects for only node types in the path
+            # ------------------
+            # Create node Objects for only node types in the path
+            # ------------------
             for _domain_name in domain_dims.keys():
                 self.node_object_dict[_domain_name] = {}
                 for _id in range(domain_dims[_domain_name]):
@@ -162,33 +166,20 @@ class RandomWalkGraph_v1:
                         entity=_id
                     )
                     self.node_object_dict[_domain_name][_id] = _obj
-            # self.update_node_obj_dict()
 
-        return
+            return 2
 
-    def get_coOccMatrixDict(
-            self,
-            df_x
-    ):
-        coOccMatrix_File = os.path.join(self.save_data_dir, 'coOccMatrixSaved.pkl')
-        if not os.path.exists(coOccMatrix_File):
-            coOCcMatrix_dict = cMg.get_coOccMatrix_dict(df_x, self.id_col)
-            with open(coOccMatrix_File, 'wb') as fh:
-                pickle.dump(coOCcMatrix_dict, fh, pickle.HIGHEST_PROTOCOL)
-        else:
-            with open(coOccMatrix_File, 'rb') as fh:
-                coOCcMatrix_dict = pickle.load(fh)
-        return coOCcMatrix_dict
-
+    # ---------------------------------------------- #
+    # Initialize the model
     # ---------------------------------------------- #
 
     def initialize(
             self,
-            data_wdom,
+            coOccMatrixDict,
             serial_mapping_df,
             domain_dims,
             id_col='PanjivaRecordID',
-            MP_list=None,
+            MP_list = None,
             save_data_dir=None,
             saved_file_name='node_obj_dict.pkl'
     ):
@@ -198,11 +189,14 @@ class RandomWalkGraph_v1:
         Serial_mapping_df = serial_mapping_df
         self.n_jobs = multiprocessing.cpu_count()
         self.MP_list = MP_list
+        self.coOCcMatrix_dict = coOccMatrixDict
         self.domain_dims = domain_dims
         self.id_col = id_col
         self.save_data_dir = save_data_dir
         self.saved_file_name = saved_file_name
-        _signature = ''.join(sorted([''.join(_) for _ in MP_list]))
+        _signature = ''.join(
+            ([''.join(_) for _ in MP_list])
+        )
 
         self.signature = str(md5(str.encode(_signature)).hexdigest())
         self.saved_file_name = saved_file_name.replace(
@@ -214,21 +208,22 @@ class RandomWalkGraph_v1:
             self.save_data_dir,
             self.saved_file_name
         )
-
-
-        if os.path.exists(self.node_obj_dict_file):
-            print('Node dict file exists :: ', self.saved_file_name)
-
-            with open(self.node_obj_dict_file, "rb") as fh:
-                self.node_object_dict = pickle.load(fh)
-                NODE_OBJECT_DICT = self.node_object_dict
-            return
-
+        # ---------------------------------------- #
+        # Check if already pre-computed dictionary and transitions.
+        # ---------------------------------------- #
+        # if os.path.exists(self.node_obj_dict_file):
+        #     print('Node dict file exists :: ', self.saved_file_name)
+        #     with open(self.node_obj_dict_file, "rb") as fh:
+        #         self.node_object_dict = pickle.load(fh)
+        #         NODE_OBJECT_DICT = self.node_object_dict
+        #
+        #     return
         # ----------------------------------------- #
 
-        self.coOCcMatrix_dict = self.get_coOccMatrixDict(data_wdom)
-        self.get_node_obj_dict(domain_dims)
+        return_value = self.get_node_obj_dict(domain_dims)
         NODE_OBJECT_DICT = self.node_object_dict
+
+        if return_value == 1 : return
 
         # ----------------------------------------- #
         # set up transition probabilities
@@ -248,7 +243,7 @@ class RandomWalkGraph_v1:
             # find the serilaized ids of the neighbors
             _tmp_df = Serial_mapping_df.loc[
                 Serial_mapping_df['Domain'] == nbr_type
-            ].reset_index(drop=True)
+                ].reset_index(drop=True)
             _tmp_df = _tmp_df.sort_values(by=['Entity_ID'])
             _tmp_df['count'] = arr
 
@@ -273,7 +268,7 @@ class RandomWalkGraph_v1:
                 relations.append(_1 + '_+_' + _2)
         relations = set(relations)
         relations = [_.split('_+_') for _ in relations]
-        print('Distinct ', relations)
+        print('Number of distinct relations :: ', len(relations) )
 
         for R in relations:
             print(' Relation :: ', R)
@@ -285,7 +280,7 @@ class RandomWalkGraph_v1:
             if domain_i > domain_j:
                 (domain_i, domain_j) = (domain_j, domain_i)
 
-            key = get_key(domain_i, domain_j)
+            key = get_coOccMatrixkey(domain_i, domain_j)
             matrix = np.array(self.coOCcMatrix_dict[key])
             # ------------------------------
             # Consider both directions
@@ -331,6 +326,7 @@ class RandomWalkGraph_v1:
                 self.node_object_dict[domain_j][e_j] = obj_j
 
         self.update_node_obj_dict()
+        NODE_OBJECT_DICT = self.node_object_dict
         return
 
     # ----------------------
@@ -349,10 +345,9 @@ class RandomWalkGraph_v1:
 
         def Entity_ID_lookup(domain, serial_id):
             return list(Serial_mapping_df.loc[
-                            (Serial_mapping_df['Domain']==domain) &
-                            (Serial_mapping_df['Serial_ID']==serial_id)
-                        ]['Entity_ID'])[0]
-
+                            (Serial_mapping_df['Domain'] == domain) &
+                            (Serial_mapping_df['Serial_ID'] == serial_id)
+                            ]['Entity_ID'])[0]
 
         start_node_entity_idx = args[0]
         mp = args[1]
@@ -362,13 +357,12 @@ class RandomWalkGraph_v1:
         node_object_dict = NODE_OBJECT_DICT
 
         augmented_mp = mp + mp[::-1][1:]
-        rep_len = len(augmented_mp)-1
-        path_seq = augmented_mp + augmented_mp[1:] * (rw_length//rep_len)
+        rep_len = len(augmented_mp) - 1
+        path_seq = augmented_mp + augmented_mp[1:] * (rw_length // rep_len)
         # --------------
         # Pad it at  end
         # --------------
         path_seq = path_seq[:rw_length + 1]
-        print('len(path_seq)', len(path_seq))
         all_walks = []
         all_neg_samples = []
         # --------------------------
@@ -393,12 +387,13 @@ class RandomWalkGraph_v1:
 
                 else:
                     cur_domain = path_seq[i]
+                    # ------
                     # next neighbor determined in previous step
                     # nbr_e_id is entity id of a current domain selected in previous step
                     # that becomes cur node
+                    # ------
                     cur_node_e_id = nbr_e_id
                     cur_node_s_id = node_object_dict[cur_domain][cur_node_e_id].serial_id
-
 
                 cur_node_obj = node_object_dict[cur_domain][cur_node_e_id]
 
@@ -433,7 +428,7 @@ class RandomWalkGraph_v1:
                     num_neg_samples
                 )
 
-                # _neg_samples has shape [ ns ]
+                # _neg_samples has shape [ ?, ns ]
                 _neg_samples = np.reshape(_neg_samples, [-1, 1])
 
                 if neg_samples is None:
@@ -443,11 +438,9 @@ class RandomWalkGraph_v1:
 
                 # ---------------------------------- #
 
-
             # -------------------------------------- #
             # remove the last one ; since padding was done
             # -------------------------------------- #
-
 
             all_walks.append(walk)
             all_neg_samples.append(neg_samples)

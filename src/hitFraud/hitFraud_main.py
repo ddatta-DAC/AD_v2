@@ -6,9 +6,7 @@ import sys
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
-from sklearn.metrics import classification_report
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import precision_recall_fscore_support
+
 sys.path.append('./../..')
 sys.path.append('./..')
 from scipy.sparse import csr_matrix
@@ -137,7 +135,6 @@ def get_transition_matrix(domain1, domain2):
 
 class MP_object:
     id = 0
-
     @staticmethod
     def assign_id():
         t = MP_object.id
@@ -175,7 +172,6 @@ class MP_object:
     def __init__(self, MP):
 
         global domain_dims
-
         # symmetric
         self.mp = MP + MP[::-1][1:]
         self.id = MP_object.assign_id()
@@ -517,20 +513,55 @@ def exec_classifier(
         args=(df_master,)
     )
 
+
     # We are trying to understand how input so far will improve the output in next stage
     # So we try to see the metrics in the next 10% of the data
     from sklearn.metrics import precision_score
-    df_eval = df_eval.sort_values(by=['score'],ascending=True)
+    df_eval1 = df_eval.sort_values(by=['score'],ascending=True)
+    df_eval2 = df_eval.sort_values(by=[label_col,'score'], ascending=[False,True])
+
     # Take next 20% of data
     for point in [10,20,30,40,50]:
 
         _count = int(len(df_master)*point/100)
-        df_tmp = df_eval.head(_count)
+        df_tmp = df_eval1.head(_count)
+        y_true = list(df_tmp[true_label_name])
+        y_pred =  [1] * len(df_tmp)
+        accuracy = round(accuracy_score(y_true, y_pred),2)
+
+        msg = '[ Without Input] accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
+        LOGGER.info(msg)
+
+        TP = 0
+        TP_FN = 0
+        for i, j in zip(y_true, y_pred):
+            if i == 1 and i == j:
+                TP += 1
+            if i == 1: TP_FN += 1
+
+        precision = round(TP / TP_FN, 2)
+        msg = '[ Without Input] precision at Top (next)  {} % :: {}'.format(point, precision)
+        LOGGER.info(msg)
+
+        df_tmp = df_eval2.head(_count)
         y_true = list(df_tmp[true_label_name])
         y_pred = list(df_tmp[label_col])
-        accuracy = accuracy_score(y_true, y_pred)
-        msg = 'Accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
+        accuracy = round(accuracy_score(y_true, y_pred), 2)
+        msg = '[  With Input] accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
         LOGGER.info(msg)
+
+        TP = 0
+        TP_FN = 0
+        for i, j in zip(y_true, y_pred):
+            if i == 1 and i == j:
+                TP += 1
+            if i == 1: TP_FN += 1
+
+        precision = round(TP / TP_FN, 2)
+        msg = '[  With Input] precision at Top (next)  {} % :: {}'.format(point, precision)
+        LOGGER.info(msg)
+
+
 
     return
 
@@ -557,8 +588,10 @@ DIR = args.DIR
 classifier_type = args.classifier_type
 
 # --------------------------------------
-
-MODEL_DATA_DIR = os.path.join('model_use_data', DIR)
+MODEL_DATA_DIR = 'model_use_data'
+if not os.path.exists(MODEL_DATA_DIR):
+    os.mkdir(MODEL_DATA_DIR)
+MODEL_DATA_DIR = os.path.join(MODEL_DATA_DIR, DIR)
 
 if not os.path.exists(MODEL_DATA_DIR):
     os.mkdir(MODEL_DATA_DIR)

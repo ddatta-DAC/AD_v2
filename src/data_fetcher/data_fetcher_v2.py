@@ -226,6 +226,7 @@ def get_testing_data_as_DF(
         DATA_DIR,
         DIR
 ):
+
     _, test_x, test_idList = get_data_base_x(DATA_DIR, DIR)
 
     anomaly_x , anomaly_idList = get_anomaly_data_matrices(
@@ -264,8 +265,10 @@ def get_testing_data_as_DF(
         data=np.hstack([np.reshape(anomaly_idList_NF, [-1, 1]), anomaly_NF_x]),
         columns=cols
     )
+
     _df3['anomaly'] = True
     _df3['fraud'] = False
+
     if len(_df1) >  len(_df2) + len(_df3):
         _df1 = _df1.sample(
             len(_df2) + len(_df3)
@@ -280,6 +283,83 @@ def get_testing_data_as_DF(
         DF = DF.append(_df1, ignore_index=True)
 
     return DF
+
+
+# -----------------------------------------------------------------------
+# Function to obtain data for stage 2
+#
+# -----------------------------------------------------------------------
+def get_Stage2_data_as_DF(
+        DATA_DIR,
+        DIR,
+        id_col = 'PanjivaRecordID',
+        fraud_ratio = 0.5,
+        anomaly_ratio=0.4,
+        total_size = 10000
+):
+    anomalies_NotFraud_file_name = 'anomalies_NotFraud.csv'
+    anomalies_Fraud_file_name = 'anomalies_Fraud.csv'
+    normal_data_file_name =  'test_data.csv'
+
+    anomalies_F_df = pd.read_csv(
+        os.path.join(
+            DATA_DIR, DIR, anomalies_Fraud_file_name
+        )
+    )
+    anomalies_F_df['anomaly'] = True
+    anomalies_F_df['fraud'] = True
+
+    anomalies_NF_df = pd.read_csv(
+        os.path.join(
+            DATA_DIR, DIR, anomalies_NotFraud_file_name
+        )
+    )
+    anomalies_NF_df['anomaly']  = True
+    anomalies_NF_df['fraud'] = False
+
+    normal_df = pd.read_csv(
+        os.path.join(
+            DATA_DIR, DIR, normal_data_file_name
+        )
+    )
+
+    normal_df['anomaly'] = False
+    normal_df['fraud'] = False
+
+    # -------------
+    # a = # of Fraud
+    # b = # non Fraud
+    # c = # normal
+    #  a = (a + b) * fraud_ratio
+    # (a + b) = (a + b + c) * anomaly_ratio
+    #  If max given
+    #       a + b + c = max
+    #  else :
+    #       Use entire normal set
+    # ---------------
+
+    R2 = anomaly_ratio
+    R1 = fraud_ratio
+
+    c  = int( (1 - R2) * total_size )
+    M = int(R2 * total_size)
+    a = int(M * R1)
+    b = int(M * (1-R1))
+
+    F = anomalies_F_df.sample(n = a)
+    NF = anomalies_NF_df.sample(n = b )
+    P = normal_df.sample (n = c)
+    res_df = pd.DataFrame( P )
+    res_df = res_df.append(F, ignore_index=True)
+    res_df = res_df.append(NF, ignore_index=True)
+
+    return res_df
+
+
+
+
+
+
 
 
 
