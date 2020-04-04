@@ -1,0 +1,45 @@
+ ------------------  
+ Current checkpoint (% of records already labelled) :: 10
+Size of Data set ::34360
+Classifier :: RF
+Accuracy at Top (next)  10 % :: 0.6059371362048894
+Accuracy at Top (next)  20 % :: 0.5772700814901047
+Accuracy at Top (next)  30 % :: 0.5590803259604191
+Accuracy at Top (next)  40 % :: 0.5632275902211874
+Accuracy at Top (next)  50 % :: 0.6232828870779977
+ ------------------  
+ Current checkpoint (% of records already labelled) :: 20
+Size of Data set ::34360
+Classifier :: RF
+Accuracy at Top (next)  10 % :: 0.5660651920838184
+Accuracy at Top (next)  20 % :: 0.5550058207217695
+Accuracy at Top (next)  30 % :: 0.568975552968568
+Accuracy at Top (next)  40 % :: 0.6436990686845169
+Accuracy at Top (next)  50 % :: 0.709254947613504
+ ------------------  
+ Current checkpoint (% of records already labelled) :: 30
+Size of Data set ::34360
+Classifier :: RF
+Accuracy at Top (next)  10 % :: 0.5855646100116414
+Accuracy at Top (next)  20 % :: 0.6079743888242142
+Accuracy at Top (next)  30 % :: 0.6981955762514552
+Accuracy at Top (next)  40 % :: 0.7668073341094296
+Accuracy at Top (next)  50 % :: 0.810186263096624
+ ------------------  
+ Current checkpoint (% of records already labelled) :: 40
+Size of Data set ::34360
+Classifier :: RF
+Accuracy at Top (next)  10 % :: 0.7424330616996507
+Accuracy at Top (next)  20 % :: 0.8208672875436555
+Accuracy at Top (next)  30 % :: 0.8675785797438882
+Accuracy at Top (next)  40 % :: 0.8936263096623981
+Accuracy at Top (next)  50 % :: 0.910244470314319
+ ------------------  
+ Current checkpoint (% of records already labelled) :: 50
+Size of Data set ::34360
+Classifier :: RF
+Accuracy at Top (next)  10 % :: 0.8853317811408614
+Accuracy at Top (next)  20 % :: 0.9305878928987195
+Accuracy at Top (next)  30 % :: 0.94965075669383
+Accuracy at Top (next)  40 % :: 0.9604190919674039
+Accuracy at Top (next)  50 % :: 0.9675785797438883
