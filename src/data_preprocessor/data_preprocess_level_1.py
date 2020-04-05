@@ -76,7 +76,7 @@ def get_files(DIR, _type='all'):
         return filter(re.compile(pattern).match, strings)
 
     files = sorted([_ for _ in glob_re(regex, c)])
-  
+
     print('DIR ::', DIR, ' Type ::', _type, 'Files count::', len(files))
     return files
 
@@ -106,7 +106,9 @@ def set_up_config(_DIR = None):
 
     DIR_LOC = re.sub('[0-9]', '', DIR)
     DATA_SOURCE = os.path.join('./../../Data_Raw', DIR_LOC)
-
+    save_dir =  CONFIG['save_dir']
+    if not os.path.exists(save_dir):
+        os.mkdir(save_dir)
     save_dir = os.path.join(
         CONFIG['save_dir'],
         DIR
