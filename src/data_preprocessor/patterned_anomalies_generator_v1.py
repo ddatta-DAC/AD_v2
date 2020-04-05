@@ -467,7 +467,7 @@ def main_process():
 
     a = a.sample(min(len(a), len(df_test)))
 
-    _fixed_set = ['ConsigneePanjivaID', 'ShipmentDestination', 'PortOfUnlading', 'ShipperPanjivaID']
+    _fixed_set = ['ConsigneePanjivaID', 'ShipmentDestination','HSCode', 'PortOfUnlading', 'ShipperPanjivaID']
     _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
 
     res_NA_2 = a.parallel_apply(
