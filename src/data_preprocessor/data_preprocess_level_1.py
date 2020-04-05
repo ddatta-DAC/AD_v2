@@ -50,7 +50,7 @@ def get_regex(_type):
         if _type == 'test':
             return '.*((04)|(05))_2015.csv'
 
-    if DIR == 'us_import4':
+    if DIR == 'us_import2':
         if _type == 'train':
             return '.*(09|10|11|12)_2015.csv'
         if _type == 'test':
@@ -76,6 +76,7 @@ def get_files(DIR, _type='all'):
         return filter(re.compile(pattern).match, strings)
 
     files = sorted([_ for _ in glob_re(regex, c)])
+  
     print('DIR ::', DIR, ' Type ::', _type, 'Files count::', len(files))
     return files
 
@@ -525,8 +526,8 @@ def create_train_test_sets():
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    '--DIR', choices=['us_import1', 'us_import2', 'us_import3', 'us_import4'],
-    default=None
+    '--DIR', choices=['us_import1', 'us_import2', 'us_import3' ],
+    default= 'us_import2'
 )
 
 args = parser.parse_args()
