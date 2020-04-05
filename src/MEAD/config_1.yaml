@@ -1,5 +1,5 @@
-'DATA_DIR': '../../generated_data_v1'
-'DATA_SOURCE_DIR' : '../../generated_data_v1'
+'DATA_DIR': '../../generated_data_v2'
+'DATA_SOURCE_DIR' : '../../generated_data_v2'
 'DIR' : 'us_import1'
 'OP_DIR' : 'output'
 'SAVE_DIR' : 'save_dir'
@@ -13,7 +13,7 @@
 
 'us_import1':
   'learning_rate' : 0.0005
-  'use_pretrained' : True
+  'use_pretrained' : False
   'show_loss_figure' : False
   'save_loss_figure' : True
   'use_bias' : Falseus
@@ -26,7 +26,7 @@
 
 'us_import2':
   'learning_rate' : 0.0005
-  'use_pretrained' : True
+  'use_pretrained' : False
   'show_loss_figure' : False
   'save_loss_figure' : False
   'use_bias' : False
@@ -39,7 +39,7 @@
 
 'us_import3':
   'learning_rate' : 0.0005
-  'use_pretrained' : True
+  'use_pretrained' : False
   'show_loss_figure' : False
   'save_loss_figure' : False
   'use_bias' : False
