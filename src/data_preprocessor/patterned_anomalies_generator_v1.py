@@ -440,10 +440,14 @@ def main_process():
     )
 
     a = df_test.loc[~df_test[id_col].isin(rmv_list)]
-    a = a.loc[(~a['ConsigneePanjivaID'].isin(target_Consignee)) & (~a['ShipperPanjivaID'].isin(target_Shipper))]
+    a = a.loc[
+        (~a['ConsigneePanjivaID'].isin(target_Consignee)) &
+        (~a['ShipperPanjivaID'].isin(target_Shipper))&
+        (~a['HSCode'].isin(target_HSCode))
+        ]
     a = a.sample(min(len(a), len(df_test)))
 
-    _fixed_set = ['ConsigneePanjivaID', 'PortOfLading', 'ShipmentOrigin', 'ShipperPanjivaID']
+    _fixed_set = ['ConsigneePanjivaID', 'PortOfLading', 'HSCode', 'ShipmentOrigin', 'ShipperPanjivaID']
     _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
 
     res_NA_1 = a.parallel_apply(
@@ -515,6 +519,7 @@ def main_process():
         axis=1,
         args=(904, _fixed_set, _perturb_set, hash_ref_df,)
     )
+
     a = df_test.loc[
         (~df_test['ShipperPanjivaID'].isin(target_Shipper)) &
         (~df_test['ConsigneePanjivaID'].isin(target_Consignee)) &
@@ -533,7 +538,7 @@ def main_process():
     # join the all the Non Anomaly anomalies
     # ---------------------------------------
     _tmp_ = pd.DataFrame(columns=(df_test.columns))
-    _list_ = [res_NA_1, res_NA_2,  res_NA_4, res_NA_5]
+    _list_ = [res_NA_1, res_NA_2, res_NA_4 ]
     for _ in _list_:
         _tmp_ = _tmp_.append(_, ignore_index=True)
 
