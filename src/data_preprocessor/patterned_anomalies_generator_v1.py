@@ -443,8 +443,6 @@ def main_process():
     a = a.loc[(~a['ConsigneePanjivaID'].isin(target_Consignee)) & (~a['ShipperPanjivaID'].isin(target_Shipper))]
     a = a.sample(min(len(a), len(df_test)))
 
-    len(a)
-
     _fixed_set = ['ConsigneePanjivaID', 'PortOfLading', 'ShipmentOrigin', 'ShipperPanjivaID']
     _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
 
@@ -461,10 +459,13 @@ def main_process():
         [id_col]
     )
     a = df_test.loc[~df_test[id_col].isin(rmv_list)]
-    a = a.loc[(~a['ConsigneePanjivaID'].isin(target_Consignee)) & (~a['ShipperPanjivaID'].isin(target_Shipper))]
-    a = a.sample(min(len(a), len(df_test)))
+    a = a.loc[
+        (~a['ConsigneePanjivaID'].isin(target_Consignee)) &
+        (~a['ShipperPanjivaID'].isin(target_Shipper)) &
+        (~a['HSCode'].isin(target_HSCode))
+    ]
 
-    len(a)
+    a = a.sample(min(len(a), len(df_test)))
 
     _fixed_set = ['ConsigneePanjivaID', 'ShipmentDestination', 'PortOfUnlading', 'ShipperPanjivaID']
     _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
@@ -475,25 +476,27 @@ def main_process():
         args=(902, _fixed_set, _perturb_set, hash_ref_df,)
     )
 
-    rmv_list = list(df_test.merge(
-        target_ShipmentOrigin_ShipmentDestination,
-        how='inner',
-        on=['ShipmentOrigin', 'ShipmentDestination']
-    )[id_col])
+    # rmv_list = list(df_test.merge(
+    #     target_ShipmentOrigin_ShipmentDestination,
+    #     how='inner',
+    #     on=['ShipmentOrigin', 'ShipmentDestination']
+    # )[id_col])
+    #
+    # a = df_test.loc[~df_test[id_col].isin(rmv_list)]
+    # a = a.loc[(~a['HSCode'].isin(target_HSCode))]
+    # a = a.loc[(~a['ConsigneePanjivaID'].isin(target_Consignee))]
+    # a = a.sample(min(len(a), len(df_test)))
+    #
+    # _fixed_set = ['ConsigneePanjivaID', 'ShipmentOrigin', 'ShipmentDestination', 'HSCode']
+    # _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
+    #
+    # res_NA_3 = a.parallel_apply(
+    #     generate_by_criteria,
+    #     axis=1,
+    #     args=(903, _fixed_set, _perturb_set, hash_ref_df,)
+    # )
 
-    a = df_test.loc[~df_test[id_col].isin(rmv_list)]
-    a = a.loc[(~a['HSCode'].isin(target_HSCode))]
-    a = a.loc[(~a['ConsigneePanjivaID'].isin(target_Consignee))]
-    a = a.sample(min(len(a), len(df_test)))
 
-    _fixed_set = ['ConsigneePanjivaID', 'ShipmentOrigin', 'ShipmentDestination', 'HSCode']
-    _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
-
-    res_NA_3 = a.parallel_apply(
-        generate_by_criteria,
-        axis=1,
-        args=(903, _fixed_set, _perturb_set, hash_ref_df,)
-    )
     rmv_list = list(df_test.merge(
         target_ShipmentOrigin_ShipmentDestination,
         how='inner',
@@ -503,7 +506,8 @@ def main_process():
     a = df_test.loc[~df_test[id_col].isin(rmv_list)]
     a = a.loc[(~a['HSCode'].isin(target_HSCode))]
     a = a.loc[(~a['ShipperPanjivaID'].isin(target_Shipper))]
-    _fixed_set = ['ShipperPanjivaID', 'ShipmentOrigin', 'ShipmentDestination', 'HSCode']
+    a = a.loc[(~a['ConsigneePanjivaID'].isin(target_Consignee))]
+    _fixed_set = ['ShipperPanjivaID', 'ShipmentOrigin', 'ShipmentDestination', 'HSCode','ConsigneePanjivaID']
     _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
 
     res_NA_4 = a.parallel_apply(
@@ -511,8 +515,11 @@ def main_process():
         axis=1,
         args=(904, _fixed_set, _perturb_set, hash_ref_df,)
     )
-    a = df_test.loc[(~df_test['ShipperPanjivaID'].isin(target_Shipper)) & (
-        ~df_test['ConsigneePanjivaID'].isin(target_Consignee)) & (~df_test['HSCode'].isin(target_HSCode))]
+    a = df_test.loc[
+        (~df_test['ShipperPanjivaID'].isin(target_Shipper)) &
+        (~df_test['ConsigneePanjivaID'].isin(target_Consignee)) &
+        (~df_test['HSCode'].isin(target_HSCode))
+    ]
     _fixed_set = ['HSCode', 'ShipperPanjivaID', 'ConsigneePanjivaID']
     _perturb_set = [_ for _ in list(domain_dims.keys()) if _ not in _fixed_set]
 
@@ -526,7 +533,7 @@ def main_process():
     # join the all the Non Anomaly anomalies
     # ---------------------------------------
     _tmp_ = pd.DataFrame(columns=(df_test.columns))
-    _list_ = [res_NA_1, res_NA_2, res_NA_3, res_NA_4, res_NA_5]
+    _list_ = [res_NA_1, res_NA_2,  res_NA_4, res_NA_5]
     for _ in _list_:
         _tmp_ = _tmp_.append(_, ignore_index=True)
 
