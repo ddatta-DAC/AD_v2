@@ -257,14 +257,15 @@ def main_process():
     # We need list of companies trading in these routes
     _frac = 0.20
     candidate_Consignee = list(set(pp['ConsigneePanjivaID']))
-    _count2 = int(_frac * domain_dims['ConsigneePanjivaID'])
-    _count2 = min(_count2, len(candidate_Consignee))
-    target_Consignee2 = np.random.choice(candidate_Consignee, size=_count2, replace=False)
+    _count1 = int(_frac * domain_dims['ConsigneePanjivaID'])
+    _count1 = min(_count2, len(candidate_Consignee))
+    target_Consignee2 = np.random.choice(candidate_Consignee, size=_count1, replace=False)
+
     pp_1 = pp.loc[pp['ConsigneePanjivaID'].isin(target_Consignee2)]
     candidate_Shipper = list(set(pp_1['ShipperPanjivaID']))
     _count2 = int(_frac * domain_dims['ShipperPanjivaID'])
     _count2 = min(_count2, len(candidate_Consignee))
-    target_Shipper2 = np.random.choice(candidate_Shipper, size=_count1, replace=False)
+    target_Shipper2 = np.random.choice(candidate_Shipper, size=_count2, replace=False)
 
     print('Number of interesting shippers ', len(target_Shipper2))
     print('Number of interesting consignee ', len(target_Consignee2))
