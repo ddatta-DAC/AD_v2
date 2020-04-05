@@ -399,35 +399,35 @@ def main_process():
     # ------ #
     # Save the dfs
 
-    intermediate_data_loc = os.path.join(DATA_DIR, 'fraud_targets')
-    if not os.path.exists(intermediate_data_loc):
-        os.mkdir(intermediate_data_loc)
-
-    tmp = pd.DataFrame(columns=['ShipperPanjivaID'])
-    tmp['ShipperPanjivaID'] = target_Shipper
-    f_name = os.path.join(intermediate_data_loc, 'gen_fraud_Shipper.csv')
-    tmp.to_csv(f_name, index=False)
-
-    tmp = pd.DataFrame(columns=['ConsigneePanjivaID'])
-    tmp['ConsigneePanjivaID'] = target_Consignee
-    f_name = os.path.join(intermediate_data_loc, 'gen_fraud_Consignee.csv')
-    tmp.to_csv(f_name, index=False)
-
-    tmp = pd.DataFrame(columns=['HSCode'])
-    tmp['HSCode'] = target_HSCode
-    f_name = os.path.join(intermediate_data_loc, 'gen_fraud_HSCode.csv')
-    tmp.to_csv(f_name, index=False)
-
-    f_name = os.path.join(intermediate_data_loc, 'gen_fraud_PortOfLading_PortOfUnlading.csv')
-    target_PortOfLading_PortOfUnlading.to_csv(
-        f_name,
-        index=False
-    )
-    f_name = os.path.join(intermediate_data_loc, 'gen_fraud_ShipmentOrigin_ShipmentDestination.csv')
-    target_ShipmentOrigin_ShipmentDestination.to_csv(
-        f_name,
-        index=False
-    )
+    # intermediate_data_loc = os.path.join(DATA_DIR, 'fraud_targets')
+    # if not os.path.exists(intermediate_data_loc):
+    #     os.mkdir(intermediate_data_loc)
+    #
+    # tmp = pd.DataFrame(columns=['ShipperPanjivaID'])
+    # tmp['ShipperPanjivaID'] = target_Shipper
+    # f_name = os.path.join(intermediate_data_loc, 'gen_fraud_Shipper.csv')
+    # tmp.to_csv(f_name, index=False)
+    #
+    # tmp = pd.DataFrame(columns=['ConsigneePanjivaID'])
+    # tmp['ConsigneePanjivaID'] = target_Consignee
+    # f_name = os.path.join(intermediate_data_loc, 'gen_fraud_Consignee.csv')
+    # tmp.to_csv(f_name, index=False)
+    #
+    # tmp = pd.DataFrame(columns=['HSCode'])
+    # tmp['HSCode'] = target_HSCode
+    # f_name = os.path.join(intermediate_data_loc, 'gen_fraud_HSCode.csv')
+    # tmp.to_csv(f_name, index=False)
+    #
+    # f_name = os.path.join(intermediate_data_loc, 'gen_fraud_PortOfLading_PortOfUnlading.csv')
+    # target_PortOfLading_PortOfUnlading.to_csv(
+    #     f_name,
+    #     index=False
+    # )
+    # f_name = os.path.join(intermediate_data_loc, 'gen_fraud_ShipmentOrigin_ShipmentDestination.csv')
+    # target_ShipmentOrigin_ShipmentDestination.to_csv(
+    #     f_name,
+    #     index=False
+    # )
 
     # -------------------------------------------------------- #
     # Generate anomalies that are not "interesting"
