@@ -180,7 +180,7 @@ def get_MP_list():
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
-    default=None
+    default='us_import1'
 )
 
 args = parser.parse_args()

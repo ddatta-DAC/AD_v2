@@ -166,7 +166,7 @@ class RandomWalkGraph_v1:
                     _obj = Entity_Node(
                         domain=_domain_name,
                         entity=_id,
-                        serial_id = RandomWalkGraph_v1.Entity_ID_lookup(_domain_name, _id)
+                        serial_id = RandomWalkGraph_v1.Serial_ID_lookup(_domain_name, _id)
                     )
                     self.node_object_dict[_domain_name][_id] = _obj
 
@@ -349,12 +349,13 @@ class RandomWalkGraph_v1:
 
     @staticmethod
     def setup_Entity_ID_lookup():
+
         global Serial_mapping_df
         RandomWalkGraph_v1.Serial_2_Entity_ID_dict = {}
         RandomWalkGraph_v1.Entity_2_Serial_ID_dict = {}
 
-
         for domain in set(Serial_mapping_df['Domain']):
+
             RandomWalkGraph_v1.Serial_2_Entity_ID_dict[domain] = {}
             tmp = Serial_mapping_df.loc[
                 (Serial_mapping_df['Domain'] == domain)]

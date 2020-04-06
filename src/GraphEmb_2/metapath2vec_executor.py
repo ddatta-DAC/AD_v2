@@ -79,9 +79,9 @@ set_up_config(args.DIR)
 
 domain_dims = network_data_loader.get_domain_dims()
 num_entities = sum(list(domain_dims.values()))
-obj = model_mp2v_1.model()
+model_obj = model_mp2v_1.model()
 
-obj.build(
+model_obj.build(
     emb_dim=128,
     num_entities=num_entities,
     num_neg_samples=10,
@@ -90,10 +90,8 @@ obj.build(
     num_epochs=10
 )
 
-x_t, x_c, x_ns = network_data_loader.fetch_model_data_m2p(
-    DIR
-)
-y = obj.train_model(x_t, x_c, x_ns)
+x_t, x_c, x_ns = network_data_loader.fetch_model_data_mp2v()
+y = model_obj.train_model(x_t, x_c, x_ns)
 # x = range(len(y))
 # plotter.get_general_plot(
 #     x,y
