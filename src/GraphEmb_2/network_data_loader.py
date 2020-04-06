@@ -35,7 +35,7 @@ def get_cur_path():
 # ------------------------------------------ #
 # Set up configuration
 # ------------------------------------------ #
-def set_up_config(_DIR=None):
+def set_up_config(_DIR = None):
     global CONFIG
     global CONFIG_FILE
     global DATA_SOURCE_loc

@@ -10,20 +10,20 @@ except:
     from src.utils import plotter
 
 try:
-    import model_mp2v_1
+    from .metapath2vec_1 import model_mp2v_1
 except:
-    from . import model_mp2v_1
+    from metapath2vec_1 import model_mp2v_1
 
 try:
-    from GraphEmb_1 import  data_loader
+    from . import network_data_loader
 except:
-    from src.GraphEmb_1 import data_loader
+   import network_data_loader
 
 
 
 # -------------------------------------------- #
 
-domain_dims = data_loader.get_domain_dims()
+domain_dims = network_data_loader.get_domain_dims()
 num_entities = sum(list(domain_dims.values()))
 obj = model_mp2v_1.model()
 
