@@ -1,8 +1,8 @@
+'SOURCE_DATA_DIR_1' : './../../generated_data_v2'
+'SOURCE_DATA_DIR_2' : './../../AD_system_output_v2'
 'DIR': 'us_import1'
 'SAVE_DATA_DIR': './saved_data/'
 'id_col': 'PanjivaRecordID'
 'hscode_col': 'HSCode'
-'num_jobs': 40
-'SOURCE_DATA_DIR_1' : './../../generated_data_v1'
-'SOURCE_DATA_DIR_2' : './../../AD_system_output'
 'model_use_data_DIR' : 'model_use_data'
+'num_jobs': 8
