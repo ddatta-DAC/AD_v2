@@ -19,8 +19,6 @@ try:
 except:
     from src.GraphEmb_1 import data_loader
 
-
-
 # -------------------------------------------- #
 
 domain_dims = data_loader.get_domain_dims()
