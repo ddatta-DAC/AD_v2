@@ -347,6 +347,7 @@ class RandomWalkGraph_v1:
 
     @staticmethod
     def setup_Entity_ID_lookup():
+
         global Serial_mapping_df
         RandomWalkGraph_v1.Serial_2_Entity_ID_dict = {}
         for domain in set(Serial_mapping_df['Domain']):
@@ -507,10 +508,11 @@ class RandomWalkGraph_v1:
         print('[INFO] Meta paths ', self.MP_list)
         print('[INFO] Number of jobs ', num_jobs)
 
-
+        #  =================
+        # Do RW for each of the domain entities in the meta path
+        #  =================
         for _MP in MP_list:
 
-            # Do RW for each of the domain entities in the meta path
             meta_path_pattern = _MP
             print('Path :: ', meta_path_pattern)
 

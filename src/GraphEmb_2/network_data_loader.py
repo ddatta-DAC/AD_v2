@@ -19,7 +19,7 @@ DATA_SOURCE_loc = None
 RW_dir = None
 Serialized_RW_dir = None
 SAVE_DIR_loc = None
-REFRESH_create_data = False
+flag_REFRESH_create_mp2v_data = False
 domain_dims = None
 
 def get_cur_path():
@@ -45,7 +45,7 @@ def set_up_config(_DIR = None):
     global Serialized_RW_dir
     global RW_dir
     global domain_dims
-    global REFRESH_create_data
+    global flag_REFRESH_create_mp2v_data
     if _DIR is not None:
         DIR = _DIR
 
@@ -65,7 +65,7 @@ def set_up_config(_DIR = None):
     Serialized_RW_dir = 'Serialized'
 
     Refresh = CONFIG[DIR]['Refresh']
-    REFRESH_create_data = CONFIG[DIR]['Refresh_create_data']
+    flag_REFRESH_create_data = CONFIG[DIR]['Refresh_create_data']
 
     with open(
             os.path.join(
@@ -95,9 +95,16 @@ def convert_data(
     global Refresh
 
     mapping_df_file = 'Serialized_Mapping.csv'
-    mapping_df_file = os.path.join(SAVE_DIR_loc, RW_DIR, Serialized_DIR, mapping_df_file)
-    RW_SOURCE = os.path.join(DATA_SOURCE, RW_DIR)
-
+    mapping_df_file = os.path.join(
+        SAVE_DIR_loc,
+        RW_DIR,
+        Serialized_DIR,
+        mapping_df_file
+    )
+    RW_SOURCE = os.path.join(
+        DATA_SOURCE,
+        RW_DIR
+    )
 
     SAVE_DIR = os.path.join(
         SAVE_DIR_loc,
@@ -222,15 +229,15 @@ def convert_data(
 
     return SAVE_DIR
 
+
+# -----------------------------------------
+# Create ingestion data for metapath2vec model
 # ---------------------------------------------------------- #
 # Function to create data specific to metapath2vec_1 model
 # Following the skip-gram, a word and its context are chosen as well as corresponding negative 'context'
-# Inputs to model:
+#
 # ---------------------------------------------------------- #
-
-
 def create_data_aux(args) :
-
     inp_row = args[0]
     row = inp_row.copy()
     _neg_samples_arr = args[1]
@@ -269,31 +276,30 @@ def create_data_aux(args) :
 
     return (centre, context, neg_samples)
 
-def create_ingestion_data_v1(
+
+
+def create_metapath2vec_ingestion_data(
     source_file_dir = None,
     model_data_save_dir = None,
     ctxt_size = 2
 ):
-    global REFRESH_create_data
+    global flag_REFRESH_create_mp2v_data
     model_data_save_dir = os.path.join(
-        source_file_dir, model_data_save_dir
+        source_file_dir,
+        model_data_save_dir
     )
     if not os.path.exists(model_data_save_dir):
         os.mkdir(model_data_save_dir)
 
-    if not REFRESH_create_data:
+    if not flag_REFRESH_create_mp2v_data:
         return model_data_save_dir
 
     print(source_file_dir)
     _files = glob.glob(
         source_file_dir + '/../**.csv'
     )
-    print(_files)
-
 
     mp_specs = sorted([ _.split('/')[-1].split('.')[0] for _ in _files])
-    print(mp_specs)
-
 
     res_centre = []
     res_context = []
@@ -312,7 +318,6 @@ def create_ingestion_data_v1(
         num_jobs = multiprocessing.cpu_count()
 
         cols = list(df.columns)
-
         results = Parallel( num_jobs )(
             delayed(create_data_aux)(
                 (row, neg_samples[i], cols, ctxt_size),)
@@ -355,9 +360,6 @@ def create_ingestion_data_v1(
     return model_data_save_dir
 
 
-
-
-
 SAVE_DIR = convert_data(
     DATA_SOURCE=DATA_SOURCE_loc,
     RW_DIR=RW_dir,
@@ -366,7 +368,7 @@ SAVE_DIR = convert_data(
     domain_dims=domain_dims
 )
 
-MODEL_DATA_LOC = create_ingestion_data_v1(
+mp2v_data_loc = create_metapath2vec_ingestion_data(
     source_file_dir = SAVE_DIR,
     model_data_save_dir = 'metapath2vec_1',
     ctxt_size = 2
@@ -375,11 +377,10 @@ MODEL_DATA_LOC = create_ingestion_data_v1(
 # ----------------------------------- #
 
 
-def fetch_model_data_m2p(
-    DIR
+def fetch_model_data_mp2v(
 ):
-    global MODEL_DATA_LOC
-    source_dir = MODEL_DATA_LOC
+    global mp2v_data_loc
+    source_dir = mp2v_data_loc
     centre = np.load(os.path.join(source_dir, 'x_target.npy'))
     context = np.load(os.path.join(source_dir, 'x_context.npy'))
     neg_samples = np.load(os.path.join(source_dir, 'x_neg_samples.npy'))

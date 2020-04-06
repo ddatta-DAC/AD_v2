@@ -79,10 +79,8 @@ def set_up_config(_DIR=None):
         CONFIG['model_use_data_DIR'],
         DIR
     )
-
     if not os.path.exists(model_use_data_DIR):
         os.mkdir(model_use_data_DIR)
-
     id_col = CONFIG['id_col']
     mapping_df_file = 'Serialized_Mapping.csv'
     serial_mapping_df_file = os.path.join(model_use_data_DIR, mapping_df_file)
