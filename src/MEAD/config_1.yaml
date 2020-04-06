@@ -35,7 +35,7 @@
   'op_dims' : 16
   'batchsize': 128
   'num_neg_samples' : 15
-  'test_data_size' : 60000
+  'test_data_size' : 50000
 
 'us_import3':
   'learning_rate' : 0.0005
@@ -48,4 +48,4 @@
   'op_dims' : 16
   'batchsize': 128
   'num_neg_samples' : 15
-  'test_data_size' : 80000
+  'test_data_size' : 60000
