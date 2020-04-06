@@ -356,17 +356,7 @@ def create_ingestion_data_v1(
 
 
 
-# --------------------------------------------------------- #
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
-    default=None
-)
 
-args = parser.parse_args()
-set_up_config(args.DIR)
-
-# --------------------------------- #
 
 SAVE_DIR = convert_data(
     DATA_SOURCE=DATA_SOURCE_loc,
@@ -385,8 +375,8 @@ MODEL_DATA_LOC = create_ingestion_data_v1(
 # ----------------------------------- #
 
 
-def fetch_model_data_m2pv_1(
-    source_dir = None
+def fetch_model_data_m2p(
+    DIR
 ):
     global MODEL_DATA_LOC
     source_dir = MODEL_DATA_LOC

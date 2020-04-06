@@ -181,7 +181,8 @@ class RandomWalkGraph_v1:
             domain_dims,
             id_col='PanjivaRecordID',
             MP_list = None,
-            save_data_dir=None,
+            save_data_dir = None,
+            random_walk_save_subdir = 'RW_Samples',
             saved_file_name='node_obj_dict.pkl'
     ):
         global NODE_OBJECT_DICT
@@ -194,11 +195,19 @@ class RandomWalkGraph_v1:
         self.id_col = id_col
         self.save_data_dir = save_data_dir
         self.saved_file_name = saved_file_name
-        _signature = ''.join(
+        signature = ''.join(
             ([''.join(_) for _ in MP_list])
         )
+        self.random_walk_save_dir = os.path.join(
+            self.save_data_dir,
+            random_walk_save_subdir
+        )
 
-        self.signature = str(md5(str.encode(_signature)).hexdigest())
+        if not os.path.exists(self.random_walk_save_dir):
+            os.mkdir(self.random_walk_save_dir)
+
+
+        self.signature = str(md5(str.encode(signature)).hexdigest())
         self.saved_file_name = saved_file_name.replace(
             '.',
             '_' + self.signature + '.'
@@ -210,6 +219,7 @@ class RandomWalkGraph_v1:
             self.save_data_dir,
             self.saved_file_name
         )
+
         # ---------------------------------------- #
         # Check if already pre-computed dictionary and transitions.
         # ---------------------------------------- #
@@ -271,7 +281,7 @@ class RandomWalkGraph_v1:
         relations = []
         for mp in MP_list:
             for _1, _2 in zip(mp[:-1], mp[1:]):
-                relations.append(_1 + '_+_' + _2)
+                relations.append('_+_'.join(sorted([_1, _2])))
         relations = set(relations)
         relations = [_.split('_+_') for _ in relations]
         print('Number of distinct relations :: ', len(relations) )
@@ -497,13 +507,6 @@ class RandomWalkGraph_v1:
         print('[INFO] Meta paths ', self.MP_list)
         print('[INFO] Number of jobs ', num_jobs)
 
-        _dir = os.path.join(
-            self.save_data_dir,
-            'RW_Samples'
-        )
-
-        if not os.path.exists(_dir):
-            os.mkdir(_dir)
 
         for _MP in MP_list:
 
@@ -542,13 +545,13 @@ class RandomWalkGraph_v1:
 
             # Save the Random Walks as numpy array
             fname = '_'.join(_MP) + '_walks.npy'
-            fpath = os.path.join(_dir, fname)
+            fpath = os.path.join(self.random_walk_save_dir, fname)
             result = np.array(result)
             np.save(fpath, result)
 
             # ---- Save the negative samples as a numpy array ------ #
             fname = '_'.join(_MP) + '_neg_samples.npy'
-            fpath = os.path.join(_dir, fname)
+            fpath = os.path.join(self.random_walk_save_dir, fname)
             neg_samples = np.concatenate(neg_samples)
             np.save(fpath, neg_samples)
 
