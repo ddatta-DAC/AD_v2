@@ -368,14 +368,6 @@ def get_Stage2_data_as_DF(
 
 #-------------------------------------------
 
-get_Stage2_data_as_DF(
-        DATA_DIR = './../../generated_data_v2',
-        DIR='us_import1',
-        id_col = 'PanjivaRecordID',
-        fraud_ratio = 0.5,
-        anomaly_ratio=0.4,
-        total_size = 40000
-)
 
 
 
