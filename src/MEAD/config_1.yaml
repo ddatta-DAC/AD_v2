@@ -13,11 +13,11 @@
 
 'us_import1':
   'learning_rate' : 0.0005
-  'use_pretrained' : False
+  'use_pretrained' : True
   'show_loss_figure' : False
   'save_loss_figure' : True
-  'use_bias' : Falseus
-  'saved_model_file' : 'frozen_model_mead16_1584989948.pb'
+  'use_bias' : False
+  'saved_model_file' : 'frozen_model_mead16_1586100258.pb'
   'num_epochs' : 25
   'op_dims' : 16
   'batchsize': 128
@@ -26,11 +26,11 @@
 
 'us_import2':
   'learning_rate' : 0.0005
-  'use_pretrained' : False
+  'use_pretrained' : True
   'show_loss_figure' : False
   'save_loss_figure' : False
   'use_bias' : False
-  'saved_model_file' : 'frozen_model_mead16_1585585938.pb'
+  'saved_model_file' : 'frozen_model_mead16_1586106671.pb'
   'num_epochs' : 25
   'op_dims' : 16
   'batchsize': 128
@@ -39,11 +39,11 @@
 
 'us_import3':
   'learning_rate' : 0.0005
-  'use_pretrained' : False
+  'use_pretrained' : True
   'show_loss_figure' : False
   'save_loss_figure' : False
   'use_bias' : False
-  'saved_model_file' : 'frozen_model_mead16_1584997705.pb'
+  'saved_model_file' : 'frozen_model_mead16_1586114200.pb'
   'num_epochs' : 25
   'op_dims' : 16
   'batchsize': 128
