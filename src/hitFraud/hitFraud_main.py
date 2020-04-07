@@ -26,6 +26,7 @@ except:
 from sklearn.utils.sparsefuncs_fast import inplace_csr_row_normalize_l1
 from hashlib import md5
 
+DATA_SOURCE_DIR_1 = './../../generated_data_v2'
 domain_dims = None
 Logging_Dir = 'Log'
 # ------------------------------------ #
@@ -67,19 +68,23 @@ def close_logger(logger):
 
 def get_domain_dims(DIR):
     global domain_dims
+    global DATA_SOURCE_DIR_1
+
     with open(
             os.path.join(
-                './../../generated_data_v1/',
+                DATA_SOURCE_DIR_1,
                 DIR,
                 'domain_dims.pkl'
             ), 'rb') as fh:
         domain_dims = pickle.load(fh)
+
     return
 
 
 def get_training_data(DIR):
-    SOURCE_DATA_DIR = './../../generated_data_v1'
-    data = data_fetcher.get_train_x_csv(SOURCE_DATA_DIR, DIR)
+    global DATA_SOURCE_DIR_1
+
+    data = data_fetcher.get_train_x_csv(DATA_SOURCE_DIR_1, DIR)
     return data
 
 
@@ -547,7 +552,7 @@ def exec_classifier(
         y_true = list(df_tmp[true_label_name])
         y_pred = list(df_tmp[label_col])
         accuracy = round(accuracy_score(y_true, y_pred), 2)
-        msg = '[  With Input] accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
+        msg = '[  With Input ] accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
         LOGGER.info(msg)
 
         TP = 0
@@ -560,14 +565,7 @@ def exec_classifier(
         precision = round(TP / TP_FN, 2)
         msg = '[  With Input] precision at Top (next)  {} % :: {}'.format(point, precision)
         LOGGER.info(msg)
-
-
-
     return
-
-
-
-
 
 
 # -------------------------------------------------------------------------------
