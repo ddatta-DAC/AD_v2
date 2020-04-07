@@ -1,0 +1,131 @@
+ ------------------  
+ Current checkpoint (% of records already labelled) :: 10
+Size of Data set ::40000
+ ------------------  
+ Current checkpoint (% of records already labelled) :: 10
+Size of Data set ::40000
+ ------------------  
+ Current checkpoint (% of records already labelled) :: 10
+Size of Data set ::40000
+ ------------------  
+ Current checkpoint (% of records already labelled) :: 10
+ ------------------  
+ Current checkpoint (% of records already labelled) :: 10
+Size of Data set ::40000
+Classifier :: RF
+[ Without Input] accuracy at Top (next)  10 % :: 0.46
+[ Without Input] precision at Top (next)  10 % :: 1.0
+[  With Input ] accuracy at Top (next)  10 % :: 0.82
+[  With Input] precision at Top (next)  10 % :: 1.0
+[ Without Input] accuracy at Top (next)  20 % :: 0.48
+[ Without Input] precision at Top (next)  20 % :: 1.0
+[  With Input ] accuracy at Top (next)  20 % :: 0.64
+[  With Input] precision at Top (next)  20 % :: 1.0
+[ Without Input] accuracy at Top (next)  30 % :: 0.47
+[ Without Input] precision at Top (next)  30 % :: 1.0
+[  With Input ] accuracy at Top (next)  30 % :: 0.43
+[  With Input] precision at Top (next)  30 % :: 1.0
+[ Without Input] accuracy at Top (next)  40 % :: 0.39
+[ Without Input] precision at Top (next)  40 % :: 1.0
+[  With Input ] accuracy at Top (next)  40 % :: 0.43
+[  With Input] precision at Top (next)  40 % :: 0.97
+[ Without Input] accuracy at Top (next)  50 % :: 0.32
+[ Without Input] precision at Top (next)  50 % :: 1.0
+[  With Input ] accuracy at Top (next)  50 % :: 0.5
+[  With Input] precision at Top (next)  50 % :: 0.85
+ ------------------  
+ Current checkpoint (% of records already labelled) :: 20
+Size of Data set ::40000
+Classifier :: RF
+[ Without Input] accuracy at Top (next)  10 % :: 0.5
+[ Without Input] precision at Top (next)  10 % :: 1.0
+[  With Input ] accuracy at Top (next)  10 % :: 0.61
+[  With Input] precision at Top (next)  10 % :: 1.0
+[ Without Input] accuracy at Top (next)  20 % :: 0.47
+[ Without Input] precision at Top (next)  20 % :: 1.0
+[  With Input ] accuracy at Top (next)  20 % :: 0.38
+[  With Input] precision at Top (next)  20 % :: 0.94
+[ Without Input] accuracy at Top (next)  30 % :: 0.36
+[ Without Input] precision at Top (next)  30 % :: 1.0
+[  With Input ] accuracy at Top (next)  30 % :: 0.49
+[  With Input] precision at Top (next)  30 % :: 0.65
+[ Without Input] accuracy at Top (next)  40 % :: 0.28
+[ Without Input] precision at Top (next)  40 % :: 1.0
+[  With Input ] accuracy at Top (next)  40 % :: 0.58
+[  With Input] precision at Top (next)  40 % :: 0.56
+[ Without Input] accuracy at Top (next)  50 % :: 0.23
+[ Without Input] precision at Top (next)  50 % :: 1.0
+[  With Input ] accuracy at Top (next)  50 % :: 0.66
+[  With Input] precision at Top (next)  50 % :: 0.54
+ ------------------  
+ Current checkpoint (% of records already labelled) :: 30
+Size of Data set ::40000
+Classifier :: RF
+[ Without Input] accuracy at Top (next)  10 % :: 0.45
+[ Without Input] precision at Top (next)  10 % :: 1.0
+[  With Input ] accuracy at Top (next)  10 % :: 0.44
+[  With Input] precision at Top (next)  10 % :: 1.0
+[ Without Input] accuracy at Top (next)  20 % :: 0.3
+[ Without Input] precision at Top (next)  20 % :: 1.0
+[  With Input ] accuracy at Top (next)  20 % :: 0.26
+[  With Input] precision at Top (next)  20 % :: 0.96
+[ Without Input] accuracy at Top (next)  30 % :: 0.21
+[ Without Input] precision at Top (next)  30 % :: 1.0
+[  With Input ] accuracy at Top (next)  30 % :: 0.45
+[  With Input] precision at Top (next)  30 % :: 0.73
+[ Without Input] accuracy at Top (next)  40 % :: 0.16
+[ Without Input] precision at Top (next)  40 % :: 1.0
+[  With Input ] accuracy at Top (next)  40 % :: 0.58
+[  With Input] precision at Top (next)  40 % :: 0.7
+[ Without Input] accuracy at Top (next)  50 % :: 0.13
+[ Without Input] precision at Top (next)  50 % :: 1.0
+[  With Input ] accuracy at Top (next)  50 % :: 0.67
+[  With Input] precision at Top (next)  50 % :: 0.69
+ ------------------  
+ Current checkpoint (% of records already labelled) :: 40
+Size of Data set ::40000
+Classifier :: RF
+[ Without Input] accuracy at Top (next)  10 % :: 0.15
+[ Without Input] precision at Top (next)  10 % :: 1.0
+[  With Input ] accuracy at Top (next)  10 % :: 0.17
+[  With Input] precision at Top (next)  10 % :: 1.0
+[ Without Input] accuracy at Top (next)  20 % :: 0.09
+[ Without Input] precision at Top (next)  20 % :: 1.0
+[  With Input ] accuracy at Top (next)  20 % :: 0.47
+[  With Input] precision at Top (next)  20 % :: 0.89
+[ Without Input] accuracy at Top (next)  30 % :: 0.06
+[ Without Input] precision at Top (next)  30 % :: 1.0
+[  With Input ] accuracy at Top (next)  30 % :: 0.65
+[  With Input] precision at Top (next)  30 % :: 0.88
+[ Without Input] accuracy at Top (next)  40 % :: 0.05
+[ Without Input] precision at Top (next)  40 % :: 1.0
+[  With Input ] accuracy at Top (next)  40 % :: 0.73
+[  With Input] precision at Top (next)  40 % :: 0.88
+[ Without Input] accuracy at Top (next)  50 % :: 0.04
+[ Without Input] precision at Top (next)  50 % :: 1.0
+[  With Input ] accuracy at Top (next)  50 % :: 0.79
+[  With Input] precision at Top (next)  50 % :: 0.87
+ ------------------  
+ Current checkpoint (% of records already labelled) :: 50
+Size of Data set ::40000
+Classifier :: RF
+[ Without Input] accuracy at Top (next)  10 % :: 0.03
+[ Without Input] precision at Top (next)  10 % :: 1.0
+[  With Input ] accuracy at Top (next)  10 % :: 0.81
+[  With Input] precision at Top (next)  10 % :: 0.64
+[ Without Input] accuracy at Top (next)  20 % :: 0.02
+[ Without Input] precision at Top (next)  20 % :: 1.0
+[  With Input ] accuracy at Top (next)  20 % :: 0.9
+[  With Input] precision at Top (next)  20 % :: 0.56
+[ Without Input] accuracy at Top (next)  30 % :: 0.01
+[ Without Input] precision at Top (next)  30 % :: 1.0
+[  With Input ] accuracy at Top (next)  30 % :: 0.93
+[  With Input] precision at Top (next)  30 % :: 0.52
+[ Without Input] accuracy at Top (next)  40 % :: 0.01
+[ Without Input] precision at Top (next)  40 % :: 1.0
+[  With Input ] accuracy at Top (next)  40 % :: 0.95
+[  With Input] precision at Top (next)  40 % :: 0.5
+[ Without Input] accuracy at Top (next)  50 % :: 0.01
+[ Without Input] precision at Top (next)  50 % :: 1.0
+[  With Input ] accuracy at Top (next)  50 % :: 0.96
+[  With Input] precision at Top (next)  50 % :: 0.49
