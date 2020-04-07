@@ -27,6 +27,7 @@ from sklearn.utils.sparsefuncs_fast import inplace_csr_row_normalize_l1
 from hashlib import md5
 
 DATA_SOURCE_DIR_1 = './../../generated_data_v2'
+DATA_SOURCE_DIR_2 =  './../../AD_system_output_v2'
 domain_dims = None
 Logging_Dir = 'Log'
 # ------------------------------------ #
@@ -300,6 +301,7 @@ def exec_classifier(
 ):
     global DIR
     global LOGGER
+    global DATA_SOURCE_DIR_2
 
     cur_checkpoint = checkpoint
     LOGGER.info(' ------------------  ')
@@ -307,7 +309,7 @@ def exec_classifier(
     label_col = 'y'
     id_col = 'PanjivaRecordID'
     df = read_target_data(
-        DATA_SOURCE='./../../AD_system_output',
+        DATA_SOURCE= DATA_SOURCE_DIR_2,
         DIR=DIR
     )
     LOGGER.info('Size of Data set ::' + str(len(df)))
