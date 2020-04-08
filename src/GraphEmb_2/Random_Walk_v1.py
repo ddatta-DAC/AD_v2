@@ -532,7 +532,6 @@ class RandomWalkGraph_v1:
         # Do RW for each of the domain entities in the meta path
         #  =================
         for _MP in MP_list:
-
             meta_path_pattern = _MP
             print('Path :: ', meta_path_pattern)
             # Start the random walk from start node

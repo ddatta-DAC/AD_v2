@@ -89,9 +89,28 @@ model_obj.build(
     batch_size=256,
     num_epochs=10
 )
-
+# -------------------------------
+# Obtain the model training data
+# -------------------------------
 x_t, x_c, x_ns = network_data_loader.fetch_model_data_mp2v()
-y = model_obj.train_model(x_t, x_c, x_ns)
+y = model_obj.train_model(
+    x_t,
+    x_c,
+    x_ns
+)
+
+# -------------------------------
+# Save weights
+# -------------------------------
+model_obj.save_weights(
+    model_use_data_DIR,
+    'mp2v_emb.npy'
+)
+
+
+
+
+
 # x = range(len(y))
 # plotter.get_general_plot(
 #     x,y
