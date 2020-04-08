@@ -21,6 +21,11 @@ import torch.nn.functional as F
 # ----------------------------------------
 # clf_net_v1 :: a simple MLP classifier
 # ----------------------------------------
+def clf_loss_v1 (y_pred, y_true):
+    loss_func = nn.BCELoss()
+    loss = loss_func(y_pred, y_true)
+    return loss
+
 class clf_net_v1(nn.Module):
     def __init__(
             self,

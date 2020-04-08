@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # ---------------
 # Author : Debanjan Datta
@@ -7,6 +7,7 @@
 # ---------------
 import os
 import sys
+
 sys.path.append('./../..')
 sys.path.append('./..')
 from torch.utils.data import DataLoader
@@ -17,22 +18,21 @@ import pandas as pd
 import numpy as np
 import torch
 
-class  custom_dataset_type_1(Dataset):
+
+class custom_dataset_type_1(Dataset):
     def __init__(
             self,
-            file_path =None,
-            is_numpy = False,
-            is_csv = True
+            file_path=None,
+            is_numpy=False,
+            is_csv=True
     ):
         if is_numpy:
             self.data = np.load(file_path)
         if is_csv:
             self.data = pd.read_csv(file_path, index_col=None)
 
-
     def __len__(self):
-        return len(self.data )
-
+        return len(self.data)
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
@@ -42,6 +42,105 @@ class  custom_dataset_type_1(Dataset):
         return np.array(res)
 
 
+# ------------------------------------------------- #
+# Given 2 data sets, retrieves samples from both in parallel
+# must provide the x cols and y cols for both
+# -------------------------------------------------- #
+class pair_Dataset(Dataset):
+    def __init__(
+            self,
+            x_cols,
+            y_col=None,
+            df_1=None,
+            df_2=None,
+            size_1=None,
+            size_2=None,
+    ):
+        self.data_1 = df_1
+        if size_1 is None:
+            size_1 = len(self.data_1)
+        else:
+            self.data_1 = self.data_1.head(size_1)
+
+        self.data_2 = df_2
+        if size_2 is None:
+            self.size_2 = len(self.data_2)
+        else:
+            self.data_2 = self.data_2.head(size_2)
+        self.size_1 = size_1
+        self.size_2 = size_2
+        self.x_cols = x_cols
+        self.y_col = y_col
+        return
+
+    def __len__(self):
+        return max(self.size_1, self.size_2)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        min_size = min(self.size_1, self.size_2)
+        try:
+            idx_s = [_ for _ in map(lambda x: x % min_size, idx)]
+        except:
+            idx_s = idx % min_size
+        shuffle_flag = np.random.random(1) <= 0.05
+
+        if self.size_1 < self.size_2:
+            if shuffle_flag:
+                np.random.shuffle(self.data_1.values)
+            idx_1 = idx_s
+            idx_2 = idx
+        elif self.size_1 > self.size_2:
+            if shuffle_flag:
+                np.random.shuffle(self.data_2.values)
+            idx_1 = idx
+            idx_2 = idx_s
+        else:
+            idx_1 = idx
+            idx_2 = idx
+
+        res_1_x = self.data_1[self.x_cols].iloc[idx_1]
+        res_2_x = self.data_2[self.x_cols].iloc[idx_2]
+
+        x1 = np.array(res_1_x)
+        x2 = np.array(res_2_x)
+        if self.y_col is not None:
+            y1 = np.array(self.data_1[self.y_col].iloc[idx_1])
+            y2 = np.array(self.data_2[self.y_col].iloc[idx_2])
+            return (x1, x2), (y1, y2)
+        else:
+            return x1, x2
+
+
+# ================================
+#
+# ================================
+class type1_Dataset(Dataset):
+    def __init__(
+            self,
+            df,
+            x_cols,
+            y_col=None
+    ):
+        self.df = df
+        self.x_cols = x_cols
+        self.y_col = y_col
+
+
+    def __len__(self):
+        return len(self.df)
+
+    def __getitem__(self, idx):
+
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+        x = self.df[self.x_cols].iloc[idx]
+        if self.y_col is not None:
+            y = self.df[self.y_col].iloc[idx]
+            return (x,y)
+        return x
 
 # ------------------------------------------------- #
 
@@ -57,16 +156,13 @@ def test():
         batch_size=16,
         shuffle=False,
         num_workers=num_proc,
-        sampler = RandomSampler(dataset)
+        sampler=RandomSampler(dataset)
     )
 
     arr = []
     for i_batch, sample_batched in enumerate(dataloader):
-        # print(i_batch)
-        # print(sample_batched.shape)
-        arr.extend(list(sample_batched[:,0]))
+        arr.extend(list(sample_batched[:, 0]))
     print(len(arr))
-
 
     # rs = RandomSampler(
     #     dataset,
@@ -75,6 +171,14 @@ def test():
     # )
     # for sample_batched in enumerate(rs):
     #     print(sample_batched)
+
+    # dataloader1 = DataLoader(
+    #     ds,
+    #     batch_size=16,
+    #     shuffle=False,
+    #     num_workers=num_proc,
+    #     sampler=RandomSampler(ds)
+    # )
 
 
 test()

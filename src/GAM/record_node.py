@@ -50,7 +50,8 @@ class graph_net_v1(nn.Module):
         self.emb_dimension = emb_dimension
         self.num_domains = num_domains
         self.setup_Net(
-            pretrained_node_embeddings
+            pretrained_node_embeddings,
+            output_dimensions
         )
 
         return

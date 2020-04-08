@@ -1,0 +1,5 @@
+DATA_SOURCE_DIR_1 : './../../generated_data_v1'
+DATA_SOURCE_DIR_2 : './../../AD_System_output_v2'
+model_use_data_DIR : 'model_use_data'
+serial_mapping_df_name : 'Serial_mapping_df.csv'
+serial_mapping_df_loc : './../GraphEmb_2/model_use_data'
