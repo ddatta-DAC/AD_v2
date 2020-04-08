@@ -269,6 +269,17 @@ class net(nn.Module):
             y_pred = self.clf_net(x1)
             return y_pred
 
+
+class dataGeneratorWrapper():
+    def __init__(self,obj_dataloader):
+        self.obj_dataloader = obj_dataloader
+
+    def get_next(self):
+        for _, batch_data in enumerate(self.obj_dataloader):
+            yield batch_data
+
+
+
 # -----------------------
 # Co-training
 # -----------------------
@@ -367,8 +378,11 @@ def train_model(
     )
     optimizer_f.zero_grad()
     for epoch in range(num_epochs_f):
+        data_L_generator  = dataGeneratorWrapper(dataLoader_obj_L2)
 
-        for l_i, l_data in enumerate(dataLoader_obj_L2):
+        l_data = data_L_generator.get_next()
+
+        while l_data is not None:
             x1 = l_data[0]
             y_true = l_data[1]
             pred_label = net(x1)
@@ -380,12 +394,9 @@ def train_model(
 
 
             # UL
-        except StopIteration:
-            continue
 
 
-
-        # UU
+            # UU
 
 
 
