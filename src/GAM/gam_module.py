@@ -54,10 +54,15 @@ class gam_net(nn.Module):
         inp_dim = node_input_dimension
         print('Encoder Layer ::')
         for i in range(num_encoder_layers):
-            self.encoder[i] = nn.Linear(inp_dim, encoder_op_dimensions[i])
+            if i == num_encoder_layers -1 :
+                op_dim = 2
+            else:
+                op_dim = encoder_op_dimensions[i]
+            self.encoder[i] = nn.Linear(inp_dim, op_dim)
             self.register_parameter('encoder_' + str(i), self.encoder[i].weight)
             print(self.encoder[i])
-            inp_dim = encoder_op_dimensions[i]
+            inp_dim = op_dim
+
 
         # Aggregator
         # Just d = (ei -ej)^2
