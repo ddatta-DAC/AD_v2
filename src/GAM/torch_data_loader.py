@@ -49,12 +49,13 @@ class custom_dataset_type_1(Dataset):
 class pair_Dataset(Dataset):
     def __init__(
             self,
+            df_1,
+            df_2,
             x_cols,
             y_col=None,
-            df_1=None,
-            df_2=None,
             size_1=None,
             size_2=None,
+            shuffle_prob = 0.25
     ):
         self.data_1 = df_1
         if size_1 is None:
@@ -71,6 +72,7 @@ class pair_Dataset(Dataset):
         self.size_2 = size_2
         self.x_cols = x_cols
         self.y_col = y_col
+        self.shuffle_prob = shuffle_prob
         return
 
     def __len__(self):
@@ -85,7 +87,7 @@ class pair_Dataset(Dataset):
             idx_s = [_ for _ in map(lambda x: x % min_size, idx)]
         except:
             idx_s = idx % min_size
-        shuffle_flag = np.random.random(1) <= 0.05
+        shuffle_flag = np.random.uniform(0,1) <= self.shuffle_prob
 
         if self.size_1 < self.size_2:
             if shuffle_flag:
@@ -107,8 +109,15 @@ class pair_Dataset(Dataset):
         x1 = np.array(res_1_x)
         x2 = np.array(res_2_x)
         if self.y_col is not None:
-            y1 = np.array(self.data_1[self.y_col].iloc[idx_1])
-            y2 = np.array(self.data_2[self.y_col].iloc[idx_2])
+            try:
+                y1 = np.array(self.data_1[self.y_col].iloc[idx_1])
+            except:
+                y1 = None
+            try:
+                y2 = np.array(self.data_2[self.y_col].iloc[idx_2])
+            except:
+                y2 = None
+
             return (x1, x2), (y1, y2)
         else:
             return x1, x2

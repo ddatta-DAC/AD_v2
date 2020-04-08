@@ -22,7 +22,7 @@ import torch.nn.functional as F
 # clf_net_v1 :: a simple MLP classifier
 # ----------------------------------------
 def clf_loss_v1 (y_pred, y_true):
-    loss_func = nn.BCELoss()
+    loss_func = nn.CrossEntropyLoss()
     loss = loss_func(y_pred, y_true)
     return loss
 
@@ -42,6 +42,9 @@ class clf_net_v1(nn.Module):
         )
         return
 
+    # ---------------------
+    # Structure of MLP
+    # [ inp_emb_dimension, [layer_dimensions] , 2 ]
     def setup_Net(
             self,
             inp_emb_dimension,
@@ -49,18 +52,21 @@ class clf_net_v1(nn.Module):
             dropout
     ):
 
-        num_mlp_layers =  len(layer_dimensions)
+        num_mlp_layers =  len(layer_dimensions) + 1
         self.num_mlp_layers = num_mlp_layers
         self.mlp_layers = [None] * num_mlp_layers
         inp_dim = inp_emb_dimension
         for i in range(num_mlp_layers):
-            self.mlp_layers[i] = nn.Linear(inp_dim, layer_dimensions[i])
+            if i == num_mlp_layers-1:
+                op_dim = 2
+            else:
+                op_dim = layer_dimensions[i]
+            self.mlp_layers[i] = nn.Linear(inp_dim, op_dim )
             self.register_parameter('mlp_' + str(i), self.encoder[i].weight)
             print(self.mlp_layers[i])
-            inp_dim = layer_dimensions[i]
+            inp_dim = op_dim
 
         self.dropout = nn.Dropout(dropout)
-
         return
 
     # Input is a tensor/array
@@ -75,6 +81,6 @@ class clf_net_v1(nn.Module):
             if i != self.num_mlp_layers-1 :
                 x = nn.LeakyReLU(x)
 
-        op_x = nn.Sigmoid(x)
+        op_x = nn.Softmax(x)
         return op_x
 
