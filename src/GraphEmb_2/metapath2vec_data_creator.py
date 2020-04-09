@@ -125,16 +125,19 @@ def create_metapath2vec_ingestion_data(
         source_dir + '/**.npy'
     )
 
-    mp_specs = sorted(set(
-        [ _.split('/')[-1].split('.')[0] for _ in _files])
+    mp_specs = sorted(
+        [ _.split('/')[-1].split('.')[0] for _ in _files]
     )
+    mp_specs = [ _.replace('_walks','') for _ in mp_specs ]
+    mp_specs = [ _.replace('_neg_samples', '') for _ in mp_specs]
+    mp_specs = set(mp_specs)
     res_centre = []
     res_context = []
     res_neg_samples = []
 
     for mp_spec in mp_specs :
         pos_samples_file = os.path.join(
-            source_dir, mp_spec+'_walks.npy'
+            source_dir, mp_spec + '_walks.npy'
         )
         neg_samples_file = os.path.join(
             source_dir, mp_spec+'_neg_samples.npy'
