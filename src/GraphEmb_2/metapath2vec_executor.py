@@ -72,7 +72,7 @@ def set_up_config(_DIR = None):
         CONFIG['SOURCE_DATA_DIR_2'], DIR
     )
 
-    model_use_data_DIR = CONFIG['model_use_data']
+    model_use_data_DIR = CONFIG['model_use_data_DIR']
     model_use_data_DIR = os.path.join(model_use_data_DIR, DIR)
     model_weights_data = CONFIG['model_weights_data']
     if not os.path.exists(model_weights_data):
@@ -101,7 +101,7 @@ set_up_config(args.DIR)
 
 # -------------------------------------------- #
 
-domain_dims = network_data_loader.get_domain_dims()
+domain_dims = get_domain_dims()
 num_entities = sum(list(domain_dims.values()))
 model_obj = model_mp2v_1.model()
 
