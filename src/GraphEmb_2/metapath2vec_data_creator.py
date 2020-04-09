@@ -86,7 +86,7 @@ def set_up_config(_DIR = None):
 def create_data_aux(args) :
     _pos_arr = args[0]
     _neg_samples_arr = args[1]
-    _ctxt_size = args[3]
+    _ctxt_size = args[2]
     _pos_arr = np.reshape(_pos_arr,-1)
     k = _ctxt_size//2
     arr_len = _pos_arr.shape[-1]
@@ -98,14 +98,17 @@ def create_data_aux(args) :
     del_pos = k
     for i in range( k, arr_len-k ):
         cur_pos = _pos_arr[i-k:i+k+1]
-        cur_centre_val = cur_pos[i]
+        cur_centre_val = cur_pos[k]
         centre.append(cur_centre_val)
         # remove the central "word" from cur_pos
         ctx = np.delete(cur_pos, del_pos)
-        context.append(ctx)
+        context.append(list(ctx))
         cur_ns = _neg_samples_arr[:, i-k:i+k+1]
         cur_ns = np.delete(cur_ns, del_pos, axis=1)
         neg_samples.append(cur_ns)
+
+    context = np.array(context)
+    neg_samples= np.array(neg_samples)
     return (centre, context, neg_samples)
 
 
@@ -136,14 +139,13 @@ def create_metapath2vec_ingestion_data(
         )
         pos_samples = np.load(pos_samples_file)
         neg_samples = np.load(neg_samples_file)
-        neg_samples = neg_samples
+
         num_jobs = multiprocessing.cpu_count()
-
-
+        count = pos_samples.shape[0]
         results = Parallel( num_jobs )(
             delayed(create_data_aux)(
                 (pos_samples[i], neg_samples[i], ctxt_size),)
-            for i in range(pos_samples.shape[0])
+            for i in range(count)
         )
 
         for _result in results :
@@ -151,18 +153,16 @@ def create_metapath2vec_ingestion_data(
             _context = _result[1]
             _neg_samples = _result[2]
 
+
             res_centre.extend(_centre)
-            res_context.append(_context)
-            res_neg_samples.append(_neg_samples)
+            res_context.extend(_context)
+            res_neg_samples.extend(_neg_samples)
 
     centre = np.array(res_centre)
-    context = np.vstack(res_context)
-    neg_samples = np.vstack(res_neg_samples)
+    context = np.array(res_context)
+    neg_samples = np.array(res_neg_samples)
 
-    print(centre.shape)
-    print(context.shape)
-    print(neg_samples.shape)
-
+    print(centre.shape , context.shape , neg_samples.shape)
     # -----------------
     # Save data
     # -----------------
