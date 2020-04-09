@@ -27,6 +27,7 @@ try:
 except:
    import network_data_loader
 
+
 try:
     from src.data_fetcher import data_fetcher_v2 as data_fetcher
 except:
@@ -80,6 +81,9 @@ def set_up_config(_DIR = None):
     model_weights_data = os.path.join(
         model_weights_data ,DIR , model_name
     )
+    metapath2vec_data_DIR = CONFIG['mp2v_data']
+    metapath2vec_data_DIR = os.path.join(model_use_data_DIR, metapath2vec_data_DIR)
+    return
 
 def get_domain_dims():
     global CONFIG
@@ -116,7 +120,7 @@ model_obj.build(
 # -------------------------------
 # Obtain the model training data
 # -------------------------------
-x_t, x_c, x_ns = network_data_loader.fetch_model_data_mp2v()
+x_t, x_c, x_ns = network_data_loader.fetch_model_data_mp2v(metapath2vec_data_DIR)
 y = model_obj.train_model(
     x_t,
     x_c,

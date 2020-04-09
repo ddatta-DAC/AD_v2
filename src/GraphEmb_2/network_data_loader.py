@@ -235,9 +235,8 @@ def set_up_config(_DIR = None):
 # Fetch data specific to metapath2vec model 
 # ------------------------------------ #
 
-def fetch_model_data_mp2v():
-    global metapath2vec_data_DIR
-    source_dir = metapath2vec_data_DIR
+def fetch_model_data_mp2v(source_dir):
+
     print('Directory :: ', source_dir)
     try:
         centre = np.load(os.path.join(source_dir, 'x_target.npy'))

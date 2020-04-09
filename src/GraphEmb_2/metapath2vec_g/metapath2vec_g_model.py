@@ -28,7 +28,7 @@ MODEL_INP_DATA_DIR = './data'
 id_col = 'PanjivaRecordID'
 coOccDict = None
 serial_mapping_df = None
-
+metapath2vec_data_DIR = None
 
 def get_data():
     global SOURCE_DATA_DIR_1
@@ -38,7 +38,7 @@ def get_data():
     global coOccDict
     global serial_mapping_df
     global domain_dims
-
+    global metapath2vec_data_DIR
     data = data_fetcher.get_train_x_csv(SOURCE_DATA_DIR_1, DIR)
     domain_dims = data_fetcher.get_domain_dims(SOURCE_DATA_DIR_1, DIR)
     print(domain_dims)
