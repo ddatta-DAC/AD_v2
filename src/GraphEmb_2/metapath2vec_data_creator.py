@@ -120,12 +120,14 @@ def create_metapath2vec_ingestion_data(
     if not os.path.exists(target_dir):
         os.mkdir(target_dir)
 
-    print(source_dir)
+
     _files = glob.glob(
-        source_dir + '/../**.npy'
+        source_dir + '/**.npy'
     )
 
-    mp_specs = sorted(set([ _.split('/')[-1].split('.')[0] for _ in _files]))
+    mp_specs = sorted(set(
+        [ _.split('/')[-1].split('.')[0] for _ in _files])
+    )
     res_centre = []
     res_context = []
     res_neg_samples = []
