@@ -42,6 +42,7 @@ serializedRandomWalk_DIR = None
 randomWalk_DIR = None
 SOURCE_DATA_DIR_1 = None
 SOURCE_DATA_DIR_2 = None
+metapath2vec_data_DIR = None
 
 def set_up_config(_DIR = None):
     global CONFIG
@@ -54,6 +55,7 @@ def set_up_config(_DIR = None):
     global model_weights_data
     global SOURCE_DATA_DIR_1
     global SOURCE_DATA_DIR_2
+    global metapath2vec_data_DIR
     if _DIR is not None:
         DIR = _DIR
 
