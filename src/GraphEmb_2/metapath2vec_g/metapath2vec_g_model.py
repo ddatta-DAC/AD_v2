@@ -6,20 +6,15 @@ import argparse
 import pickle
 import sys
 from gensim.similarities.index import AnnoyIndexer
-
 sys.path.append('./../..')
 sys.path.append('./..')
 from gensim.models.word2vec import LineSentence
 from gensim.models import Word2Vec
 from pandarallel import pandarallel
-
 pandarallel.initialize()
 from src.utils import coOccMatrixGenerator
 
-try:
-    from src.data_fetcher import data_fetcher_v2 as data_fetcher
-except:
-    from data_fetcher import data_fetcher_v2 as data_fetcher
+
 
 # ----------------------------- #
 domain_dims = None
