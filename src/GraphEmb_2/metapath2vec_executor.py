@@ -22,12 +22,25 @@ try:
 except:
    import network_data_loader
 
+try:
+    from . import network_data_loader
+except:
+   import network_data_loader
 
+try:
+    from src.data_fetcher import data_fetcher_v2 as data_fetcher
+except:
+    from data_fetcher import data_fetcher_v2 as data_fetcher
+
+
+model_name = 'metapath2vec'
 DIR = None
 config_file = 'config.yaml'
 model_use_data_DIR = None
 serializedRandomWalk_DIR = None
 randomWalk_DIR = None
+SOURCE_DATA_DIR_1 = None
+SOURCE_DATA_DIR_2 = None
 
 def set_up_config(_DIR = None):
     global CONFIG
@@ -36,7 +49,10 @@ def set_up_config(_DIR = None):
     global model_use_data_DIR
     global serializedRandomWalk_DIR
     global randomWalk_DIR
-
+    global model_name
+    global model_weights_data
+    global SOURCE_DATA_DIR_1
+    global SOURCE_DATA_DIR_2
     if _DIR is not None:
         DIR = _DIR
 
@@ -58,9 +74,17 @@ def set_up_config(_DIR = None):
 
     model_use_data_DIR = CONFIG['model_use_data']
     model_use_data_DIR = os.path.join(model_use_data_DIR, DIR)
+    model_weights_data = CONFIG['model_weights_data']
+    if not os.path.exists(model_weights_data):
+        os.mkdir(model_weights_data)
+    model_weights_data = os.path.join(
+        model_weights_data ,DIR , model_name
+    )
 
-    randomWalk_DIR = CONFIG['randomWalk']
-    serializedRandomWalk_DIR = 'Serialized'
+def get_domain_dims():
+    global SOURCE_DATA_DIR_1
+    global DIR
+    return data_fetcher.get_domain_dims(SOURCE_DATA_DIR_1, DIR)
 
 
 # --------------------------------------------------------- #
@@ -103,7 +127,7 @@ y = model_obj.train_model(
 # Save weights
 # -------------------------------
 model_obj.save_weights(
-    model_use_data_DIR,
+    model_weights_data,
     'mp2v_emb.npy'
 )
 
