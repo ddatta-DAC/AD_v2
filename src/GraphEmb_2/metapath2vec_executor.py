@@ -82,9 +82,9 @@ def set_up_config(_DIR = None):
     )
 
 def get_domain_dims():
-    global SOURCE_DATA_DIR_1
+    global CONFIG
     global DIR
-    return data_fetcher.get_domain_dims(SOURCE_DATA_DIR_1, DIR)
+    return data_fetcher.get_domain_dims(CONFIG['SOURCE_DATA_DIR_1'], DIR)
 
 
 # --------------------------------------------------------- #
