@@ -453,7 +453,7 @@ class RandomWalkGraph_v1:
                 next_nbr_domain = path_seq[i + 1]
 
                 nbr_s_id = cur_node_obj.sample_nbr(next_nbr_domain)
-                print(next_nbr_domain,nbr_s_id)
+                print(next_nbr_domain, nbr_s_id)
                 # while  nbr_s_id in cycle_prevention_dict[next_nbr_domain]:
                 #     nbr_s_id = cur_node_obj.sample_nbr(next_nbr_domain)
 

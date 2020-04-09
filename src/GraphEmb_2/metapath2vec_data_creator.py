@@ -23,7 +23,7 @@ import argparse
 CONFIG = None
 CONFIG_FILE = 'config.yaml'
 DATA_SOURCE_DIR_1 = None
-DATA_SOURCE_DIR_2 = None
+model_use_data_DIR = None
 RW_dir = None
 Serialized_RW_dir = None
 SAVE_DIR_loc = None
@@ -42,7 +42,7 @@ def set_up_config(_DIR = None):
     global RW_dir
     global domain_dims
     global flag_REFRESH_create_mp2v_data
-    global DATA_SOURCE_DIR_2
+    global model_use_data_DIR
     global mp2v_context_size
     global metapath2vec_data_DIR
 
@@ -59,15 +59,15 @@ def set_up_config(_DIR = None):
         DIR = _DIR
 
     DATA_SOURCE_DIR_1 = os.path.join(
-        CONFIG['DATA_SOURCE'], DIR
+        CONFIG['DATA_SOURCE_DIR_1'], DIR
     )
-    SAVE_DIR_loc = DATA_SOURCE_DIR_1
-    DATA_SOURCE_DIR_2 = os.path.join(CONFIG['model_use_data_DIR'], DIR)
+
+    model_use_data_DIR = os.path.join(CONFIG['model_use_data_DIR'], DIR)
 
     RW_dir = CONFIG['RW_dir']
-    RW_dir = os.path.join(DATA_SOURCE_DIR_2, RW_dir)
+    RW_dir = os.path.join(model_use_data_DIR, RW_dir)
     metapath2vec_data_DIR = CONFIG['mp2v_data']
-    metapath2vec_data_DIR = os.path.join(DATA_SOURCE_DIR_2, metapath2vec_data_DIR)
+    metapath2vec_data_DIR = os.path.join(model_use_data_DIR, metapath2vec_data_DIR)
 
     if not os.path.exists(metapath2vec_data_DIR):
         os.mkdir(metapath2vec_data_DIR)
@@ -181,7 +181,6 @@ def create_metapath2vec_ingestion_data(
     return
 
 # ------------------------------------------ #
-import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],

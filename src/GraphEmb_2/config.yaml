@@ -8,5 +8,5 @@
 'num_jobs': 8
 'random_walk_save_subdir' : 'RW_Samples'
 'mp2v_data' : 'mp2v_data'
-'mp2v_context_size' : 6
+'mp2v_context_size' : 8
 'RW_Samples_DIR' : 'RW_Samples'
