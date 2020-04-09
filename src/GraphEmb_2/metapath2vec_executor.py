@@ -80,9 +80,14 @@ def set_up_config(_DIR = None):
     model_weights_data = CONFIG['model_weights_data']
     if not os.path.exists(model_weights_data):
         os.mkdir(model_weights_data)
-    model_weights_data = os.path.join(
-        model_weights_data ,DIR , model_name
-    )
+
+    model_weights_data = os.path.join(model_weights_data, model_name)
+    if not os.path.exists(model_weights_data):
+        os.mkdir(model_weights_data)
+    model_weights_data = os.path.join(model_weights_data, DIR)
+    if not os.path.exists(model_weights_data):
+        os.mkdir(model_weights_data)
+
     metapath2vec_data_DIR = CONFIG['mp2v_data']
     metapath2vec_data_DIR = os.path.join(model_use_data_DIR, metapath2vec_data_DIR)
     return
