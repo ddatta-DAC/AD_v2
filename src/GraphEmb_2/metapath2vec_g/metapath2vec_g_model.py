@@ -64,8 +64,9 @@ def get_model_obj(
             iter=100,
             null_word=-1
         )
+        print(model)
+        print(' Saving model')
         model.save(model_save_path)
-
     return model
 
 

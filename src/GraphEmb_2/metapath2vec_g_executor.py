@@ -142,9 +142,10 @@ DIR = args.DIR
 set_up_config(DIR)
 
 
-metapath2vec_g_model.get_model_obj(
+model_obj = metapath2vec_g_model.get_model_obj(
     corpus_txt_file_path = text_data_file,
-    emb_size=128
+    emb_size=128,
+    load_saved = False
 )
 
 
