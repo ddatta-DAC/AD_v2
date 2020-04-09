@@ -6,6 +6,7 @@
 # Email : ddatta@vt.edu
 # ---------------
 import yaml
+import glob
 import pandas as pd
 import numpy as np
 import os
@@ -15,13 +16,15 @@ import sys
 sys.path.append('./../..')
 sys.path.append('./..')
 
+try:
+    from .metapath2vec_g import metapath2vec_g_model
+except:
+    from metapath2vec_g import metapath2vec_g_model
 
 try:
     from src.data_fetcher import data_fetcher_v2 as data_fetcher
 except:
     from .src.data_fetcher import data_fetcher_v2 as data_fetcher
-
-
 
 model_name = 'metapath2vec_gensim'
 DIR = None
@@ -30,7 +33,9 @@ model_use_data_DIR = None
 randomWalk_DIR = None
 SOURCE_DATA_DIR_1 = None
 SOURCE_DATA_DIR_2 = None
-metapath2vec_data_DIR = None
+mp2v_g_data_dir = None
+text_data_file = None
+
 
 def set_up_config(_DIR = None):
     global CONFIG
@@ -43,7 +48,9 @@ def set_up_config(_DIR = None):
     global model_weights_data
     global SOURCE_DATA_DIR_1
     global SOURCE_DATA_DIR_2
-    global metapath2vec_data_DIR
+    global mp2v_g_data_dir
+    global text_data_file
+    global RW_dir
     if _DIR is not None:
         DIR = _DIR
 
@@ -71,14 +78,74 @@ def set_up_config(_DIR = None):
     model_weights_data = os.path.join(
         model_weights_data ,DIR , model_name
     )
-    model_data_dir = CONFIG['mp2v_g_data_dir']
-    model_data_dir = os.path.join(model_use_data_DIR, model_data_dir)
+    RW_dir = CONFIG['RW_Samples_DIR']
+    RW_dir = os.path.join(model_use_data_DIR, RW_dir)
+
+    mp2v_g_data_dir = CONFIG['mp2v_g_data_dir']
+    mp2v_g_data_dir = os.path.join(model_use_data_DIR, mp2v_g_data_dir)
+    if not os.path.exists(mp2v_g_data_dir):
+        os.mkdir(mp2v_g_data_dir)
+    text_data_file = os.path.join(mp2v_g_data_dir, 'gensim_corpus.txt')
+    setup_data()
+
     return
 
 def get_domain_dims():
     global CONFIG
     global DIR
     return data_fetcher.get_domain_dims(CONFIG['SOURCE_DATA_DIR_1'], DIR)
+
+# --------------------------------------------------------- #
+
+def setup_data():
+    # Check if folder exists
+    global model_data_dir
+    global text_data_file
+    global model_use_data_DIR
+    global RW_dir
+
+
+    if os.path.exists(text_data_file):
+        print('Data file present')
+        return
+    else:
+        print(model_use_data_DIR)
+        target_files = glob.glob(
+            os.path.join(RW_dir,'**_walks.npy')
+        )
+        res = []
+        for _file in target_files[:5]:
+            np_arr = np.load(_file)
+            res.extend(np_arr)
+
+        res = np.array(res)
+
+        np.savetxt(
+            text_data_file,
+            res,
+            fmt ='%d',
+            delimiter=' ',
+            newline = '\n'
+        )
+    return
+
+# ========================================================= #
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
+    default='us_import1'
+)
+
+args = parser.parse_args()
+DIR = args.DIR
+set_up_config(DIR)
+
+
+metapath2vec_g_model.get_model_obj(
+    corpus_txt_file_path = text_data_file,
+    emb_size=128
+)
 
 
 
