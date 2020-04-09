@@ -51,6 +51,8 @@ def set_up_config(_DIR = None):
     global mp2v_g_data_dir
     global text_data_file
     global RW_dir
+    global model_save_path
+
     if _DIR is not None:
         DIR = _DIR
 
