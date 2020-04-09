@@ -116,8 +116,8 @@ model_obj.build(
     num_entities=num_entities,
     num_neg_samples=10,
     context_size=8,
-    batch_size=512,
-    num_epochs=20
+    batch_size=1024,
+    num_epochs=10
 )
 # -------------------------------
 # Obtain the model training data
