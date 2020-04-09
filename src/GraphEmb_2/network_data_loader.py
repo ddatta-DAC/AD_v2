@@ -63,10 +63,10 @@ def set_up_config(_DIR = None):
         CONFIG['DATA_SOURCE'], DIR
     )
 
-    DATA_SOURCE_DIR_2 = os.path.join(DATA_SOURCE_DIR_2, CONFIG['model_use_data_DIR'], DIR)
+    DATA_SOURCE_DIR_2 = os.path.join(CONFIG['model_use_data_DIR'], DIR)
     RW_dir = CONFIG['RW_Samples_DIR']
     metapath2vec_data_DIR = CONFIG['mp2v_data']
-    metapath2vec_data_DIR = os.path.join(metapath2vec_data_DIR)
+    metapath2vec_data_DIR = os.path.join(DATA_SOURCE_DIR_2, metapath2vec_data_DIR)
     return
 
 
