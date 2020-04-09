@@ -115,7 +115,7 @@ model_obj.build(
     emb_dim=128,
     num_entities=num_entities,
     num_neg_samples=10,
-    context_size=2,
+    context_size=8,
     batch_size=512,
     num_epochs=20
 )
