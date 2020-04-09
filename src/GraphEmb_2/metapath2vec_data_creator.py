@@ -59,7 +59,7 @@ def set_up_config(_DIR = None):
         DIR = _DIR
 
     DATA_SOURCE_DIR_1 = os.path.join(
-        CONFIG['DATA_SOURCE_DIR_1'], DIR
+        CONFIG['SOURCE_DATA_DIR_1'], DIR
     )
 
     model_use_data_DIR = os.path.join(CONFIG['model_use_data_DIR'], DIR)
