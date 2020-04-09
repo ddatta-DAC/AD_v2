@@ -263,7 +263,7 @@ class model:
             file_name
     ):
 
-        weight_vals = self.net.module.Emb.weight.detach().numpy()
+        weight_vals = self.net.module.Emb.weight.detach().cpu().numpy()
         f_path = os.path.join(dir, file_name)
         try:
             np.save(

@@ -236,7 +236,6 @@ def set_up_config(_DIR = None):
 # ------------------------------------ #
 
 def fetch_model_data_mp2v(source_dir):
-
     print('Directory :: ', source_dir)
     try:
         centre = np.load(os.path.join(source_dir, 'x_target.npy'))

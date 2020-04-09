@@ -11,3 +11,4 @@
 'mp2v_context_size' : 8
 'RW_Samples_DIR' : 'RW_Samples'
 'model_weights_data' : 'model_weights_data'
+'mp2v_g_data_dir' : 'mp2v_g_data'

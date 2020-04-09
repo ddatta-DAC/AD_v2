@@ -5,7 +5,7 @@
 # Author : Debanjan Datta
 # Email : ddatta@vt.edu
 # ---------------
-
+import yaml
 import pandas as pd
 import numpy as np
 import os
@@ -27,7 +27,6 @@ model_name = 'metapath2vec_gensim'
 DIR = None
 config_file = 'config.yaml'
 model_use_data_DIR = None
-serializedRandomWalk_DIR = None
 randomWalk_DIR = None
 SOURCE_DATA_DIR_1 = None
 SOURCE_DATA_DIR_2 = None
@@ -72,13 +71,15 @@ def set_up_config(_DIR = None):
     model_weights_data = os.path.join(
         model_weights_data ,DIR , model_name
     )
-    metapath2vec_data_DIR = CONFIG['mp2v_data']
-    metapath2vec_data_DIR = os.path.join(model_use_data_DIR, metapath2vec_data_DIR)
+    model_data_dir = CONFIG['mp2v_g_data_dir']
+    model_data_dir = os.path.join(model_use_data_DIR, model_data_dir)
     return
 
 def get_domain_dims():
     global CONFIG
     global DIR
     return data_fetcher.get_domain_dims(CONFIG['SOURCE_DATA_DIR_1'], DIR)
+
+
 
 
