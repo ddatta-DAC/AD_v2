@@ -67,6 +67,7 @@ def set_up_config(_DIR = None):
     RW_dir = CONFIG['RW_Samples_DIR']
     metapath2vec_data_DIR = CONFIG['mp2v_data']
     metapath2vec_data_DIR = os.path.join(DATA_SOURCE_DIR_2, metapath2vec_data_DIR)
+
     return
 
 
@@ -237,6 +238,7 @@ def set_up_config(_DIR = None):
 def fetch_model_data_mp2v():
     global metapath2vec_data_DIR
     source_dir = metapath2vec_data_DIR
+    print('Directory :: ', source_dir)
     try:
         centre = np.load(os.path.join(source_dir, 'x_target.npy'))
         context = np.load(os.path.join(source_dir, 'x_context.npy'))
