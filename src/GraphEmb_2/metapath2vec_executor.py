@@ -117,7 +117,7 @@ model_obj.build(
     num_neg_samples=10,
     context_size=8,
     batch_size=1024,
-    num_epochs=10
+    num_epochs=2
 )
 # -------------------------------
 # Obtain the model training data
