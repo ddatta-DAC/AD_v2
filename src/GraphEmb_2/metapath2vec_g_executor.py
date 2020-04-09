@@ -35,7 +35,7 @@ SOURCE_DATA_DIR_1 = None
 SOURCE_DATA_DIR_2 = None
 mp2v_g_data_dir = None
 text_data_file = None
-
+model_save_path = None
 
 def set_up_config(_DIR = None):
     global CONFIG
@@ -87,6 +87,17 @@ def set_up_config(_DIR = None):
         os.mkdir(mp2v_g_data_dir)
     text_data_file = os.path.join(mp2v_g_data_dir, 'gensim_corpus.txt')
     setup_data()
+
+    model_save_path = CONFIG['model_weights_data']
+    if not os.path.exists(model_save_path):
+        os.mkdir(model_save_path)
+    model_save_path = os.path.join(model_save_path, model_name)
+    if not os.path.exists(model_save_path):
+        os.mkdir(model_save_path)
+    model_save_path = os.path.join(model_save_path,  DIR)
+    if not os.path.exists(model_save_path):
+        os.mkdir(model_save_path)
+    model_save_path = os.path.join(model_save_path, 'mp2v_gensim.data')
 
     return
 
@@ -145,6 +156,7 @@ set_up_config(DIR)
 model_obj = metapath2vec_g_model.get_model_obj(
     corpus_txt_file_path = text_data_file,
     emb_size=128,
+    model_save_path = model_save_path,
     load_saved = False
 )
 
