@@ -159,6 +159,8 @@ def convert_to_ids(
 ):
     global id_col
     global freq_bound
+    print('freq_bound ==', freq_bound)
+
     feature_columns = list(df.columns)
     feature_columns.remove(id_col)
     feature_columns = list(sorted(feature_columns))
@@ -254,12 +256,15 @@ def remove_low_frequency_values(df):
         values = list(df[c])
         freq_column_value_filters[c] = []
         obj_counter = Counter(values)
+
         for _item, _count in obj_counter.items():
             if _count < freq_bound:
                 freq_column_value_filters[c].append(_item)
+
     print('Removing :: ')
     for c, _items in freq_column_value_filters.items():
         print('column : ', c, 'count', len(_items))
+
     print(' DF length : ', len(df))
 
     for col, val in freq_column_value_filters.items():
@@ -317,7 +322,9 @@ def HSCode_cleanup(list_df, DIR_LOC, config):
         df = lexical_sort_cols(df, id_col)
 
         if df is not None and len(df) > 0:
+            df = df.dropna()
             list_processed_df.append(df)
+
     # --------- #
     print([len(_) for _ in list_processed_df])
     return list_processed_df
@@ -336,7 +343,7 @@ def apply_value_filters(list_df):
         list_processed_df = []
         for df in list_df:
             for col, val in column_value_filters.items():
-                df = df.loc[(~df[col].isin(val))]
+                df = df.loc[~df[col].isin(val)]
             list_processed_df.append(df)
         return list_processed_df
     return list_df
@@ -486,6 +493,8 @@ def create_train_test_sets():
         return train_df, test_df, col_val2id_dict
 
     train_df = clean_train_data()
+    train_df.to_csv(train_df_file, index=False)
+    exit(1)
 
     train_df, col_val2id_dict = convert_to_ids(
         train_df,
@@ -494,8 +503,7 @@ def create_train_test_sets():
     print('Length of train data ', len(train_df))
 
     train_df = lexical_sort_cols(train_df, id_col)
-    train_df.to_csv(train_df_file, index=False)
-    exit(1)
+
 
     '''
          test data preprocessing
