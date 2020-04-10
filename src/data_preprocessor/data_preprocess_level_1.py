@@ -266,20 +266,8 @@ def remove_low_frequency_values(df):
         print('column : ', c, 'count', len(_items))
 
     print(' DF length : ', len(df))
-
-    # Try to remove in unison
-
-    df = df.loc[
-        ~df['ShipperPanjivaID'].isin(freq_column_value_filters['ShipperPanjivaID']) &
-        ~df['ShipmentOrigin'].isin(freq_column_value_filters['ShipmentOrigin']) &
-        ~df['ShipmentDestination'].isin(freq_column_value_filters['ShipmentDestination']) &
-        ~df['HSCode'].isin(freq_column_value_filters['HSCode']) &
-        ~df['PortOfUnlading'].isin(freq_column_value_filters['PortOfUnlading']) &
-        ~df['PortOfLading'].isin(freq_column_value_filters['PortOfLading']) &
-        ~df['Carrier'].isin(freq_column_value_filters['Carrier'])
-        ]
-    # for col, val in freq_column_value_filters.items():
-    #     df = df.loc[~df[col].isin(val)]
+    for col, val in freq_column_value_filters.items():
+        df = df.loc[~df[col].isin(val)]
 
     print(' DF length : ', len(df))
     return df
@@ -504,17 +492,12 @@ def create_train_test_sets():
         return train_df, test_df, col_val2id_dict
 
     train_df = clean_train_data()
-    train_df.to_csv(train_df_file, index=False)
-    exit(1)
-
     train_df, col_val2id_dict = convert_to_ids(
         train_df,
         save_dir
     )
     print('Length of train data ', len(train_df))
-
     train_df = lexical_sort_cols(train_df, id_col)
-
 
     '''
          test data preprocessing
