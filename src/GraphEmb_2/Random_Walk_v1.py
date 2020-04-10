@@ -299,7 +299,6 @@ class RandomWalkGraph_v1:
         relations = [_.split('_+_') for _ in relations]
 
         print('Number of distinct relations :: ', len(relations) )
-        relations = [['ShipmentDestination', 'ShipperPanjivaID']]
 
         for R in relations:
             print(' Relation :: ', R)

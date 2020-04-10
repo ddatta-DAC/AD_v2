@@ -192,6 +192,7 @@ source_1_data = get_data()
 rw_obj = Random_Walk.RandomWalkGraph_v1()
 coOccMatrixDict = get_coOccMatrixDict(source_1_data)
 
+
 rw_obj.initialize(
     coOccMatrixDict = coOccMatrixDict,
     serial_mapping_df=serial_mapping_df,
@@ -203,7 +204,7 @@ rw_obj.initialize(
 )
 
 rw_obj.generate_RandomWalks_w_neg_samples(
-    rw_count=50,
+    rw_count=20,
     rw_length=128,
     num_neg_samples=10
 )
