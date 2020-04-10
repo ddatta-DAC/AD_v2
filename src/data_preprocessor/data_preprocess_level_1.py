@@ -270,12 +270,12 @@ def remove_low_frequency_values(df):
     # Try to remove in unison
 
     df = df.loc[
-         ~df['ShipperPanjivaID'].isin(freq_column_value_filters['ShipperPanjivaID']) |
-         ~df['ShipmentOrigin'].isin(freq_column_value_filters['ShipmentOrigin']) |
-        ~df['ShipmentDestination'].isin(freq_column_value_filters['ShipmentDestination']) |
-        ~df['HSCode'].isin(freq_column_value_filters['HSCode']) |
-        ~df['PortOfUnlading'].isin(freq_column_value_filters['PortOfUnlading']) |
-        ~df['PortOfLading'].isin(freq_column_value_filters['PortOfLading']) |
+        ~df['ShipperPanjivaID'].isin(freq_column_value_filters['ShipperPanjivaID']) &
+        ~df['ShipmentOrigin'].isin(freq_column_value_filters['ShipmentOrigin']) &
+        ~df['ShipmentDestination'].isin(freq_column_value_filters['ShipmentDestination']) &
+        ~df['HSCode'].isin(freq_column_value_filters['HSCode']) &
+        ~df['PortOfUnlading'].isin(freq_column_value_filters['PortOfUnlading']) &
+        ~df['PortOfLading'].isin(freq_column_value_filters['PortOfLading']) &
         ~df['Carrier'].isin(freq_column_value_filters['Carrier'])
         ]
     # for col, val in freq_column_value_filters.items():
