@@ -245,7 +245,6 @@ def remove_low_frequency_values(df):
     for c in feature_cols:
         values = list(df[c])
         freq_column_value_filters[c] = []
-
         obj_counter = Counter(values)
         for _item, _count in obj_counter.items():
             if _count < freq_bound:
@@ -253,13 +252,12 @@ def remove_low_frequency_values(df):
     print('Removing :: ')
     for c, _items in freq_column_value_filters.items():
         print('column : ', c, 'count', len(_items))
+    print(' DF length : ', len(df))
+
+    for col, val in freq_column_value_filters.items():
+        df = df.loc[~df[col].isin(val)]
 
     print(' DF length : ', len(df))
-    for col, val in freq_column_value_filters.items():
-        df = df.loc[
-            (~df[col].isin(val))
-        ]
-
     return df
 
 
@@ -384,6 +382,7 @@ def clean_train_data():
             )
 
     master_df = remove_low_frequency_values(master_df)
+
     return master_df
 
 
@@ -468,6 +467,7 @@ def create_train_test_sets():
     test_df_file = os.path.join(save_dir, 'test_data.csv')
     column_valuesId_dict_file = 'column_valuesId_dict.pkl'
     column_valuesId_dict_path = os.path.join(save_dir, column_valuesId_dict_file)
+
     # --- Later on - remove using the saved file ---- #
     if os.path.exists(train_df_file) and os.path.exists(test_df_file) and False:
         train_df = pd.read_csv(train_df_file)
@@ -478,6 +478,7 @@ def create_train_test_sets():
         return train_df, test_df, col_val2id_dict
 
     train_df = clean_train_data()
+
     train_df, col_val2id_dict = convert_to_ids(
         train_df,
         save_dir
@@ -486,6 +487,7 @@ def create_train_test_sets():
 
     train_df = lexical_sort_cols(train_df, id_col)
     train_df.to_csv(train_df_file, index=False)
+    exit(1)
 
     '''
          test data preprocessing
