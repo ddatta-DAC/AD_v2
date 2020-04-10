@@ -192,10 +192,6 @@ def convert_to_ids(
                 val2id_dict,
             )
         )
-        for value in  set(df[col]):
-            if len(df.loc[df[col] == value]) < freq_bound :
-                print('ERROR')
-                exit(2)
 
         dict_DomainDims[col] = len(id2val_dict)
 
