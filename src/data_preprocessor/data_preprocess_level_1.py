@@ -158,7 +158,7 @@ def convert_to_ids(
         save_dir
 ):
     global id_col
-
+    global freq_bound
     feature_columns = list(df.columns)
     feature_columns.remove(id_col)
     feature_columns = list(sorted(feature_columns))
@@ -173,13 +173,16 @@ def convert_to_ids(
             e[0]: e[1]
             for e in enumerate(vals, 0)
         }
+        print(id2val_dict)
+
         val2id_dict = {
             v: k for k, v in id2val_dict.items()
         }
         col_val2id_dict[col] = val2id_dict
 
+
         # Replace
-        df[col] = df.apply(
+        df[col] = df.parallel_apply(
             replace_attr_with_id,
             axis=1,
             args=(
@@ -187,6 +190,11 @@ def convert_to_ids(
                 val2id_dict,
             )
         )
+        for value in  set(df[col]):
+            if len(df.loc[df[col] == value]) < freq_bound :
+                print('ERROR')
+                exit(2)
+
         dict_DomainDims[col] = len(id2val_dict)
 
     print(' Feature columns :: ', feature_columns)
