@@ -197,9 +197,19 @@ class RandomWalkGraph_v1:
         self.id_col = id_col
         self.save_data_dir = save_data_dir
         self.saved_file_name = saved_file_name
-        signature = ''.join(
-            ([''.join(_) for _ in MP_list])
+
+        relations = []
+        for mp in MP_list:
+            for _1, _2 in zip(mp[:-1], mp[1:]):
+                relations.append('_+_'.join(sorted([_1, _2])))
+        relations = sorted(set(relations))
+        signature = '__'.join(relations)
+        self.signature = str(md5(str.encode(signature)).hexdigest())
+        self.saved_file_name = saved_file_name.replace(
+            '.',
+            '_' + self.signature + '.'
         )
+
         self.random_walk_save_dir = os.path.join(
             self.save_data_dir,
             random_walk_save_subdir
@@ -209,11 +219,6 @@ class RandomWalkGraph_v1:
             os.mkdir(self.random_walk_save_dir)
 
 
-        self.signature = str(md5(str.encode(signature)).hexdigest())
-        self.saved_file_name = saved_file_name.replace(
-            '.',
-            '_' + self.signature + '.'
-        )
         Serial_mapping_df = serial_mapping_df
         RandomWalkGraph_v1.setup_Entity_ID_lookup()
 
