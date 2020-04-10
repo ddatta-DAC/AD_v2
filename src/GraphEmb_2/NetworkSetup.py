@@ -180,7 +180,7 @@ def get_MP_list():
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
-    default='us_import1'
+    default='us_import2'
 )
 
 args = parser.parse_args()
@@ -203,7 +203,7 @@ rw_obj.initialize(
 )
 
 rw_obj.generate_RandomWalks_w_neg_samples(
-    rw_count=20,
+    rw_count=50,
     rw_length=128,
     num_neg_samples=10
 )

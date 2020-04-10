@@ -36,6 +36,7 @@ SOURCE_DATA_DIR_2 = None
 mp2v_g_data_dir = None
 text_data_file = None
 model_save_path = None
+weights_np_save_path = None
 
 def set_up_config(_DIR = None):
     global CONFIG
@@ -52,6 +53,7 @@ def set_up_config(_DIR = None):
     global text_data_file
     global RW_dir
     global model_save_path
+    global weights_np_save_path
 
     if _DIR is not None:
         DIR = _DIR
@@ -101,6 +103,8 @@ def set_up_config(_DIR = None):
         os.mkdir(model_save_path)
     model_save_path = os.path.join(model_save_path, 'mp2v_gensim.data')
 
+    weights_np_save_path = os.path.join(model_save_path,'mp2v_gensim_weights.npy')
+
     return
 
 def get_domain_dims():
@@ -116,7 +120,6 @@ def setup_data():
     global text_data_file
     global model_use_data_DIR
     global RW_dir
-
 
     if os.path.exists(text_data_file):
         print('Data file present')
@@ -161,7 +164,13 @@ model_obj = metapath2vec_g_model.get_model_obj(
     model_save_path = model_save_path,
     load_saved = False
 )
-
+domain_dims = get_domain_dims()
+entity_count = sum(list(domain_dims.values()))
+metapath2vec_g_model.save_weights(
+        model_obj,
+        entity_count,
+        weights_np_save_path
+)
 
 
 

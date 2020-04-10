@@ -69,6 +69,26 @@ def get_model_obj(
         model.save(model_save_path)
     return model
 
+def save_weights(
+        model,
+        entity_count,
+        save_path
+):
+    res = []
+
+    for word in range(entity_count):
+        try:
+            v = model.wv.word_vec(str(word))
+        except:
+            print('[ERROR ] ::  not found entity with serial id :', word)
+            v = np.zeros([model.layer1_size])
+        res.append(v)
+    weights = np.array(res)
+    np.save( save_path, weights)
+    return
+
+
+
 
 #
 # def check_NN(model):

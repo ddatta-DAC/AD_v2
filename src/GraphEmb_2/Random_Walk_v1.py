@@ -17,6 +17,8 @@ import multiprocessing
 # ---- Global object ----- #
 NODE_OBJECT_DICT = None
 Serial_mapping_df = None
+
+
 NO_REFRESH = True
 
 # ------------------------- #
@@ -58,7 +60,7 @@ class Entity_Node:
         # -------------------
         p = [math.pow(_ / max(norm_prob), 0.75) for _ in norm_prob]
         p = [_ / sum(p) for _ in p]
-
+        print( min(p), max(p))
         # prob_dist = {e[0]: e[1] for e in enumerate(p)}
         # set up the prob distribution dictionary as { key=serialized_id  : value=prob}
 
@@ -242,7 +244,8 @@ class RandomWalkGraph_v1:
         return_value = self.get_node_obj_dict(domain_dims)
         NODE_OBJECT_DICT = self.node_object_dict
 
-        if return_value == 1 : return
+        if return_value == 1 :
+            return
 
         # ----------------------------------------- #
         # set up transition probabilities
@@ -280,18 +283,23 @@ class RandomWalkGraph_v1:
                 nbr_type=nbr_type,
                 unnorm_counts_dict=_count_dict
             )
+
             return (e_idx, obj)
 
         # ------------------
         # Binary relations as per metapaths
         # ------------------
-        relations = []
+
+
         for mp in MP_list:
             for _1, _2 in zip(mp[:-1], mp[1:]):
                 relations.append('_+_'.join(sorted([_1, _2])))
-        relations = set(relations)
+        print(relations)
+        relations = sorted(set(relations))
         relations = [_.split('_+_') for _ in relations]
+
         print('Number of distinct relations :: ', len(relations) )
+        relations = [['ShipmentDestination', 'ShipperPanjivaID']]
 
         for R in relations:
             print(' Relation :: ', R)
@@ -310,7 +318,6 @@ class RandomWalkGraph_v1:
             # i -> j  and j -> i
             # ------------------------------
             entities_i = [_ for _ in range(domain_dims[domain_i])]
-
             tmp = {idx: self.node_object_dict[domain_i][idx] for idx in entities_i}
             nbr_type = domain_j
             orientation = 'r'
@@ -362,8 +369,7 @@ class RandomWalkGraph_v1:
         for domain in set(Serial_mapping_df['Domain']):
 
             RandomWalkGraph_v1.Serial_2_Entity_ID_dict[domain] = {}
-            tmp = Serial_mapping_df.loc[
-                (Serial_mapping_df['Domain'] == domain)]
+            tmp = Serial_mapping_df.loc[(Serial_mapping_df['Domain'] == domain)]
             s_id_list = list(tmp['Serial_ID'])
             e_id_list = list(tmp['Entity_ID'])
             for _si, _ej in zip(s_id_list, e_id_list):
@@ -397,6 +403,7 @@ class RandomWalkGraph_v1:
 
         print('In aux_rw_exec_w_ns')
         print(args)
+
         start_node_entity_idx = args[0]
         mp = args[1]
         rw_count = args[2]
@@ -420,10 +427,10 @@ class RandomWalkGraph_v1:
         # Note :: ensure no cycles
         # --------------------------
         for rc in range(rw_count):
-            cycle_prevention_dict = {_: [] for _ in mp}
+            cycle_prevention_dict = { _: [] for _ in mp}
             cur_domain = mp[0]
             _obj = node_object_dict[cur_domain][start_node_entity_idx]
-            print( _obj,  _obj.entity, _obj.domain )
+            # print( _obj,  _obj.entity, _obj.domain )
 
             cur_node_s_id = RandomWalkGraph_v1.Serial_ID_lookup(cur_domain, start_node_entity_idx)
             # cur_node_s_id = node_object_dict[cur_domain][start_node_entity_idx].serial_id
@@ -458,11 +465,16 @@ class RandomWalkGraph_v1:
                 next_nbr_domain = path_seq[i + 1]
 
                 nbr_s_id = cur_node_obj.sample_nbr(next_nbr_domain)
-                print(next_nbr_domain, nbr_s_id)
-                # while  nbr_s_id in cycle_prevention_dict[next_nbr_domain]:
-                #     nbr_s_id = cur_node_obj.sample_nbr(next_nbr_domain)
+                # print(next_nbr_domain, nbr_s_id)
+                num_tries = 0
+                max_tries = 10
+                while  nbr_s_id in cycle_prevention_dict[next_nbr_domain]:
+                    nbr_s_id = cur_node_obj.sample_nbr(next_nbr_domain)
+                    num_tries += 1
+                    if num_tries > max_tries: break
 
                 cycle_prevention_dict[next_nbr_domain].append(nbr_s_id)
+                cycle_prevention_dict[next_nbr_domain] = list(set( cycle_prevention_dict[next_nbr_domain]))
 
                 if nbr_s_id is None:
                     print('Error!!')
