@@ -400,8 +400,8 @@ class RandomWalkGraph_v1:
         global NODE_OBJECT_DICT
         global Serial_mapping_df
 
-        print('In aux_rw_exec_w_ns')
-        print(args)
+        # print('In aux_rw_exec_w_ns')
+        # print(args)
 
         start_node_entity_idx = args[0]
         mp = args[1]
@@ -414,7 +414,7 @@ class RandomWalkGraph_v1:
 
         rep_len = len(augmented_mp) - 1
         path_seq = augmented_mp + augmented_mp[1:] * (rw_length // rep_len)
-        print('Augmented MP ', path_seq)
+        # print('Augmented MP ', path_seq)
 
         # --------------
         # Pad it at  end
@@ -547,12 +547,15 @@ class RandomWalkGraph_v1:
         #  =================
         # Do RW for each of the domain entities in the meta path
         #  =================
-        for _MP in MP_list:
+
+        for _MP in MP_list :
             meta_path_pattern = _MP
             print('Path :: ', meta_path_pattern)
             # Start the random walk from start node
             domain_t = _MP[0]
             start_nodes_idx = []
+
+
             for e_id in range(self.domain_dims[domain_t]):
                 start_nodes_idx.append(e_id)
 
@@ -562,6 +565,7 @@ class RandomWalkGraph_v1:
                 (n, meta_path_pattern, rw_count, rw_length, num_neg_samples)
                 for n in start_nodes_idx
             ]
+
 
             with Pool(num_jobs) as p:
                 pooled_result = p.map(
