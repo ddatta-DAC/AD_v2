@@ -41,7 +41,7 @@ def parse_into_sentence(data_df):
 def get_model_obj(
     corpus_txt_file_path,
     emb_size = 64,
-    window_size = 8,
+    window_size = 2,
     model_save_path = 'mp2v_gensim.dat',
     num_neg_samples = 10,
     load_saved = True
