@@ -126,26 +126,26 @@ def setup_data():
 
     if os.path.exists(text_data_file):
         print('Data file present')
-        return
-    else:
-        print(model_use_data_DIR)
-        target_files = glob.glob(
-            os.path.join(RW_dir,'**_walks.npy')
-        )
-        res = []
-        for _file in target_files[:5]:
-            np_arr = np.load(_file)
-            res.extend(np_arr)
+        # return
 
-        res = np.array(res)
+    print(model_use_data_DIR)
+    target_files = glob.glob(
+        os.path.join(RW_dir,'**_walks.npy')
+    )
+    res = []
+    for _file in target_files[:5]:
+        np_arr = np.load(_file)
+        res.extend(np_arr)
 
-        np.savetxt(
-            text_data_file,
-            res,
-            fmt ='%d',
-            delimiter=' ',
-            newline = '\n'
-        )
+    res = np.array(res)
+
+    np.savetxt(
+        text_data_file,
+        res,
+        fmt ='%d',
+        delimiter=' ',
+        newline = '\n'
+    )
     return
 
 # ========================================================= #
