@@ -35,7 +35,8 @@ SOURCE_DATA_DIR_1 = None
 SOURCE_DATA_DIR_2 = None
 mp2v_g_data_dir = None
 text_data_file = None
-model_save_path = None
+model_save_loc= None
+model_save_file= None
 weights_np_save_path = None
 
 def set_up_config(_DIR = None):
@@ -52,7 +53,8 @@ def set_up_config(_DIR = None):
     global mp2v_g_data_dir
     global text_data_file
     global RW_dir
-    global model_save_path
+    global model_save_loc
+    global model_save_file
     global weights_np_save_path
 
     if _DIR is not None:
@@ -98,12 +100,13 @@ def set_up_config(_DIR = None):
     model_save_path = os.path.join(model_save_path, model_name)
     if not os.path.exists(model_save_path):
         os.mkdir(model_save_path)
-    model_save_path = os.path.join(model_save_path,  DIR)
+    model_save_loc = os.path.join(model_save_path,  DIR)
     if not os.path.exists(model_save_path):
         os.mkdir(model_save_path)
-    model_save_path = os.path.join(model_save_path, 'mp2v_gensim.data')
 
-    weights_np_save_path = os.path.join(model_save_path,'mp2v_gensim_weights.npy')
+    model_save_file = 'mp2v_gensim.data'
+
+    weights_np_save_path = os.path.join(model_save_loc,'mp2v_gensim_weights.npy')
 
     return
 
@@ -161,7 +164,7 @@ set_up_config(DIR)
 model_obj = metapath2vec_g_model.get_model_obj(
     corpus_txt_file_path = text_data_file,
     emb_size=128,
-    model_save_path = model_save_path,
+    model_save_path = os.path.join(model_save_loc,model_save_file),
     load_saved = False
 )
 domain_dims = get_domain_dims()
