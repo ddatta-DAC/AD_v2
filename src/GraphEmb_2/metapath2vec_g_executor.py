@@ -133,7 +133,7 @@ def setup_data():
         os.path.join(RW_dir,'**_walks.npy')
     )
     res = []
-    for _file in target_files[:5]:
+    for _file in target_files:
         np_arr = np.load(_file)
         res.extend(np_arr)
 
