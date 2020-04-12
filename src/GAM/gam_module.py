@@ -12,9 +12,8 @@ import torch.nn.functional as F
 
 # -------------------------------- #
 
-
 try:
-    print('Cuda available ::', torch.cuda.is_available(), 'Cde current device ::', torch.cuda.current_device(),
+    print('Cuda available ::', torch.cuda.is_available(), 'Cuda current device ::', torch.cuda.current_device(),
           torch.cuda.get_device_name(0))
     if torch.cuda.is_available():
         dev = "cuda:0"
@@ -134,5 +133,3 @@ def test():
     print(net.encoder[0].weight[0].detach().numpy())
 
 # ------------------------------------------ #
-
-test()

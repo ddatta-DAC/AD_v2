@@ -33,6 +33,8 @@ from .clf_net import clf_loss_v1 as clf_loss
 from .record_node import graph_net_v1 as graph_net
 from .torch_data_loader import pair_Dataset
 from .torch_data_loader import type1_Dataset
+from torch import FloatTensor as FT
+from torch import LongTensor as LT
 
 try:
     print('Cuda available ::', torch.cuda.is_available(), 'Cde current device ::', torch.cuda.current_device(),
@@ -147,6 +149,9 @@ def extract_unlabelled_df(df):
     return res
 
 
+# -----------------------
+# Get o/p from the AD system
+# -----------------------
 def read_scored_data():
     global score_col
     global DATA_SOURCE_DIR_2
@@ -349,7 +354,7 @@ class dataGeneratorWrapper():
 
 
 # ===========================================
-# Co-training
+# Iterative training
 # ===========================================
 def train_model(
         df
@@ -375,7 +380,6 @@ def train_model(
         # GAM gets inputs as embeddings, which are obtained through the graph embeddings
         # that requires serialized feature ids
         g_feature_cols = serialized_feature_col_list
-
 
         net.train_mode = 'g'
         data_source_L1 = type1_Dataset(
@@ -404,7 +408,7 @@ def train_model(
             lr=0.005
         )
         optimizer_f = torch.optim.Adam(
-            [net.graph_net.parameters(), net.gam_net.parameters()],
+            [net.graph_net.parameters(), net.clf_net.parameters()],
             lr=0.005
         )
 
@@ -425,7 +429,7 @@ def train_model(
                     y2 = data_j[1]
                     input_x = [x1, x2]
                     true_agreement = np.array((y1 == y2)).astype(float)
-                    true_agreement = torch.FloatTensor(true_agreement)
+                    true_agreement = FT(true_agreement)
                     pred_agreement = net(input_x)
                     loss = gam_loss(pred_agreement, true_agreement)
                     loss.backward()
@@ -522,7 +526,6 @@ def train_model(
                 loss_LL = regularization_loss (pred_agreement, [pred_y1, y2])
 
                 # UL
-                data_UL = next(data_UL_generator)
                 data_UL_x, data_UL_y = next(data_LL_generator)
                 x1 = data_UL_x[0]
                 x2 = data_UL_x[1]
@@ -533,8 +536,8 @@ def train_model(
 
                 # UU
                 data_UU = next(data_UU_generator)
-                x1 = data_UL_x[0]
-                x2 = data_UL_x[1]
+                x1 = data_UU[0]
+                x2 = data_UU[1]
                 pred_y1 =  torch.argmax(net(x1),dim=1)
                 pred_y2 = torch.argmax(net(x2),dim=1)
                 pred_agreement = gam_net(x1, x2)
@@ -563,7 +566,7 @@ def train_model(
             num_workers=num_proc,
             sampler= SequentialSampler(data_source_EU)
         )
-        data_EU_generator = dataGeneratorWrapper(dataLoader_obj_EU).generator()
+        # data_EU_generator = dataGeneratorWrapper(dataLoader_obj_EU).generator()
 
         pred_y_label = []
         pred_y_probs = []
@@ -575,6 +578,7 @@ def train_model(
 
         # ----------------
         # Find the top-k most confident label
+        # Update the set of labelled and unlabelled samples
         # ----------------
 
         k = int(len(df_U) * 0.05)
@@ -588,27 +592,17 @@ def train_model(
 
         # remove those ids from df_U
         rmv_id_list = list(self_labelled_samples[id_col])
-        df_L = df_L.append(self_labelled_samples)
-        df_U = df._U.loc[~(df_U[id_col].isin(rmv_id_list))]
+        df_L = df_L.append(self_labelled_samples,ignore_index=True)
+        df_U = df_U.loc[~(df_U[id_col].isin(rmv_id_list))]
 
         # Also check for convergence
         current_iter_count += 1
         if current_iter_count > max_iter_count:
             continue_training = False
 
-        # Update the set of labelled and unlabelled samples
-
-
-
-
-
-
 
 
 
 
 # -------------------------------------------------- #
-
-
-
 setup_config('us_import1')

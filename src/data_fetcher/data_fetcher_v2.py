@@ -229,7 +229,6 @@ def get_testing_data_as_DF(
 ):
 
     _, test_x, test_idList = get_data_base_x(DATA_DIR, DIR)
-
     anomaly_x , anomaly_idList = get_anomaly_data_matrices(
         DATA_DIR,
         DIR,
@@ -298,7 +297,6 @@ def get_Stage2_data_as_DF(
         anomaly_ratio=0.4,
         total_size = 10000
 ):
-
 
     anomalies_NotFraud_file_name = 'anomalies_NotFraud.csv'
     anomalies_Fraud_file_name = 'anomalies_Fraud.csv'
