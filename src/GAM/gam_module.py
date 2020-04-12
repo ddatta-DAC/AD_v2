@@ -43,6 +43,7 @@ class gam_net(nn.Module):
             node_input_dimension,
             encoder_op_dimensions
     ):
+        print(' Graph Agreement Module ')
         num_encoder_layers = len(encoder_op_dimensions)
         self.num_encoder_layers = num_encoder_layers
         self.encoder_dimensions = encoder_op_dimensions
@@ -53,10 +54,7 @@ class gam_net(nn.Module):
         inp_dim = node_input_dimension
         print('Encoder Layer ::')
         for i in range(num_encoder_layers):
-            if i == num_encoder_layers -1 :
-                op_dim = 2
-            else:
-                op_dim = encoder_op_dimensions[i]
+            op_dim = encoder_op_dimensions[i]
             self.encoder[i] = nn.Linear(inp_dim, op_dim)
             self.register_parameter('encoder_' + str(i), self.encoder[i].weight)
             print(self.encoder[i])

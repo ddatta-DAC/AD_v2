@@ -62,7 +62,7 @@ class clf_net_v1(nn.Module):
             else:
                 op_dim = layer_dimensions[i]
             self.mlp_layers[i] = nn.Linear(inp_dim, op_dim )
-            self.register_parameter('mlp_' + str(i), self.encoder[i].weight)
+            self.register_parameter('mlp_' + str(i), self.mlp_layers[i].weight)
             print(self.mlp_layers[i])
             inp_dim = op_dim
 

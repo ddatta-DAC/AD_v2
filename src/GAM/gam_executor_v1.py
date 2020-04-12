@@ -15,6 +15,7 @@ from pandarallel import pandarallel
 pandarallel.initialize()
 sys.path.append('./../..')
 sys.path.append('./..')
+
 import argparse
 import multiprocessing
 from torch.utils.data import DataLoader
@@ -26,18 +27,19 @@ import torch
 import torch.nn as nn
 from torch.nn import Parameter
 from torch import tensor
-from .gam_module import gam_net
-from .gam_module import gam_loss
-from .clf_net import clf_net_v1 as clf_net
-from .clf_net import clf_loss_v1 as clf_loss
-from .record_node import graph_net_v1 as graph_net
-from .torch_data_loader import pair_Dataset
-from .torch_data_loader import type1_Dataset
+from gam_module import gam_net
+from gam_module import gam_loss
+from clf_net import clf_net_v1 as clf_net
+from clf_net import clf_loss_v1 as clf_loss
+from record_node import graph_net_v1 as graph_net
+from torch_data_loader import pair_Dataset
+from torch_data_loader import type1_Dataset
 from torch import FloatTensor as FT
 from torch import LongTensor as LT
 
+
 try:
-    print('Cuda available ::', torch.cuda.is_available(), 'Cde current device ::', torch.cuda.current_device(),
+    print('Cuda available ::', torch.cuda.is_available(), 'Cuda current device ::', torch.cuda.current_device(),
           torch.cuda.get_device_name(0))
     if torch.cuda.is_available():
         dev = "cuda:0"
@@ -63,7 +65,7 @@ true_label_col = 'y_true'
 feature_col_list = []
 serial_mapping_df = None
 is_labelled_col = 'labelled'
-
+matrix_node_emb_path = None
 
 # =================================================
 
@@ -78,7 +80,8 @@ def setup_config(_DIR):
     global feature_col_list
     global serial_mapping_df
     global serialized_feature_col_list
-
+    global matrix_node_emb_path
+    
     if _DIR is not None:
         DIR = _DIR
 
@@ -111,7 +114,14 @@ def setup_config(_DIR):
         CONFIG['serial_mapping_df_name']
     )
     serial_mapping_df = pd.read_csv(serial_mapping_df_path, index_col=None)
+    matrix_node_emb_path = os.path.join(CONFIG['matrix_node_emb_loc'], DIR, CONFIG['matrix_node_emb_file'])
+    
+    
     return
+
+DIR = 'us_import2'
+setup_config(DIR)
+
 
 
 def set_ground_truth_labels(df):
@@ -164,6 +174,11 @@ def read_scored_data():
     df[label_col] = 0
     df = set_ground_truth_labels(df)
     return df
+
+def read_matrix_node_emb():
+    global matrix_node_emb_path
+    emb = np.load(matrix_node_emb_path)
+    return emb
 
 
 
@@ -235,6 +250,7 @@ def find_most_confident_samples (
     return res_df
 
 
+
 def convert_to_serial_IDs(
         df,
         keep_entity_ids=False
@@ -259,6 +275,7 @@ def convert_to_serial_IDs(
     return df
 
 
+
 # ------------------------------------------------- #
 # Custom regularization_loss
 def regularization_loss( g_ij, fi_yj):
@@ -269,12 +286,12 @@ def regularization_loss( g_ij, fi_yj):
 
 
 # -------------------------------------------------- #
+
 '''
 1. Train g
 2. Train f
 3. Add in the most confident labels
 '''
-
 
 class net(nn.Module):
     def __init(self):
@@ -287,9 +304,9 @@ class net(nn.Module):
             self,
             node_emb_dimension,
             num_domains,
-            output_dimensions,
+            gnet_output_dimensions,
             matrix_pretrained_node_embeddings,
-            record_input_dimension,
+            gam_record_input_dimension,
             gam_encoder_dimensions,
             clf_inp_emb_dimension,
             clf_layer_dimensions
@@ -297,11 +314,11 @@ class net(nn.Module):
         self.graph_net = graph_net(
             node_emb_dimension,
             num_domains,
-            output_dimensions,
+            gnet_output_dimensions,
             matrix_pretrained_node_embeddings
         )
         self.gam_net = gam_net(
-            record_input_dimension,
+            gam_record_input_dimension,
             gam_encoder_dimensions,
         )
         self.clf_net = clf_net(
@@ -343,7 +360,6 @@ class net(nn.Module):
             y_pred = self.clf_net(x1)
             return y_pred
 
-
 class dataGeneratorWrapper():
     def __init__(self, obj_dataloader):
         self.obj_dataloader = obj_dataloader.copy()
@@ -353,12 +369,29 @@ class dataGeneratorWrapper():
             yield batch_data
 
 
+matrix_node_emb = read_matrix_node_emb()
+NN = net()
+NN.setup_Net(
+    node_emb_dimension=128,
+    num_domains=8,
+    gnet_output_dimensions=128,
+    matrix_pretrained_node_embeddings = FT(matrix_node_emb),
+    gam_record_input_dimension = 128*8,
+    gam_encoder_dimensions = [512,512,256],
+    clf_inp_emb_dimension = 128*8,
+    clf_layer_dimensions = [ 96,64,48 ]
+    )
+
+
+
+
 # ===========================================
 # Iterative training
 # ===========================================
-def train_model(
-        df
-):
+
+
+def train_model(df , NN):
+
     global serialized_feature_col_list
     global feature_col_list
     batch_size = 256
@@ -381,7 +414,7 @@ def train_model(
         # that requires serialized feature ids
         g_feature_cols = serialized_feature_col_list
 
-        net.train_mode = 'g'
+        NN.train_mode = 'g'
         data_source_L1 = type1_Dataset(
             df_L,
             x_cols=g_feature_cols,
@@ -404,11 +437,11 @@ def train_model(
         )
 
         optimizer_g = torch.optim.Adam(
-            [net.graph_net.parameters(), net.gam_net.parameters()],
+            [NN.graph_net.parameters(), NN.gam_net.parameters()],
             lr=0.005
         )
         optimizer_f = torch.optim.Adam(
-            [net.graph_net.parameters(), net.clf_net.parameters()],
+            [NN.graph_net.parameters(), NN.clf_net.parameters()],
             lr=0.005
         )
 
@@ -430,7 +463,7 @@ def train_model(
                     input_x = [x1, x2]
                     true_agreement = np.array((y1 == y2)).astype(float)
                     true_agreement = FT(true_agreement)
-                    pred_agreement = net(input_x)
+                    pred_agreement = NN(input_x)
                     loss = gam_loss(pred_agreement, true_agreement)
                     loss.backward()
                     optimizer_g.step()
@@ -485,124 +518,117 @@ def train_model(
             sampler=RandomSampler(data_source_LL)
         )
 
-        data_source_UU = pair_Dataset(
-            df_U,
-            df_U,
-            x_cols=g_feature_cols,
-            y_col=label_col
-        )
+    data_source_UU = pair_Dataset(
+        df_U,
+        df_U,
+        x_cols=g_feature_cols,
+        y_col=label_col
+    )
 
-        dataLoader_obj_L5 = DataLoader(
-            data_source_UU,
-            batch_size=batch_size,
-            shuffle=False,
-            num_workers=num_proc,
-            sampler=RandomSampler(data_source_UU)
-        )
+    dataLoader_obj_L5 = DataLoader(
+        data_source_UU,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_proc,
+        sampler=RandomSampler(data_source_UU)
+    )
 
-        optimizer_f.zero_grad()
-        for epoch in range(num_epochs_f):
-            data_L_generator = dataGeneratorWrapper(dataLoader_obj_L2).generator()
-            data_LL_generator = dataGeneratorWrapper(dataLoader_obj_L3).generator()
-            data_UL_generator = dataGeneratorWrapper(dataLoader_obj_L4).generator()
-            data_UU_generator = dataGeneratorWrapper(dataLoader_obj_L5).generator()
+    optimizer_f.zero_grad()
+    for epoch in range(num_epochs_f):
+        data_L_generator = dataGeneratorWrapper(dataLoader_obj_L2).generator()
+        data_LL_generator = dataGeneratorWrapper(dataLoader_obj_L3).generator()
+        data_UL_generator = dataGeneratorWrapper(dataLoader_obj_L4).generator()
+        data_UU_generator = dataGeneratorWrapper(dataLoader_obj_L5).generator()
 
-            batch_idx_f = 0
+        batch_idx_f = 0
+        data_L = next(data_L_generator)
+        while data_L is not None:
+            # Supervised Loss
+            x1 = data_L[0]
+            y_true = data_L[1]
+            pred_label = NN(x1)
+            loss_s = clf_loss(pred_label, y_true)
+
+            # LL :: lambda_LL * g(x_i,x_j) * d (f(x_i),y_j)
+            data_LL_x, data_LL_y = next(data_LL_generator)
+            x1 = data_LL_x[0]
+            x2 = data_LL_x[1]
+            y2 = data_LL_y[1]
+            pred_y1 = torch.argmax(net(x1),dim=1)
+            pred_agreement = NN.gam_net(x1,x2)
+            loss_LL = regularization_loss (pred_agreement, [pred_y1, y2])
+
+            # UL
+            data_UL_x, data_UL_y = next(data_LL_generator)
+            x1 = data_UL_x[0]
+            x2 = data_UL_x[1]
+            y2 = data_UL_y[1]
+            pred_y1 = torch.argmax(net(x1),dim=1)
+            pred_agreement = NN.gam_net(x1, x2)
+            loss_UL = regularization_loss(pred_agreement, [pred_y1, y2])
+
+            # UU
+            data_UU = next(data_UU_generator)
+            x1 = data_UU[0]
+            x2 = data_UU[1]
+            pred_y1 =  torch.argmax(net(x1),dim=1)
+            pred_y2 = torch.argmax(net(x2),dim=1)
+            pred_agreement = NN.gam_net(x1, x2)
+            loss_UU = regularization_loss(pred_agreement, [pred_y1, pred_y2])
+
+            loss_total = loss_s + lambda_LL * loss_LL + lambda_UL * loss_UL + lambda_UU * loss_UU
+            loss_total.backward()
+            optimizer_f.step()
             data_L = next(data_L_generator)
-            while data_L is not None:
-                # Supervised Loss
-                x1 = data_L[0]
-                y_true = data_L[1]
-                pred_label = net(x1)
-                loss_s = clf_loss(pred_label, y_true)
+            batch_idx_f +=1
+            if batch_idx_f%log_interval == 0 :
+                print('Batch[f] {} :: Loss {}'.format(batch_idx_f, loss_total))
 
-                # LL :: lambda_LL * g(x_i,x_j) * d (f(x_i),y_j)
-                data_LL_x, data_LL_y = next(data_LL_generator)
-                x1 = data_LL_x[0]
-                x2 = data_LL_x[1]
-                y2 = data_LL_y[1]
-                pred_y1 = torch.argmax(net(x1),dim=1)
-                pred_agreement = gam_net(x1,x2)
-                loss_LL = regularization_loss (pred_agreement, [pred_y1, y2])
+    # -------------------------
+    # Predict and  Evaluate
+    # ---------------------------
+    data_source_EU = type1_Dataset(
+        df_U,
+        x_cols=g_feature_cols,
+        y_col=None
+    )
+    dataLoader_obj_EU = DataLoader(
+        data_source_EU,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_proc,
+        sampler= SequentialSampler(data_source_EU)
+    )
+    # data_EU_generator = dataGeneratorWrapper(dataLoader_obj_EU).generator()
 
-                # UL
-                data_UL_x, data_UL_y = next(data_LL_generator)
-                x1 = data_UL_x[0]
-                x2 = data_UL_x[1]
-                y2 = data_UL_y[1]
-                pred_y1 = torch.argmax(net(x1),dim=1)
-                pred_agreement = gam_net(x1, x2)
-                loss_UL = regularization_loss(pred_agreement, [pred_y1, y2])
+    pred_y_label = []
+    pred_y_probs = []
+    for batch_idx, data_x in enumerate(dataLoader_obj_EU):
+        _pred_y_probs = net(data_x)
+        _pred_y_label =  torch.argmax(_pred_y_probs,dim=1)
+        pred_y_label.extend(np.array(_pred_y_label))
+        pred_y_probs.extend(np.array(_pred_y_probs))
 
-                # UU
-                data_UU = next(data_UU_generator)
-                x1 = data_UU[0]
-                x2 = data_UU[1]
-                pred_y1 =  torch.argmax(net(x1),dim=1)
-                pred_y2 = torch.argmax(net(x2),dim=1)
-                pred_agreement = gam_net(x1, x2)
-                loss_UU = regularization_loss(pred_agreement, [pred_y1, pred_y2])
+    # ----------------
+    # Find the top-k most confident label
+    # Update the set of labelled and unlabelled samples
+    # ----------------
 
-                loss_total = loss_s + lambda_LL * loss_LL + lambda_UL * loss_UL + lambda_UU * loss_UU
-                loss_total.backward()
-                optimizer_f.step()
-                data_L = next(data_L_generator)
-                batch_idx_f +=1
-                if batch_idx_f%log_interval == 0 :
-                    print('Batch[f] {} :: Loss {}'.format(batch_idx_f, loss_total))
+    k = int(len(df_U) * 0.05)
+    self_labelled_samples = find_most_confident_samples (
+            U_df = df_U.copy(),
+            y_probs = pred_y_probs,
+            y_pred_label = pred_y_label,
+            confidence_lb = 0.25,
+            max_count = k
+    )
 
-        # -------------------------
-        # Predict and  Evaluate
-        # ---------------------------
-        data_source_EU = type1_Dataset(
-            df_U,
-            x_cols=g_feature_cols,
-            y_col=None
-        )
-        dataLoader_obj_EU = DataLoader(
-            data_source_EU,
-            batch_size=batch_size,
-            shuffle=False,
-            num_workers=num_proc,
-            sampler= SequentialSampler(data_source_EU)
-        )
-        # data_EU_generator = dataGeneratorWrapper(dataLoader_obj_EU).generator()
+    # remove those ids from df_U
+    rmv_id_list = list(self_labelled_samples[id_col])
+    df_L = df_L.append(self_labelled_samples,ignore_index=True)
+    df_U = df_U.loc[~(df_U[id_col].isin(rmv_id_list))]
 
-        pred_y_label = []
-        pred_y_probs = []
-        for batch_idx, data_x in enumerate(dataLoader_obj_EU):
-            _pred_y_probs = net(data_x)
-            _pred_y_label =  torch.argmax(_pred_y_probs,dim=1)
-            pred_y_label.extend(np.array(_pred_y_label))
-            pred_y_probs.extend(np.array(_pred_y_probs))
-
-        # ----------------
-        # Find the top-k most confident label
-        # Update the set of labelled and unlabelled samples
-        # ----------------
-
-        k = int(len(df_U) * 0.05)
-        self_labelled_samples = find_most_confident_samples (
-                U_df = df_U.copy(),
-                y_probs = pred_y_probs,
-                y_pred_label = pred_y_label,
-                confidence_lb = 0.25,
-                max_count = k
-        )
-
-        # remove those ids from df_U
-        rmv_id_list = list(self_labelled_samples[id_col])
-        df_L = df_L.append(self_labelled_samples,ignore_index=True)
-        df_U = df_U.loc[~(df_U[id_col].isin(rmv_id_list))]
-
-        # Also check for convergence
-        current_iter_count += 1
-        if current_iter_count > max_iter_count:
-            continue_training = False
-
-
-
-
-
-# -------------------------------------------------- #
-setup_config('us_import1')
+    # Also check for convergence
+    current_iter_count += 1
+    if current_iter_count > max_iter_count:
+        continue_training = False
