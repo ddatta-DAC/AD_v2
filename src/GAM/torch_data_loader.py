@@ -7,6 +7,8 @@
 # ---------------
 import os
 import sys
+from torch import FloatTensor as FT
+from torch import LongTensor as LT
 
 sys.path.append('./../..')
 sys.path.append('./..')
@@ -146,8 +148,10 @@ class type1_Dataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
         x = self.df[self.x_cols].iloc[idx]
+        x = np.array(x)
         if self.y_col is not None:
             y = self.df[self.y_col].iloc[idx]
+            y = np.array(y)
             return (x,y)
         return x
 

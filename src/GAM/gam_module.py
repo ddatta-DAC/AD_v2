@@ -109,9 +109,6 @@ def gam_loss( y_pred, y_true ):
 
 # -------------------------------------------------- #
 
-
-
-
 def test():
     x1 = np.random.random([10,6])
     x2 = np.random.random([10,6])
@@ -129,5 +126,7 @@ def test():
     loss.backward()
     optimizer.step()
     print(net.encoder[0].weight[0].detach().numpy())
+
+
 
 # ------------------------------------------ #

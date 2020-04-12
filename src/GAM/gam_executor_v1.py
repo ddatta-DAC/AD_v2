@@ -27,13 +27,23 @@ import torch
 import torch.nn as nn
 from torch.nn import Parameter
 from torch import tensor
-from gam_module import gam_net
-from gam_module import gam_loss
-from clf_net import clf_net_v1 as clf_net
-from clf_net import clf_loss_v1 as clf_loss
-from record_node import graph_net_v1 as graph_net
-from torch_data_loader import pair_Dataset
-from torch_data_loader import type1_Dataset
+try :
+    from gam_module import gam_net
+    from gam_module import gam_loss
+    from clf_net import clf_net_v1 as clf_net
+    from clf_net import clf_loss_v1 as clf_loss
+    from record_node import graph_net_v1 as graph_net
+    from torch_data_loader import pair_Dataset
+    from torch_data_loader import type1_Dataset
+except:
+    from .gam_module import gam_net
+    from .gam_module import gam_loss
+    from .clf_net import clf_net_v1 as clf_net
+    from .clf_net import clf_loss_v1 as clf_loss
+    from .record_node import graph_net_v1 as graph_net
+    from .torch_data_loader import pair_Dataset
+    from .torch_data_loader import type1_Dataset
+
 from torch import FloatTensor as FT
 from torch import LongTensor as LT
 
@@ -92,7 +102,7 @@ def setup_config(_DIR):
     DATA_SOURCE_DIR_2 = CONFIG['DATA_SOURCE_DIR_2']
 
     DATA_SOURCE_DIR_1 = os.path.join(DATA_SOURCE_DIR_1, DIR)
-    DATA_SOURCE_DIR_2 = os.path.join(DATA_SOURCE_DIR_1, DIR)
+    DATA_SOURCE_DIR_2 = os.path.join(DATA_SOURCE_DIR_2, DIR)
 
     model_use_data_DIR = CONFIG['model_use_data_DIR']
     if not os.path.exists(model_use_data_DIR): os.mkdir(model_use_data_DIR)
@@ -121,8 +131,6 @@ def setup_config(_DIR):
 
 DIR = 'us_import2'
 setup_config(DIR)
-
-
 
 def set_ground_truth_labels(df):
     global true_label_col
@@ -191,9 +199,10 @@ def set_label_in_top_perc(df, perc):
     df = df.sort_values(by=[score_col])
     if perc > 1:
         perc = perc / 100
-    count = len(df) * perc
+    count = int(len(df) * perc)
 
-    cand = list(df.head(count)[id_col])
+    _tmp = df.head(count)
+    cand = list(_tmp[id_col])
     df.loc[df[id_col].isin(cand), label_col] = df.loc[df[id_col].isin(cand), true_label_col]
     df.loc[df[id_col].isin(cand), is_labelled_col] = True
     return df
@@ -258,6 +267,14 @@ def convert_to_serial_IDs(
     global feature_col_list
     global serial_mapping_df
 
+    reference_dict = {}
+    for d in set(serial_mapping_df['Domain']):
+        reference_dict[d] = {}
+        _tmp =   serial_mapping_df.loc[(serial_mapping_df['Domain'] == d)]
+        k = _tmp['Entity_ID']
+        v = _tmp['Serial_ID']
+        reference_dict[d] = { _k:_v for _k,_v in zip(k,v)}
+
     # Inplace conversion
     def aux_conv_toSerialID(_row):
         row = _row.copy()
@@ -265,10 +282,13 @@ def convert_to_serial_IDs(
             col_name = fc
             if keep_entity_ids:
                 col_name = '_' + fc
-            row[col_name] = list(serial_mapping_df.loc[
-                                     (serial_mapping_df['Domain'] == fc) &
-                                     (serial_mapping_df['Entity_ID'] == row[fc])
-                                     ])[0]
+            # row[col_name] = list(
+            #     serial_mapping_df.loc[
+            #         (serial_mapping_df['Domain'] == fc) &
+            #         (serial_mapping_df['Entity_ID'] == row[fc])
+            #     ]['Serial_ID'])[0]
+            row[col_name] = reference_dict[fc][row[fc]]
+
         return row
 
     df = df.parallel_apply(aux_conv_toSerialID, axis=1)
@@ -369,21 +389,6 @@ class dataGeneratorWrapper():
             yield batch_data
 
 
-matrix_node_emb = read_matrix_node_emb()
-NN = net()
-NN.setup_Net(
-    node_emb_dimension=128,
-    num_domains=8,
-    gnet_output_dimensions=128,
-    matrix_pretrained_node_embeddings = FT(matrix_node_emb),
-    gam_record_input_dimension = 128*8,
-    gam_encoder_dimensions = [512,512,256],
-    clf_inp_emb_dimension = 128*8,
-    clf_layer_dimensions = [ 96,64,48 ]
-    )
-
-
-
 
 # ===========================================
 # Iterative training
@@ -435,13 +440,18 @@ def train_model(df , NN):
             num_workers=num_proc,
             sampler=RandomSampler(data_source_L1)
         )
-
+        params_list_g  = [_ for _ in NN.graph_net.parameters()]
+        params_list_g = params_list_g  + ([_ for _ in NN.gam_net.parameters()])
+        print(len(params_list_g))
         optimizer_g = torch.optim.Adam(
-            [NN.graph_net.parameters(), NN.gam_net.parameters()],
+            params_list_g,
             lr=0.005
         )
+        params_list_f = [_ for _ in NN.graph_net.parameters()]
+        params_list_f = params_list_f + ([_ for _ in NN.gam_net.parameters()])
+
         optimizer_f = torch.optim.Adam(
-            [NN.graph_net.parameters(), NN.clf_net.parameters()],
+            params_list_f,
             lr=0.005
         )
 
@@ -450,11 +460,14 @@ def train_model(df , NN):
         # input x2,y2 : from Dataloader ( L )
         # For every pair, so nest them
         # -----
+        print('Training Agreement model .... ')
 
         optimizer_g.zero_grad()
         for epoch in range(num_epochs_g):
             record_loss = []
             for i, data_i in enumerate(dataLoader_obj_L1a):
+                if i == 0 : print(data_i[0].shape, data_i[1].shape)
+
                 x1 = data_i[0]
                 y1 = data_i[1]
                 for j, data_j in enumerate(dataLoader_obj_L1b):
@@ -475,6 +488,7 @@ def train_model(df , NN):
         # ----------------------
         # To do separate out f and g features
         net.train_mode = 'f'
+        optimizer_f.zero_grad()
 
         data_source_L2 = type1_Dataset(
             df_L,
@@ -518,117 +532,142 @@ def train_model(df , NN):
             sampler=RandomSampler(data_source_LL)
         )
 
-    data_source_UU = pair_Dataset(
-        df_U,
-        df_U,
-        x_cols=g_feature_cols,
-        y_col=label_col
-    )
+        data_source_UU = pair_Dataset(
+            df_U,
+            df_U,
+            x_cols=g_feature_cols,
+            y_col=label_col
+        )
 
-    dataLoader_obj_L5 = DataLoader(
-        data_source_UU,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=num_proc,
-        sampler=RandomSampler(data_source_UU)
-    )
+        dataLoader_obj_L5 = DataLoader(
+            data_source_UU,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=num_proc,
+            sampler=RandomSampler(data_source_UU)
+        )
 
-    optimizer_f.zero_grad()
-    for epoch in range(num_epochs_f):
-        data_L_generator = dataGeneratorWrapper(dataLoader_obj_L2).generator()
-        data_LL_generator = dataGeneratorWrapper(dataLoader_obj_L3).generator()
-        data_UL_generator = dataGeneratorWrapper(dataLoader_obj_L4).generator()
-        data_UU_generator = dataGeneratorWrapper(dataLoader_obj_L5).generator()
+        optimizer_f.zero_grad()
+        for epoch in range(num_epochs_f):
+            data_L_generator = dataGeneratorWrapper(dataLoader_obj_L2).generator()
+            data_LL_generator = dataGeneratorWrapper(dataLoader_obj_L3).generator()
+            data_UL_generator = dataGeneratorWrapper(dataLoader_obj_L4).generator()
+            data_UU_generator = dataGeneratorWrapper(dataLoader_obj_L5).generator()
 
-        batch_idx_f = 0
-        data_L = next(data_L_generator)
-        while data_L is not None:
-            # Supervised Loss
-            x1 = data_L[0]
-            y_true = data_L[1]
-            pred_label = NN(x1)
-            loss_s = clf_loss(pred_label, y_true)
-
-            # LL :: lambda_LL * g(x_i,x_j) * d (f(x_i),y_j)
-            data_LL_x, data_LL_y = next(data_LL_generator)
-            x1 = data_LL_x[0]
-            x2 = data_LL_x[1]
-            y2 = data_LL_y[1]
-            pred_y1 = torch.argmax(net(x1),dim=1)
-            pred_agreement = NN.gam_net(x1,x2)
-            loss_LL = regularization_loss (pred_agreement, [pred_y1, y2])
-
-            # UL
-            data_UL_x, data_UL_y = next(data_LL_generator)
-            x1 = data_UL_x[0]
-            x2 = data_UL_x[1]
-            y2 = data_UL_y[1]
-            pred_y1 = torch.argmax(net(x1),dim=1)
-            pred_agreement = NN.gam_net(x1, x2)
-            loss_UL = regularization_loss(pred_agreement, [pred_y1, y2])
-
-            # UU
-            data_UU = next(data_UU_generator)
-            x1 = data_UU[0]
-            x2 = data_UU[1]
-            pred_y1 =  torch.argmax(net(x1),dim=1)
-            pred_y2 = torch.argmax(net(x2),dim=1)
-            pred_agreement = NN.gam_net(x1, x2)
-            loss_UU = regularization_loss(pred_agreement, [pred_y1, pred_y2])
-
-            loss_total = loss_s + lambda_LL * loss_LL + lambda_UL * loss_UL + lambda_UU * loss_UU
-            loss_total.backward()
-            optimizer_f.step()
+            batch_idx_f = 0
             data_L = next(data_L_generator)
-            batch_idx_f +=1
-            if batch_idx_f%log_interval == 0 :
-                print('Batch[f] {} :: Loss {}'.format(batch_idx_f, loss_total))
+            while data_L is not None:
+                # Supervised Loss
+                x1 = data_L[0]
+                y_true = data_L[1]
+                pred_label = NN(x1)
+                loss_s = clf_loss(pred_label, y_true)
 
-    # -------------------------
-    # Predict and  Evaluate
-    # ---------------------------
-    data_source_EU = type1_Dataset(
-        df_U,
-        x_cols=g_feature_cols,
-        y_col=None
+                # LL :: lambda_LL * g(x_i,x_j) * d (f(x_i),y_j)
+                data_LL_x, data_LL_y = next(data_LL_generator)
+                x1 = data_LL_x[0]
+                x2 = data_LL_x[1]
+                y2 = data_LL_y[1]
+                pred_y1 = torch.argmax(net(x1),dim=1)
+                pred_agreement = NN.gam_net(x1,x2)
+                loss_LL = regularization_loss (pred_agreement, [pred_y1, y2])
+
+                # UL
+                data_UL_x, data_UL_y = next(data_UL_generator)
+                x1 = data_UL_x[0]
+                x2 = data_UL_x[1]
+                y2 = data_UL_y[1]
+                pred_y1 = torch.argmax(net(x1),dim=1)
+                pred_agreement = NN.gam_net(x1, x2)
+                loss_UL = regularization_loss(pred_agreement, [pred_y1, y2])
+
+                # UU
+                data_UU = next(data_UU_generator)
+                x1 = data_UU[0]
+                x2 = data_UU[1]
+                pred_y1 =  torch.argmax(net(x1),dim=1)
+                pred_y2 = torch.argmax(net(x2),dim=1)
+                pred_agreement = NN.gam_net(x1, x2)
+                loss_UU = regularization_loss(pred_agreement, [pred_y1, pred_y2])
+
+                loss_total = loss_s + lambda_LL * loss_LL + lambda_UL * loss_UL + lambda_UU * loss_UU
+                loss_total.backward()
+                optimizer_f.step()
+                data_L = next(data_L_generator)
+                batch_idx_f +=1
+                if batch_idx_f%log_interval == 0 :
+                    print('Batch[f] {} :: Loss {}'.format(batch_idx_f, loss_total))
+
+        # -------------------------
+        # Predict and  Evaluate
+        # ---------------------------
+        data_source_EU = type1_Dataset(
+            df_U,
+            x_cols=g_feature_cols,
+            y_col=None
+        )
+        dataLoader_obj_EU = DataLoader(
+            data_source_EU,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=num_proc,
+            sampler= SequentialSampler(data_source_EU)
+        )
+        # data_EU_generator = dataGeneratorWrapper(dataLoader_obj_EU).generator()
+
+        pred_y_label = []
+        pred_y_probs = []
+        for batch_idx, data_x in enumerate(dataLoader_obj_EU):
+            _pred_y_probs = net(data_x)
+            _pred_y_label =  torch.argmax(_pred_y_probs,dim=1)
+            pred_y_label.extend(np.array(_pred_y_label))
+            pred_y_probs.extend(np.array(_pred_y_probs))
+
+        # ----------------
+        # Find the top-k most confident label
+        # Update the set of labelled and unlabelled samples
+        # ----------------
+
+        k = int(len(df_U) * 0.05)
+        self_labelled_samples = find_most_confident_samples (
+                U_df = df_U.copy(),
+                y_probs = pred_y_probs,
+                y_pred_label = pred_y_label,
+                confidence_lb = 0.25,
+                max_count = k
+        )
+
+        # remove those ids from df_U
+        rmv_id_list = list(self_labelled_samples[id_col])
+        df_L = df_L.append(self_labelled_samples,ignore_index=True)
+        df_U = df_U.loc[~(df_U[id_col].isin(rmv_id_list))]
+
+        # Also check for convergence
+        current_iter_count += 1
+        if current_iter_count > max_iter_count:
+            continue_training = False
+
+    return
+
+# ---------------------------------- #
+
+df = read_scored_data()
+df = convert_to_serial_IDs( df, True)
+df = set_label_in_top_perc(df, 10)
+
+matrix_node_emb = read_matrix_node_emb()
+NN = net()
+NN.setup_Net(
+    node_emb_dimension=128,
+    num_domains=8,
+    gnet_output_dimensions=128,
+    matrix_pretrained_node_embeddings = FT(matrix_node_emb),
+    gam_record_input_dimension = 128*8,
+    gam_encoder_dimensions = [512,512,256],
+    clf_inp_emb_dimension = 128*8,
+    clf_layer_dimensions = [ 96,64,48 ]
     )
-    dataLoader_obj_EU = DataLoader(
-        data_source_EU,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=num_proc,
-        sampler= SequentialSampler(data_source_EU)
-    )
-    # data_EU_generator = dataGeneratorWrapper(dataLoader_obj_EU).generator()
 
-    pred_y_label = []
-    pred_y_probs = []
-    for batch_idx, data_x in enumerate(dataLoader_obj_EU):
-        _pred_y_probs = net(data_x)
-        _pred_y_label =  torch.argmax(_pred_y_probs,dim=1)
-        pred_y_label.extend(np.array(_pred_y_label))
-        pred_y_probs.extend(np.array(_pred_y_probs))
+train_model(df, NN)
 
-    # ----------------
-    # Find the top-k most confident label
-    # Update the set of labelled and unlabelled samples
-    # ----------------
 
-    k = int(len(df_U) * 0.05)
-    self_labelled_samples = find_most_confident_samples (
-            U_df = df_U.copy(),
-            y_probs = pred_y_probs,
-            y_pred_label = pred_y_label,
-            confidence_lb = 0.25,
-            max_count = k
-    )
-
-    # remove those ids from df_U
-    rmv_id_list = list(self_labelled_samples[id_col])
-    df_L = df_L.append(self_labelled_samples,ignore_index=True)
-    df_U = df_U.loc[~(df_U[id_col].isin(rmv_id_list))]
-
-    # Also check for convergence
-    current_iter_count += 1
-    if current_iter_count > max_iter_count:
-        continue_training = False
