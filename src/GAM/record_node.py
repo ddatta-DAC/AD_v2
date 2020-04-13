@@ -21,18 +21,6 @@ import torch.nn.functional as F
 # -------------------------------- #
 
 
-try:
-    print('Cuda available ::', torch.cuda.is_available(), 'Cde current device ::', torch.cuda.current_device(),
-          torch.cuda.get_device_name(0))
-    if torch.cuda.is_available():
-        dev = "cuda:0"
-    else:
-        dev = "cpu"
-    device = torch.device(dev)
-except:
-    print('No CUDA')
-
-
 # ---------------------------------- #
 # Following GraphSage
 # Concatenate the node embeddings

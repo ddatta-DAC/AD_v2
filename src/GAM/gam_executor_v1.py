@@ -31,18 +31,16 @@ import torch
 import torch.nn as nn
 from torch.nn import Parameter
 from torch import tensor
-has_cuda = torch.cuda.is_available()
-try :
-    if has_cuda:
-        torch.cudnn.benchmark = True
-        print('Set cudnn benchmark to True')
-except:
-    pass
+HAS_CUDA = torch.cuda.is_available()
+
+
 try:
     print('Cuda available ::', torch.cuda.is_available(), 'Cuda current device ::', torch.cuda.current_device(),
           torch.cuda.get_device_name(0))
     if torch.cuda.is_available():
-        dev = "cuda:3"
+        dev = "cuda:0"
+        torch.cudnn.benchmark = True
+        print('Set cudnn benchmark to True')
     else:
         dev = "cpu"
     device = torch.device(dev)
@@ -78,7 +76,7 @@ try:
         dev = "cuda:0"
     else:
         dev = "cpu"
-    device = torch.device(dev)
+    DEVICE = torch.device(dev)
 except:
     print('No CUDA')
 
@@ -428,14 +426,14 @@ class net(nn.Module):
     def forward(
             self, input_x, input_y=None
     ):
-        global has_cuda
+        global HAS_CUDA
         # ----------------
         # Train the agreement module
         # ----------------
         if self.train_mode == 'g':
             x1 = input_x[0]
             x2 = input_x[1]
-            if has_cuda:
+            if HAS_CUDA:
                 x1 = x1.cuda()
                 x2 = x2.cuda()
 
@@ -913,12 +911,8 @@ NN.setup_Net(
     clf_layer_dimensions=clf_mlp_layer_dimesnions
 )
 
-NN.cuda()
-if torch.cuda.is_available() :
-    device = "cuda:3"
-else:
-    device = "cpu"
-device = torch.device(device)
-NN.to(device)
+
+NN.to(DEVICE)
+NN.cuda(DEVICE)
 
 train_model(df, NN)
