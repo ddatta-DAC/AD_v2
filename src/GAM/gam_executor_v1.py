@@ -633,12 +633,19 @@ def train_model(df, NN):
                 record_loss = []
                 batch_idx = 0
                 for i, data_i in enumerate(dataLoader_obj_L1a):
-                    data_i = data_i.to(DEVICE)
+                    if type(data_i) == list :
+                        data_i = [_.to(DEVICE) for _ in data_i]
+                    else:
+                        data_i = data_i.to(DEVICE)
 
                     x1 = data_i[0]
                     y1 = data_i[1]
+
                     for j, data_j in enumerate(dataLoader_obj_L1b):
-                        data_j = data_j.to(DEVICE)
+                        if type(data_i) == list:
+                            data_j = [_.to(DEVICE) for _ in data_j]
+                        else:
+                            data_j = data_j.to(DEVICE)
                         x2 = data_j[0]
                         y2 = data_j[1]
                         input_x = [x1, x2]
