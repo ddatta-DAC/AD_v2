@@ -608,6 +608,8 @@ def train_model(df, NN):
                         x2 = data_j[0]
                         y2 = data_j[1]
                         input_x = [x1, x2]
+                        if HAS_CUDA:
+                            input_x = [x1.cuda(), x2.cuda()]
                         true_agreement = np.array(y1 == y2).astype(float)
                         true_agreement = np.reshape(true_agreement, [-1, 1])
 
