@@ -627,6 +627,7 @@ def train_model(df, NN):
             print('Training Agreement model .... ')
             optimizer_g.zero_grad()
             for epoch in range(num_epochs_g):
+                print('Epoch [g]', epoch )
                 record_loss = []
                 batch_idx = 0
                 for i, data_i in enumerate(dataLoader_obj_L1a):
