@@ -76,8 +76,6 @@ class gam_net(nn.Module):
             e_1 = torch.tanh(e_1)
             e_2 = torch.tanh(e_2)
 
-
-
         # Aggregator
         d = e_1 - e_2
         d = d ** 2
