@@ -82,7 +82,11 @@ serial_mapping_df = None
 is_labelled_col = 'labelled'
 matrix_node_emb_path = None
 confidence_bound = 0.2
-
+epochs_f = 10
+epochs_g = 10
+log_interval_f = 10
+log_interval_g =10
+max_IC_iter = 5
 # =================================================
 
 def setup_config(_DIR):
@@ -98,6 +102,11 @@ def setup_config(_DIR):
     global serialized_feature_col_list
     global matrix_node_emb_path
     global confidence_bound
+    global epochs_f
+    global epochs_g
+    global log_interval_f
+    global log_interval_g
+    global max_IC_iter
 
     if _DIR is not None:
         DIR = _DIR
@@ -133,12 +142,15 @@ def setup_config(_DIR):
     serial_mapping_df = pd.read_csv(serial_mapping_df_path, index_col=None)
     matrix_node_emb_path = os.path.join(CONFIG['matrix_node_emb_loc'], DIR, CONFIG['matrix_node_emb_file'])
     confidence_bound = CONFIG['confidence_bound']
+    epochs_g =  CONFIG['epochs_g']
+    epochs_f =  CONFIG['epochs_f']
+    log_interval_f = CONFIG['log_interval_f']
+    log_interval_g = CONFIG['log_interval_g']
+    max_IC_iter = CONFIG['max_IC_iter']
 
     return
 
-
-DIR = 'us_import2'
-setup_config(DIR)
+# -------------------------------------
 
 
 def set_ground_truth_labels(df):
@@ -481,6 +493,11 @@ class dataGeneratorWrapper():
 
 
 def train_model(df, NN):
+    global epochs_f
+    global epochs_g
+    global log_interval_f
+    global log_interval_g
+    global max_IC_iter
     global serialized_feature_col_list
     global feature_col_list
     batch_size = 256
@@ -575,7 +592,7 @@ def train_model(df, NN):
                         optimizer_g.step()
                         record_loss.append(float(loss))
                         batch_idx += 1
-                        if batch_idx % log_interval_1 == 0:
+                        if batch_idx % log_interval_g == 0:
                             print(
                                 'Epoch {}, Batch [g] {} :: Loss {}'.format(
                                     epoch, batch_idx, loss)
@@ -721,7 +738,7 @@ def train_model(df, NN):
                     data_L = None
 
                 batch_idx_f += 1
-                if batch_idx_f % log_interval_2 == 0:
+                if batch_idx_f % log_interval_f == 0:
                     print('Batch[f] {} :: Loss {}'.format(batch_idx_f, loss_total))
 
         # ---------------------------
@@ -785,7 +802,7 @@ def train_model(df, NN):
 
         # Also check for convergence
         current_iter_count += 1
-        if current_iter_count > max_iter_count:
+        if current_iter_count > max_IC_iter:
             continue_training = False
 
         evaluate_1(
@@ -805,7 +822,6 @@ def evaluate_1(
 ):
     global label_col
     global true_label_col
-
     df = data_df.copy()
     model.train(mode=False)
     model.test_mode = True
@@ -845,12 +861,18 @@ def evaluate_1(
 
 # ---------------------------------- #
 
+DIR = 'us_import2'
+setup_config(DIR)
 df = read_scored_data()
 df = convert_to_serial_IDs(df, True)
 df = set_label_in_top_perc(df, 10)
 matrix_node_emb = read_matrix_node_emb()
 NN = net()
+NN.cuda()
 num_domains = len(domain_dims)
+
+
+
 
 NN.setup_Net(
     node_emb_dimension=node_emb_dim,

@@ -9,3 +9,7 @@ node_embedding_size : 128
 confidence_bound : 0.20
 epochs_f : 10
 epochs_g : 10
+classifier_mlp_layers_1 : '512,512,256'
+log_interval_f : 250
+log_interval_g : 500
+max_IC_iter : 20
