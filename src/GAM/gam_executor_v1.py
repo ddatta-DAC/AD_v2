@@ -440,6 +440,14 @@ class net(nn.Module):
             clf_inp_emb_dimension,
             clf_layer_dimensions
         )
+        global HAS_CUDA
+        global DEVICE
+        if HAS_CUDA:
+            print( "CUDA available")
+            self.clf_net.cuda(DEVICE)
+            self.gam_net.cuda(DEVICE)
+            self.graph_net.cuda(DEVICE)
+
         return
 
 
@@ -458,9 +466,9 @@ class net(nn.Module):
         if self.train_mode == 'g':
             x1 = input_x[0]
             x2 = input_x[1]
-            # if HAS_CUDA:
-            #     x1 = x1.cuda()
-            #     x2 = x2.cuda()
+            if HAS_CUDA:
+                x1 = x1.cuda()
+                x2 = x2.cuda()
 
             # print('[Forward] g ; shapes of x1 and x2 :', x1.shape, x2.shape)
             x1 = self.graph_net(x1)
@@ -939,10 +947,7 @@ NN = net(
     node_emb_dim * num_domains,
     clf_mlp_layer_dimesnions
 )
-#
-#
-#
-# NN.to(DEVICE)
+
 NN.cuda(DEVICE)
 
 train_model(df, NN)
