@@ -71,6 +71,7 @@ class gam_net(nn.Module):
         e_2 = x2
 
         for i in range(self.num_encoder_layers):
+            print(self.encoder[i].weight.device)
             e_1 = self.encoder[i](e_1)
             e_2 = self.encoder[i](e_2)
             e_1 = torch.tanh(e_1)
