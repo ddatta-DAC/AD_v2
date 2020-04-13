@@ -745,7 +745,6 @@ def train_model(df, NN):
         pred_y_label = []
         pred_y_probs = []
 
-
         NN.train(mode=False)
         NN.test_mode = True
         NN.train_mode = False
@@ -760,8 +759,6 @@ def train_model(df, NN):
         NN.test_mode = False
         pred_y_probs = np.array(pred_y_probs)
         pred_y_label = np.array(pred_y_label)
-        print(pred_y_label.shape)
-        print(pred_y_probs.shape)
 
         # ----------------
         # Find the top-k most confident label
@@ -783,6 +780,9 @@ def train_model(df, NN):
         df_U = df_U.loc[~(df_U[id_col].isin(rmv_id_list))]
 
         print(' Len of L and U ', len(df_L), len(df_U))
+        if len(df_U) < 0.05 * len(df_L):
+            continue_training = False
+
         # Also check for convergence
         current_iter_count += 1
         if current_iter_count > max_iter_count:
@@ -790,10 +790,9 @@ def train_model(df, NN):
 
         evaluate_1(
             NN,
-            df_U,
+            df_U_original,
             x_cols=g_feature_cols
         )
-
     return
 
 
@@ -806,6 +805,7 @@ def evaluate_1(
 ):
     global label_col
     global true_label_col
+
     df = data_df.copy()
     model.train(mode=False)
     model.test_mode = True
@@ -827,7 +827,6 @@ def evaluate_1(
     for batch_idx, data_x in enumerate(dataLoader_obj_eval):
         _pred_y_probs = model(data_x)
         _pred_y_label = torch.argmax(_pred_y_probs, dim=1).cpu().data.numpy()
-        _pred_y_probs = _pred_y_probs.cpu().data.numpy()
         pred_y_label.extend(_pred_y_label)
 
     model.train(mode=True)
@@ -841,7 +840,7 @@ def evaluate_1(
     y_pred = df[label_col]
     print('Precision ', precision_score(y_true, y_pred) )
     print('Accuracy ', accuracy_score(y_true, y_pred))
-    print('Balanced Accuracy ', accuracy_score(y_true, y_pred))
+    print('Balanced Accuracy ', balanced_accuracy_score(y_true, y_pred))
     return
 
 # ---------------------------------- #
@@ -863,4 +862,5 @@ NN.setup_Net(
     clf_inp_emb_dimension=node_emb_dim * 8,
     clf_layer_dimensions=[96, 64, 48]
 )
+
 train_model(df, NN)
