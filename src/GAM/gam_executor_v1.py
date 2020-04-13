@@ -591,7 +591,7 @@ def train_model(df, NN):
             batch_size=batch_size,
             shuffle=False,
             pin_memory=True,
-            num_workers=0,
+            num_workers=num_proc,
             sampler=RandomSampler(data_source_L1),
             drop_last=True
         )
@@ -600,7 +600,7 @@ def train_model(df, NN):
             batch_size=batch_size,
             shuffle=False,
             pin_memory=True,
-            num_workers=0,
+            num_workers=num_proc,
             sampler=RandomSampler(data_source_L1),
             drop_last=True
         )
@@ -650,7 +650,7 @@ def train_model(df, NN):
                         true_agreement = np.array(y1 == y2).astype(float)
                         true_agreement = np.reshape(true_agreement, [-1, 1])
 
-                        true_agreement = FT(true_agreement)
+                        true_agreement = FT(true_agreement).to(DEVICE)
                         pred_agreement = NN(input_x)
 
                         loss = gam_loss(pred_agreement, true_agreement)
@@ -683,7 +683,8 @@ def train_model(df, NN):
             data_source_L2,
             batch_size=batch_size,
             shuffle=False,
-            num_workers=0,
+            pin_memory=True,
+            num_workers=num_proc,
             sampler=RandomSampler(data_source_L2)
         )
         data_source_LL = pair_Dataset(
@@ -697,8 +698,10 @@ def train_model(df, NN):
             data_source_LL,
             batch_size=batch_size,
             shuffle=False,
+            pin_memory=True,
             num_workers=num_proc,
-            sampler=RandomSampler(data_source_LL)
+            sampler=RandomSampler(data_source_LL),
+            drop_last=True
         )
 
         data_source_UL = pair_Dataset(
@@ -712,6 +715,7 @@ def train_model(df, NN):
             data_source_UL,
             batch_size=batch_size,
             shuffle=False,
+            pin_memory=True,
             num_workers=num_proc,
             sampler=RandomSampler(data_source_LL)
         )
@@ -727,6 +731,7 @@ def train_model(df, NN):
             data_source_UU,
             batch_size=batch_size,
             shuffle=False,
+            pin_memory=True,
             num_workers=num_proc,
             sampler=RandomSampler(data_source_UU)
         )
@@ -745,7 +750,7 @@ def train_model(df, NN):
             while data_L is not None:
                 NN.train_mode = 'f'
                 # Supervised Loss
-                x1 = data_L[0]
+                x1 = data_L[0].to(DEVICE)
                 y_true = data_L[1]
                 pred_label = NN(x1)
 
@@ -757,8 +762,8 @@ def train_model(df, NN):
                 # print('---- > LL ')
                 NN.train_mode = 'f_ll'
                 data_LL_x, data_LL_y = next(data_LL_generator)
-                x1 = data_LL_x[0]
-                x2 = data_LL_x[1]
+                x1 = data_LL_x[0].to(DEVICE)
+                x2 = data_LL_x[1].to(DEVICE)
 
                 pred_agreement, pred_y1 = NN([x1, x2])
                 y2 = data_LL_y[1]
@@ -772,9 +777,10 @@ def train_model(df, NN):
                 NN.train_mode = 'f_ul'
 
                 data_UL_x, data_UL_y = next(data_UL_generator)
-                x1 = data_UL_x[0]
-                x2 = data_UL_x[1]
-                y2 = data_UL_y[1]
+
+                x1 = data_UL_x[0].to(DEVICE)
+                x2 = data_UL_x[1].to(DEVICE)
+                y2 = data_UL_y[1].to(DEVICE)
                 _x = [x1, x2]
 
                 pred_agreement, pred_y1 = NN(_x)
@@ -822,7 +828,7 @@ def train_model(df, NN):
             data_source_EU,
             batch_size=batch_size,
             shuffle=False,
-            num_workers=0,
+            num_workers=num_proc,
             sampler=SequentialSampler(data_source_EU)
         )
 

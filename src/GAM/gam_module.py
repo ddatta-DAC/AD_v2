@@ -43,17 +43,11 @@ class gam_net(nn.Module):
         # 3 layer MLP
         # self.encoder = [None] * num_encoder_layers
         inp_dim = node_input_dimension
-        print('Encoder Layer ::')
-        # for i in range(num_encoder_layers):
-        #     op_dim = encoder_op_dimensions[i]
-        #     self.encoder[i] = nn.Linear(inp_dim, op_dim)
-        #     self.register_parameter('encoder_' + str(i), self.encoder[i].weight)
-        #     print(self.encoder[i])
-        #     inp_dim = op_dim
-
-        self.encoder_1 = nn.Linear(node_input_dimension, encoder_op_dimensions[0])
+        self.encoder_1 = nn.Linear(inp_dim, encoder_op_dimensions[0])
         self.encoder_2 = nn.Linear(encoder_op_dimensions[0], encoder_op_dimensions[1])
         self.encoder_3 = nn.Linear(encoder_op_dimensions[1], encoder_op_dimensions[2])
+        print('Encoder Layer :: \n',
+              self.encoder_1, self.encoder_2, self.encoder_3)
         # Aggregator
         # Just d = (ei -ej)^2
 
