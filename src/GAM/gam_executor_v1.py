@@ -684,7 +684,7 @@ def train_model(df, NN):
             batch_size=batch_size,
             shuffle=False,
             pin_memory=True,
-            num_workers=num_proc,
+            num_workers=0,
             sampler=RandomSampler(data_source_L2)
         )
         data_source_LL = pair_Dataset(
@@ -699,7 +699,7 @@ def train_model(df, NN):
             batch_size=batch_size,
             shuffle=False,
             pin_memory=True,
-            num_workers=num_proc,
+            num_workers=0,
             sampler=RandomSampler(data_source_LL),
             drop_last=True
         )
@@ -716,7 +716,7 @@ def train_model(df, NN):
             batch_size=batch_size,
             shuffle=False,
             pin_memory=True,
-            num_workers=num_proc,
+            num_workers=0,
             sampler=RandomSampler(data_source_LL)
         )
 
@@ -732,7 +732,7 @@ def train_model(df, NN):
             batch_size=batch_size,
             shuffle=False,
             pin_memory=True,
-            num_workers=num_proc,
+            num_workers=0,
             sampler=RandomSampler(data_source_UU)
         )
 
