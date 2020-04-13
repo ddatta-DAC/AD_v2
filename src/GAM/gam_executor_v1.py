@@ -384,7 +384,7 @@ def regularization_loss(g_ij, fi_yj):
 
 
 class net(nn.Module):
-    def __init(
+    def __init__(
             self,
             node_emb_dimension,
             num_domains,
@@ -927,16 +927,18 @@ df = set_label_in_top_perc(df, 10)
 matrix_node_emb = read_matrix_node_emb()
 num_domains = len(domain_dims)
 gam_encoder_dimensions = [512, 512, 256]
+if HAS_CUDA:
+    matrix_node_emb = FT(matrix_node_emb).cuda()
 
 NN = net(
-    node_emb_dimension=node_emb_dim,
-    num_domains=num_domains,
-    gnet_output_dimensions=node_emb_dim * num_domains,
-    matrix_pretrained_node_embeddings=FT(matrix_node_emb),
-    gam_record_input_dimension=node_emb_dim * num_domains,
-    gam_encoder_dimensions= gam_encoder_dimensions,
-    clf_inp_emb_dimension=node_emb_dim * num_domains,
-    clf_layer_dimensions=clf_mlp_layer_dimesnions
+    node_emb_dim,
+    num_domains,
+    node_emb_dim * num_domains,
+    matrix_node_emb,
+    node_emb_dim * num_domains,
+    gam_encoder_dimensions,
+    node_emb_dim * num_domains,
+    clf_mlp_layer_dimesnions
 )
 
 
