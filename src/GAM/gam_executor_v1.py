@@ -31,22 +31,29 @@ import torch
 import torch.nn as nn
 from torch.nn import Parameter
 from torch import tensor
-HAS_CUDA = torch.cuda.is_available()
-
+HAS_CUDA = False
+DEVICE = "cpu"
 
 try:
-    print('Cuda available ::', torch.cuda.is_available(), 'Cuda current device ::', torch.cuda.current_device(),
-          torch.cuda.get_device_name(0))
     if torch.cuda.is_available():
         dev = "cuda:0"
-        torch.cudnn.benchmark = True
-        print('Set cudnn benchmark to True')
+        HAS_CUDA = True
     else:
         dev = "cpu"
-    device = torch.device(dev)
+    DEVICE = torch.device(dev)
+    print('Set Device :: ', DEVICE)
+    print('Cuda available ::', torch.cuda.is_available(), 'Cuda current device ::', torch.cuda.current_device(),
+          torch.cuda.get_device_name(0))
 except:
     print('No CUDA')
 
+try:
+    from torch import has_cudnn
+    if has_cudnn:
+        torch.cudnn.benchmark = True
+        print('Set cudnn benchmark to True')
+except:
+    pass
 
 
 try:
@@ -69,17 +76,8 @@ except:
 from torch import FloatTensor as FT
 from torch import LongTensor as LT
 
-DEVICE = "cpu"
-try:
-    print('Cuda available ::', torch.cuda.is_available(), 'Cuda current device ::', torch.cuda.current_device(),
-          torch.cuda.get_device_name(0))
-    if torch.cuda.is_available():
-        dev = "cuda:0"
-    else:
-        dev = "cpu"
-    DEVICE = torch.device(dev)
-except:
-    print('No CUDA')
+
+
 
 config_file = 'config.yaml'
 CONFIG = None
@@ -563,6 +561,7 @@ def train_model(df, NN):
     global max_IC_iter
     global serialized_feature_col_list
     global feature_col_list
+    global DEVICE
     batch_size = 256
     num_epochs_g = epochs_g
     num_epochs_f = epochs_f
@@ -952,8 +951,6 @@ NN = net(
     clf_inp_emb_dimension=node_emb_dim * num_domains,
     clf_layer_dimensions=clf_mlp_layer_dimesnions
 )
-
-
 NN.to(DEVICE)
 
 train_model(df, NN)
