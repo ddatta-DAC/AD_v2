@@ -433,9 +433,9 @@ class net(nn.Module):
         if self.train_mode == 'g':
             x1 = input_x[0]
             x2 = input_x[1]
-            if HAS_CUDA:
-                x1 = x1.cuda()
-                x2 = x2.cuda()
+            # if HAS_CUDA:
+            #     x1 = x1.cuda()
+            #     x2 = x2.cuda()
 
             # print('[Forward] g ; shapes of x1 and x2 :', x1.shape, x2.shape)
             x1 = self.graph_net(x1)
