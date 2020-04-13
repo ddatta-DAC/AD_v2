@@ -73,11 +73,13 @@ class gam_net(nn.Module):
         e_2 = x2
 
         e_1 = self.encoder_1(e_1)
-        e_2 = self.encoder_1(e_2)
         e_1 = self.encoder_2(e_1)
-        e_2 = self.encoder_2(e_2)
         e_1 = self.encoder_3(e_1)
+
+        e_2 = self.encoder_1(e_2)
+        e_2 = self.encoder_2(e_2)
         e_2 = self.encoder_3(e_2)
+
         e_1 = torch.tanh(e_1)
         e_2 = torch.tanh(e_2)
         # for i in range(self.num_encoder_layers):

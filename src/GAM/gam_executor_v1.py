@@ -590,6 +590,7 @@ def train_model(df, NN):
             data_source_L1,
             batch_size=batch_size,
             shuffle=False,
+            pin_memory=True,
             num_workers=0,
             sampler=RandomSampler(data_source_L1),
             drop_last=True
@@ -598,6 +599,7 @@ def train_model(df, NN):
             data_source_L1,
             batch_size=batch_size,
             shuffle=False,
+            pin_memory=True,
             num_workers=0,
             sampler=RandomSampler(data_source_L1),
             drop_last=True
@@ -628,19 +630,19 @@ def train_model(df, NN):
                 record_loss = []
                 batch_idx = 0
                 for i, data_i in enumerate(dataLoader_obj_L1a):
-                    # if type(data_i) == list :
-                    #     data_i = [_.to(DEVICE) for _ in data_i]
-                    # else:
-                    #     data_i = data_i.to(DEVICE)
+                    if type(data_i) == list :
+                        data_i = [_.to(DEVICE) for _ in data_i]
+                    else:
+                        data_i = data_i.to(DEVICE)
 
                     x1 = data_i[0]
                     y1 = data_i[1]
 
                     for j, data_j in enumerate(dataLoader_obj_L1b):
-                        # if type(data_i) == list:
-                        #     data_j = [_.to(DEVICE) for _ in data_j]
-                        # else:
-                        #     data_j = data_j.to(DEVICE)
+                        if type(data_i) == list:
+                            data_j = [_.to(DEVICE) for _ in data_j]
+                        else:
+                            data_j = data_j.to(DEVICE)
                         x2 = data_j[0]
                         y2 = data_j[1]
                         input_x = [x1, x2]
