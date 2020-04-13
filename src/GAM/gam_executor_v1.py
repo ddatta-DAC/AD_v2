@@ -42,7 +42,8 @@ try:
         dev = "cpu"
     DEVICE = torch.device(dev)
     print('Set Device :: ', DEVICE)
-    print('Cuda available ::', torch.cuda.is_available(), 'Cuda current device ::', torch.cuda.current_device(),
+    print('Cuda available ::', torch.cuda.is_available(),
+          'Cuda current device ::', torch.cuda.current_device(),
           torch.cuda.get_device_name(0))
 except:
     print('No CUDA')
@@ -50,7 +51,7 @@ except:
 try:
     from torch import has_cudnn
     if has_cudnn:
-        torch.cudnn.benchmark = True
+        torch.cudnn.benchmark = False
         print('Set cudnn benchmark to True')
 except:
     pass
@@ -532,8 +533,6 @@ def predict(NN , input_x ):
 
 # ================================================= #
 
-
-
 class dataGeneratorWrapper():
     def __init__(self, obj_dataloader):
         import copy
@@ -629,19 +628,19 @@ def train_model(df, NN):
                 record_loss = []
                 batch_idx = 0
                 for i, data_i in enumerate(dataLoader_obj_L1a):
-                    if type(data_i) == list :
-                        data_i = [_.to(DEVICE) for _ in data_i]
-                    else:
-                        data_i = data_i.to(DEVICE)
+                    # if type(data_i) == list :
+                    #     data_i = [_.to(DEVICE) for _ in data_i]
+                    # else:
+                    #     data_i = data_i.to(DEVICE)
 
                     x1 = data_i[0]
                     y1 = data_i[1]
 
                     for j, data_j in enumerate(dataLoader_obj_L1b):
-                        if type(data_i) == list:
-                            data_j = [_.to(DEVICE) for _ in data_j]
-                        else:
-                            data_j = data_j.to(DEVICE)
+                        # if type(data_i) == list:
+                        #     data_j = [_.to(DEVICE) for _ in data_j]
+                        # else:
+                        #     data_j = data_j.to(DEVICE)
                         x2 = data_j[0]
                         y2 = data_j[1]
                         input_x = [x1, x2]
@@ -929,7 +928,7 @@ def evaluate_1(
 
 # ---------------------------------- #
 
-DEVICE = "cpu"
+
 DIR = 'us_import2'
 setup_config(DIR)
 df = read_scored_data()
@@ -939,8 +938,8 @@ matrix_node_emb = read_matrix_node_emb()
 num_domains = len(domain_dims)
 gam_encoder_dimensions = [512, 512, 256]
 
-matrix_node_emb = FT(matrix_node_emb).to(DEVICE)
-print(clf_mlp_layer_dimesnions)
+# matrix_node_emb = FT(matrix_node_emb).to(DEVICE)
+matrix_node_emb = FT(matrix_node_emb)
 NN = net(
     node_emb_dimension=node_emb_dim,
     num_domains=num_domains,
