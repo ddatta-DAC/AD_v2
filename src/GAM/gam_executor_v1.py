@@ -611,7 +611,7 @@ def train_model(df, NN):
             lr=0.005
         )
         params_list_f = [_ for _ in NN.graph_net.parameters()]
-        params_list_f = params_list_f + ([_ for _ in NN.gam_net.parameters()])
+        params_list_f = params_list_f + [_ for _ in NN.gam_net.parameters()]
 
         optimizer_f = torch.optim.Adam(
             params_list_f,
@@ -751,7 +751,7 @@ def train_model(df, NN):
                 NN.train_mode = 'f'
                 # Supervised Loss
                 x1 = data_L[0].to(DEVICE)
-                y_true = data_L[1]
+                y_true = LT(data_L[1]).to(DEVICE)
                 pred_label = NN(x1)
 
                 loss_s = clf_loss(pred_label, y_true)

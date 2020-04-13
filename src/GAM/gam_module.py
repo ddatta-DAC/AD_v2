@@ -97,7 +97,7 @@ class gam_net(nn.Module):
 def gam_loss( y_pred, y_true ):
     loss_func = nn.BCEWithLogitsLoss()
     loss = loss_func(y_pred, y_true)
-    return  loss
+    return loss
 
 # -------------------------------------------------- #
 
