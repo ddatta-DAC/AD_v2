@@ -41,17 +41,19 @@ class gam_net(nn.Module):
 
         # Encoder
         # 3 layer MLP
-        self.encoder = [None] * num_encoder_layers
+        # self.encoder = [None] * num_encoder_layers
         inp_dim = node_input_dimension
         print('Encoder Layer ::')
-        for i in range(num_encoder_layers):
-            op_dim = encoder_op_dimensions[i]
-            self.encoder[i] = nn.Linear(inp_dim, op_dim)
-            self.register_parameter('encoder_' + str(i), self.encoder[i].weight)
-            print(self.encoder[i])
-            inp_dim = op_dim
+        # for i in range(num_encoder_layers):
+        #     op_dim = encoder_op_dimensions[i]
+        #     self.encoder[i] = nn.Linear(inp_dim, op_dim)
+        #     self.register_parameter('encoder_' + str(i), self.encoder[i].weight)
+        #     print(self.encoder[i])
+        #     inp_dim = op_dim
 
-
+        self.encoder_1 = nn.Linear(node_input_dimension, encoder_op_dimensions[0])
+        self.encoder_2 = nn.Linear(encoder_op_dimensions[0], encoder_op_dimensions[1])
+        self.encoder_3 = nn.Linear(encoder_op_dimensions[1], encoder_op_dimensions[2])
         # Aggregator
         # Just d = (ei -ej)^2
 
@@ -70,11 +72,19 @@ class gam_net(nn.Module):
         e_1 = x1
         e_2 = x2
 
-        for i in range(self.num_encoder_layers):
-            e_1 = self.encoder[i](e_1)
-            e_2 = self.encoder[i](e_2)
-            e_1 = torch.tanh(e_1)
-            e_2 = torch.tanh(e_2)
+        e_1 = self.encoder_1(e_1)
+        e_2 = self.encoder_1(e_2)
+        e_1 = self.encoder_2(e_1)
+        e_2 = self.encoder_2(e_2)
+        e_1 = self.encoder_3(e_1)
+        e_2 = self.encoder_3(e_2)
+        e_1 = torch.tanh(e_1)
+        e_2 = torch.tanh(e_2)
+        # for i in range(self.num_encoder_layers):
+        #     e_1 = self.encoder[i](e_1)
+        #     e_2 = self.encoder[i](e_2)
+        #     e_1 = torch.tanh(e_1)
+        #     e_2 = torch.tanh(e_2)
 
         # Aggregator
         d = e_1 - e_2
