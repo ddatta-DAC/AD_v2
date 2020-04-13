@@ -31,6 +31,14 @@ import torch
 import torch.nn as nn
 from torch.nn import Parameter
 from torch import tensor
+try :
+    from torch import has_cudnn
+    if has_cudnn:
+        torch.cudnn.benchmark = True
+        print('Set cudnn benchmark to True')
+except:
+    pass
+
 
 try:
     from gam_module import gam_net
@@ -87,6 +95,7 @@ epochs_g = 10
 log_interval_f = 10
 log_interval_g =10
 max_IC_iter = 5
+clf_mlp_layer_dimesnions = []
 # =================================================
 
 def setup_config(_DIR):
@@ -107,6 +116,7 @@ def setup_config(_DIR):
     global log_interval_f
     global log_interval_g
     global max_IC_iter
+    global clf_mlp_layer_dimesnions
 
     if _DIR is not None:
         DIR = _DIR
@@ -147,6 +157,7 @@ def setup_config(_DIR):
     log_interval_f = CONFIG['log_interval_f']
     log_interval_g = CONFIG['log_interval_g']
     max_IC_iter = CONFIG['max_IC_iter']
+    clf_mlp_layer_dimesnions = [int(_) for _ in CONFIG['classifier_mlp_layers_1'].split(',')]
 
     return
 
@@ -501,16 +512,14 @@ def train_model(df, NN):
     global serialized_feature_col_list
     global feature_col_list
     batch_size = 256
-    num_epochs_g = 1
-    num_epochs_f = 1
-    log_interval_1 = 50
-    log_interval_2 = 100
+    num_epochs_g = epochs_g
+    num_epochs_f = epochs_f
+
     num_proc =  multiprocessing.cpu_count()
     lambda_LL = 0.1
     lambda_UL = 0.1
     lambda_UU = 0.05
     current_iter_count = 0
-    max_iter_count = 10
     continue_training = True
 
     df_L = extract_labelled_df(df)
@@ -832,6 +841,7 @@ def evaluate_1(
         x_cols=x_cols,
         y_col=None
     )
+
     dataLoader_obj_eval = DataLoader(
         data_source_eval,
         batch_size=batch_size,
@@ -872,8 +882,6 @@ NN.cuda()
 num_domains = len(domain_dims)
 
 
-
-
 NN.setup_Net(
     node_emb_dimension=node_emb_dim,
     num_domains=8,
@@ -882,7 +890,7 @@ NN.setup_Net(
     gam_record_input_dimension=node_emb_dim * 8,
     gam_encoder_dimensions=[512, 512, 256],
     clf_inp_emb_dimension=node_emb_dim * 8,
-    clf_layer_dimensions=[96, 64, 48]
+    clf_layer_dimensions=clf_mlp_layer_dimesnions
 )
 
 train_model(df, NN)
