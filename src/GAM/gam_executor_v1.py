@@ -877,11 +877,9 @@ df = read_scored_data()
 df = convert_to_serial_IDs(df, True)
 df = set_label_in_top_perc(df, 10)
 matrix_node_emb = read_matrix_node_emb()
-NN = net()
-NN.cuda()
 num_domains = len(domain_dims)
 
-
+NN = net()
 NN.setup_Net(
     node_emb_dimension=node_emb_dim,
     num_domains=8,
@@ -892,5 +890,16 @@ NN.setup_Net(
     clf_inp_emb_dimension=node_emb_dim * 8,
     clf_layer_dimensions=clf_mlp_layer_dimesnions
 )
+
+NN.cuda()
+if torch.cuda.is_available():
+    device = "cuda:0"
+else:
+    device = "cpu"
+device = torch.device(device)
+if torch.cuda.device_count() > 1:
+    print('Using multiple GPUs!!')
+    NN = nn.DataParallel(NN)
+NN.to(device)
 
 train_model(df, NN)
