@@ -254,7 +254,6 @@ def set_label_in_top_perc(df, perc):
     cand = list(_tmp[id_col])
     df.loc[df[id_col].isin(cand), label_col] = df.loc[df[id_col].isin(cand), true_label_col]
     df.loc[df[id_col].isin(cand), is_labelled_col] = True
-    print(df.head(10))
 
     return df
 
@@ -634,8 +633,8 @@ def train_model(df, NN):
                         x2 = data_j[0]
                         y2 = data_j[1]
                         input_x = [x1, x2]
-                        if HAS_CUDA:
-                            input_x = [x1.cuda(), x2.cuda()]
+                        # if HAS_CUDA:
+                        #     input_x = [x1.cuda(), x2.cuda()]
                         true_agreement = np.array(y1 == y2).astype(float)
                         true_agreement = np.reshape(true_agreement, [-1, 1])
 
@@ -940,10 +939,10 @@ NN = net(
     node_emb_dim * num_domains,
     clf_mlp_layer_dimesnions
 )
-
-
-
-NN.to(DEVICE)
+#
+#
+#
+# NN.to(DEVICE)
 NN.cuda(DEVICE)
 
 train_model(df, NN)
