@@ -469,15 +469,14 @@ class net(nn.Module):
             x1 = self.graph_net(x1)
             x2 = self.graph_net(x2)
 
-
             y_pred = self.gam_net(
                 x1,
                 x2
             )
             return y_pred
+
         elif self.train_mode == 'f':
             x1 = input_x
-
             x1 = self.graph_net(x1)
             y_pred = self.clf_net(x1)
             return y_pred
@@ -604,15 +603,15 @@ def train_model(df, NN):
             sampler=RandomSampler(data_source_L1),
             drop_last=True
         )
-        params_list_g = [_ for _ in NN.module.graph_net.parameters()]
-        params_list_g = params_list_g + ([_ for _ in NN.module.gam_net.parameters()])
+        params_list_g = [_ for _ in NN.graph_net.parameters()]
+        params_list_g = params_list_g + ([_ for _ in NN.gam_net.parameters()])
         print('# of parameters to be obtimized for g ', len(params_list_g))
         optimizer_g = torch.optim.Adam(
             params_list_g,
             lr=0.005
         )
-        params_list_f = [_ for _ in NN.module.graph_net.parameters()]
-        params_list_f = params_list_f + ([_ for _ in NN.module.gam_net.parameters()])
+        params_list_f = [_ for _ in NN.graph_net.parameters()]
+        params_list_f = params_list_f + ([_ for _ in NN.gam_net.parameters()])
 
         optimizer_f = torch.optim.Adam(
             params_list_f,
@@ -960,9 +959,6 @@ NN = net(
     clf_layer_dimensions=clf_mlp_layer_dimesnions
 )
 
-if torch.cuda.device_count() > 1:
-    print('Using multiple GPUs!!')
-    NN = nn.DataParallel(NN)
 
 NN.to(DEVICE)
 train_model(df, NN)
