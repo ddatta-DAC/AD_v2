@@ -642,6 +642,7 @@ def train_model(df, NN):
             num_workers=num_proc,
             sampler=RandomSampler(data_source_LL)
         )
+
         data_source_UL = pair_Dataset(
             df_U,
             df_L,
@@ -897,9 +898,6 @@ if torch.cuda.is_available():
 else:
     device = "cpu"
 device = torch.device(device)
-if torch.cuda.device_count() > 1:
-    print('Using multiple GPUs!!')
-    NN = nn.DataParallel(NN)
 NN.to(device)
 
 train_model(df, NN)
