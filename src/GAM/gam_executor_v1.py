@@ -157,8 +157,11 @@ def setup_config(_DIR):
     log_interval_f = CONFIG['log_interval_f']
     log_interval_g = CONFIG['log_interval_g']
     max_IC_iter = CONFIG['max_IC_iter']
-    clf_mlp_layer_dimesnions = [int(_) for _ in CONFIG['classifier_mlp_layers_1'].split(',')]
-
+    clf_mlp_layer_dimesnions = [
+        int(_)
+        for _ in CONFIG['classifier_mlp_layers_1'].split(',')
+    ]
+    print(clf_mlp_layer_dimesnions)
     return
 
 # -------------------------------------
@@ -221,6 +224,7 @@ def read_matrix_node_emb():
     global matrix_node_emb_path
     emb = np.load(matrix_node_emb_path)
     node_emb_dim = emb.shape[-1]
+
     return emb
 
 
@@ -420,9 +424,14 @@ class net(nn.Module):
         if self.train_mode == 'g':
             x1 = input_x[0]
             x2 = input_x[1]
+            if has_cudnn:
+                x1 = x1.cuda()
+                x2 = x2.cuda()
+
             # print('[Forward] g ; shapes of x1 and x2 :', x1.shape, x2.shape)
             x1 = self.graph_net(x1)
             x2 = self.graph_net(x2)
+
 
             y_pred = self.gam_net(
                 x1,
@@ -431,6 +440,7 @@ class net(nn.Module):
             return y_pred
         elif self.train_mode == 'f':
             x1 = input_x
+
             x1 = self.graph_net(x1)
             y_pred = self.clf_net(x1)
             return y_pred
