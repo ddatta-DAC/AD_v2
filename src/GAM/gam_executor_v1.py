@@ -12,6 +12,10 @@ import os
 import sys
 from pandarallel import pandarallel
 
+from sklearn.metrics import precision_score
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import balanced_accuracy_score
+
 pandarallel.initialize()
 sys.path.append('./../..')
 sys.path.append('./..')
@@ -72,7 +76,7 @@ anomaly_col = 'anomaly'
 id_col = 'PanjivaRecordID'
 label_col = 'y'
 true_label_col = 'y_true'
-
+node_emb_dim = 128
 feature_col_list = []
 serial_mapping_df = None
 is_labelled_col = 'labelled'
@@ -190,8 +194,10 @@ def read_scored_data():
 
 
 def read_matrix_node_emb():
+    global node_emb_dim
     global matrix_node_emb_path
     emb = np.load(matrix_node_emb_path)
+    node_emb_dim = emb.shape[-1]
     return emb
 
 
@@ -229,10 +235,14 @@ def find_most_confident_samples(
 ):
     global label_col
     global id_col
+    global is_labelled_col
+
+    pandarallel.initialize()
+
     if max_count is None:
         max_count = 0.10 * len(U_df)
 
-    # Assuming binary classification
+    # Assuming binary classification : labels are 0 and 1
     y_pred = label_col
     U_df['diff'] = abs(y_probs[:, 0] - y_probs[:, 1])
     U_df[y_pred] = y_pred_label
@@ -245,25 +255,28 @@ def find_most_confident_samples(
     U_df_1 = U_df_1.sort_values(by=['diff'], ascending=False)
 
     def aux_1(val):
-        if val > confidence_lb:
-            return True
-        else:
-            return False
+        if val > confidence_lb : return True
+        else: return False
 
-    U_df_0[valid_flag] = U_df_0['diff'].parallel_apply(aux_1)
-    U_df_1[valid_flag] = U_df_1['diff'].parallel_apply(aux_1)
+    U_df_0[valid_flag] = U_df_0['diff'].apply(aux_1)
+    U_df_1[valid_flag] = U_df_1['diff'].apply(aux_1)
 
-    U_df_0 = U_df_0.loc[U_df_0[valid_flag] == True]
-    U_df_1 = U_df_1.loc[U_df_1[valid_flag] == True]
+    U_df_0 = U_df_0.loc[(U_df_0[valid_flag] == True)]
+    U_df_1 = U_df_1.loc[(U_df_1[valid_flag] == True)]
+    try:
+        del U_df_0['diff']
+        del U_df_1['diff']
+        del U_df_0[valid_flag]
+        del U_df_1[valid_flag]
+    except Exception:
+        print('ERROR', Exception)
+        exit(10)
 
-    del U_df_0['diff']
-    del U_df_1['diff']
-    del U_df_0[valid_flag]
-    del U_df_1[valid_flag]
+
     count = int(min(min(len(U_df_0), len(U_df_1)), max_count / 2))
     res_df = U_df_1.head(count)
     res_df = res_df.append(U_df_0.head(count), ignore_index=True)
-
+    res_df[is_labelled_col] = True
     return res_df
 
 
@@ -310,12 +323,12 @@ def convert_to_serial_IDs(
 
     df = df.parallel_apply(aux_conv_toSerialID, axis=1)
     df.to_csv(f_path, index=False)
-
     return df
 
 
-# ------------------------------------------------- #
+# ============================================== #
 # Custom regularization_loss
+# ============================================== #
 def regularization_loss(g_ij, fi_yj):
     g_ij = g_ij.view(-1)
     val1 = (fi_yj[0] - fi_yj[1]) ** 2
@@ -339,6 +352,9 @@ class net(nn.Module):
         # valid values for train_mode are 'f', 'g', False
         self.train_mode = False
         self.test_mode = False
+        self.graph_net = None
+        self.gam_net = None
+        self.clf_net = None
 
     def setup_Net(
             self,
@@ -472,7 +488,7 @@ def train_model(df, NN):
     num_epochs_f = 1
     log_interval_1 = 50
     log_interval_2 = 100
-    num_proc = multiprocessing.cpu_count()
+    num_proc =  multiprocessing.cpu_count()
     lambda_LL = 0.1
     lambda_UL = 0.1
     lambda_UU = 0.05
@@ -482,6 +498,7 @@ def train_model(df, NN):
 
     df_L = extract_labelled_df(df)
     df_U = extract_unlabelled_df(df)
+    df_U_original = df_U.copy()
 
     while continue_training:
         # GAM gets inputs as embeddings, which are obtained through the graph embeddings
@@ -629,9 +646,10 @@ def train_model(df, NN):
             sampler=RandomSampler(data_source_UU)
         )
 
+        print('Training Classifier ')
         optimizer_f.zero_grad()
         for epoch in range(num_epochs_f):
-
+            print (' Epoch :: ', epoch)
             data_L_generator = dataGeneratorWrapper(dataLoader_obj_L2).generator()
             data_LL_generator = dataGeneratorWrapper(dataLoader_obj_L3).generator()
             data_UL_generator = dataGeneratorWrapper(dataLoader_obj_L4).generator()
@@ -701,13 +719,15 @@ def train_model(df, NN):
                     data_L = next(data_L_generator)
                 except StopIteration:
                     data_L = None
+
                 batch_idx_f += 1
                 if batch_idx_f % log_interval_2 == 0:
                     print('Batch[f] {} :: Loss {}'.format(batch_idx_f, loss_total))
 
         # ---------------------------
-        # Predict and  Evaluate
+        # Self -labelling
         # ---------------------------
+
         data_source_EU = type1_Dataset(
             df_U,
             x_cols=g_feature_cols,
@@ -717,19 +737,18 @@ def train_model(df, NN):
             data_source_EU,
             batch_size=batch_size,
             shuffle=False,
-            num_workers=num_proc,
+            num_workers=0,
             sampler=SequentialSampler(data_source_EU)
         )
 
         # data_EU_generator = dataGeneratorWrapper(dataLoader_obj_EU).generator()
         pred_y_label = []
         pred_y_probs = []
-        NN.test_mode = True
-        NN.train_mode = False
+
 
         NN.train(mode=False)
         NN.test_mode = True
-
+        NN.train_mode = False
         for batch_idx, data_x in enumerate(dataLoader_obj_EU):
             _pred_y_probs = NN( data_x)
             _pred_y_label = torch.argmax(_pred_y_probs, dim=1).cpu().data.numpy()
@@ -739,6 +758,10 @@ def train_model(df, NN):
 
         NN.train(mode=True)
         NN.test_mode = False
+        pred_y_probs = np.array(pred_y_probs)
+        pred_y_label = np.array(pred_y_label)
+        print(pred_y_label.shape)
+        print(pred_y_probs.shape)
 
         # ----------------
         # Find the top-k most confident label
@@ -753,37 +776,91 @@ def train_model(df, NN):
             confidence_lb=0.20,
             max_count=k
         )
-
+        print( ' number of self labelled samples ::', len(self_labelled_samples))
         # remove those ids from df_U
         rmv_id_list = list(self_labelled_samples[id_col])
         df_L = df_L.append(self_labelled_samples, ignore_index=True)
         df_U = df_U.loc[~(df_U[id_col].isin(rmv_id_list))]
 
+        print(' Len of L and U ', len(df_L), len(df_U))
         # Also check for convergence
         current_iter_count += 1
         if current_iter_count > max_iter_count:
             continue_training = False
 
+        evaluate_1(
+            NN,
+            df_U,
+            x_cols=g_feature_cols
+        )
+
     return
 
+
+
+def evaluate_1(
+        model,
+        data_df,
+        x_cols,
+        batch_size = 1024
+):
+    global label_col
+    global true_label_col
+    df = data_df.copy()
+    model.train(mode=False)
+    model.test_mode = True
+    model.train_mode = False
+
+    data_source_eval = type1_Dataset(
+        df,
+        x_cols=x_cols,
+        y_col=None
+    )
+    dataLoader_obj_eval = DataLoader(
+        data_source_eval,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=0,
+        sampler=SequentialSampler(data_source_eval)
+    )
+    pred_y_label = []
+    for batch_idx, data_x in enumerate(dataLoader_obj_eval):
+        _pred_y_probs = model(data_x)
+        _pred_y_label = torch.argmax(_pred_y_probs, dim=1).cpu().data.numpy()
+        _pred_y_probs = _pred_y_probs.cpu().data.numpy()
+        pred_y_label.extend(_pred_y_label)
+
+    model.train(mode=True)
+    model.test_mode = False
+    model.train_mode = True
+
+    pred_y_label = np.array(pred_y_label)
+    df[label_col] = list(pred_y_label)
+
+    y_true = df[true_label_col]
+    y_pred = df[label_col]
+    print('Precision ', precision_score(y_true, y_pred) )
+    print('Accuracy ', accuracy_score(y_true, y_pred))
+    print('Balanced Accuracy ', accuracy_score(y_true, y_pred))
+    return
 
 # ---------------------------------- #
 
 df = read_scored_data()
 df = convert_to_serial_IDs(df, True)
 df = set_label_in_top_perc(df, 10)
-
 matrix_node_emb = read_matrix_node_emb()
 NN = net()
+num_domains = len(domain_dims)
+
 NN.setup_Net(
-    node_emb_dimension=128,
+    node_emb_dimension=node_emb_dim,
     num_domains=8,
-    gnet_output_dimensions=128 * 8,
+    gnet_output_dimensions=node_emb_dim * 8,
     matrix_pretrained_node_embeddings=FT(matrix_node_emb),
-    gam_record_input_dimension=128 * 8,
+    gam_record_input_dimension=node_emb_dim * 8,
     gam_encoder_dimensions=[512, 512, 256],
-    clf_inp_emb_dimension=128 * 8,
+    clf_inp_emb_dimension=node_emb_dim * 8,
     clf_layer_dimensions=[96, 64, 48]
 )
-
 train_model(df, NN)
