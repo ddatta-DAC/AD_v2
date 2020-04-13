@@ -383,7 +383,17 @@ def regularization_loss(g_ij, fi_yj):
 
 
 class net(nn.Module):
-    def __init(self):
+    def __init(
+            self,
+            node_emb_dimension,
+            num_domains,
+            gnet_output_dimensions,
+            matrix_pretrained_node_embeddings,
+            gam_record_input_dimension,
+            gam_encoder_dimensions,
+            clf_inp_emb_dimension,
+            clf_layer_dimensions
+    ):
         super(net, self).__init__()
         # valid values for train_mode are 'f', 'g', False
         self.train_mode = False
@@ -391,6 +401,19 @@ class net(nn.Module):
         self.graph_net = None
         self.gam_net = None
         self.clf_net = None
+
+        self.setup_Net(
+            node_emb_dimension,
+            num_domains,
+            gnet_output_dimensions,
+            matrix_pretrained_node_embeddings,
+            gam_record_input_dimension,
+            gam_encoder_dimensions,
+            clf_inp_emb_dimension,
+            clf_layer_dimensions
+        )
+        return
+
 
     def setup_Net(
             self,
@@ -901,8 +924,7 @@ df = set_label_in_top_perc(df, 10)
 matrix_node_emb = read_matrix_node_emb()
 num_domains = len(domain_dims)
 
-NN = net()
-NN.setup_Net(
+NN = net(
     node_emb_dimension=node_emb_dim,
     num_domains=8,
     gnet_output_dimensions=node_emb_dim * num_domains,
@@ -912,6 +934,7 @@ NN.setup_Net(
     clf_inp_emb_dimension=node_emb_dim * num_domains,
     clf_layer_dimensions=clf_mlp_layer_dimesnions
 )
+
 
 
 NN.to(DEVICE)
