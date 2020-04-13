@@ -562,6 +562,7 @@ def train_model(df, NN):
     global serialized_feature_col_list
     global feature_col_list
     global DEVICE
+    print(' Device :: ',DEVICE )
     batch_size = 256
     num_epochs_g = epochs_g
     num_epochs_f = epochs_f
@@ -632,16 +633,16 @@ def train_model(df, NN):
                 record_loss = []
                 batch_idx = 0
                 for i, data_i in enumerate(dataLoader_obj_L1a):
-                    if i == 0: print(data_i[0].shape, data_i[1].shape)
+                    data_i = data_i.to(DEVICE)
 
                     x1 = data_i[0]
                     y1 = data_i[1]
                     for j, data_j in enumerate(dataLoader_obj_L1b):
+                        data_j = data_j.to(DEVICE)
                         x2 = data_j[0]
                         y2 = data_j[1]
                         input_x = [x1, x2]
 
-                        input_x = [x1.to(DEVICE), x2.to(DEVICE)]
                         print(' >> ', x1.device, x2.device)
 
                         true_agreement = np.array(y1 == y2).astype(float)
