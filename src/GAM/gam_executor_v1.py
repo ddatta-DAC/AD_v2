@@ -877,7 +877,6 @@ def train_model(df, NN):
     return
 
 
-
 def evaluate_1(
         model,
         data_df,
@@ -904,6 +903,7 @@ def evaluate_1(
         num_workers=0,
         sampler=SequentialSampler(data_source_eval)
     )
+
     pred_y_label = []
     for batch_idx, data_x in enumerate(dataLoader_obj_eval):
         _pred_y_probs = model(data_x)
@@ -936,18 +936,22 @@ num_domains = len(domain_dims)
 gam_encoder_dimensions = [512, 512, 256]
 if HAS_CUDA:
     matrix_node_emb = FT(matrix_node_emb).cuda()
+else:
+    matrix_node_emb = FT(matrix_node_emb)
 
+print(clf_mlp_layer_dimesnions)
 NN = net(
-    node_emb_dim,
-    num_domains,
-    node_emb_dim * num_domains,
-    matrix_node_emb,
-    node_emb_dim * num_domains,
-    gam_encoder_dimensions,
-    node_emb_dim * num_domains,
-    clf_mlp_layer_dimesnions
+    node_emb_dimension=node_emb_dim,
+    num_domains=num_domains,
+    gnet_output_dimensions=node_emb_dim * num_domains,
+    matrix_pretrained_node_embeddings=matrix_node_emb,
+    gam_record_input_dimension=node_emb_dim * num_domains,
+    gam_encoder_dimensions=gam_encoder_dimensions,
+    clf_inp_emb_dimension=node_emb_dim * num_domains,
+    clf_layer_dimensions=clf_mlp_layer_dimesnions
 )
 
-NN.cuda(DEVICE)
+
+NN.to(DEVICE)
 
 train_model(df, NN)
