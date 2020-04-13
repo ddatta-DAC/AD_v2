@@ -604,15 +604,15 @@ def train_model(df, NN):
             sampler=RandomSampler(data_source_L1),
             drop_last=True
         )
-        params_list_g = [_ for _ in NN.graph_net.parameters()]
-        params_list_g = params_list_g + ([_ for _ in NN.gam_net.parameters()])
+        params_list_g = [_ for _ in NN.module.graph_net.parameters()]
+        params_list_g = params_list_g + ([_ for _ in NN.module.gam_net.parameters()])
         print('# of parameters to be obtimized for g ', len(params_list_g))
         optimizer_g = torch.optim.Adam(
             params_list_g,
             lr=0.005
         )
-        params_list_f = [_ for _ in NN.graph_net.parameters()]
-        params_list_f = params_list_f + ([_ for _ in NN.gam_net.parameters()])
+        params_list_f = [_ for _ in NN.module.graph_net.parameters()]
+        params_list_f = params_list_f + ([_ for _ in NN.module.gam_net.parameters()])
 
         optimizer_f = torch.optim.Adam(
             params_list_f,
