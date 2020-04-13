@@ -69,6 +69,7 @@ except:
 from torch import FloatTensor as FT
 from torch import LongTensor as LT
 
+DEVICE = "cpu"
 try:
     print('Cuda available ::', torch.cuda.is_available(), 'Cuda current device ::', torch.cuda.current_device(),
           torch.cuda.get_device_name(0))
@@ -440,6 +441,8 @@ class net(nn.Module):
             clf_inp_emb_dimension,
             clf_layer_dimensions
         )
+        return
+
 
     # ---------------------------
     # Input should be [ Batch, record( list of entities ) ]
@@ -923,14 +926,15 @@ df = convert_to_serial_IDs(df, True)
 df = set_label_in_top_perc(df, 10)
 matrix_node_emb = read_matrix_node_emb()
 num_domains = len(domain_dims)
+gam_encoder_dimensions = [512, 512, 256]
 
 NN = net(
     node_emb_dimension=node_emb_dim,
-    num_domains=8,
+    num_domains=num_domains,
     gnet_output_dimensions=node_emb_dim * num_domains,
     matrix_pretrained_node_embeddings=FT(matrix_node_emb),
     gam_record_input_dimension=node_emb_dim * num_domains,
-    gam_encoder_dimensions=[512, 512, 256],
+    gam_encoder_dimensions= gam_encoder_dimensions,
     clf_inp_emb_dimension=node_emb_dim * num_domains,
     clf_layer_dimensions=clf_mlp_layer_dimesnions
 )
