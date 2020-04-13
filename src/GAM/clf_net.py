@@ -58,18 +58,10 @@ class clf_net_v1(nn.Module):
         self.num_mlp_layers = num_mlp_layers
         self.mlp_layers = [None] * num_mlp_layers
         inp_dim = inp_emb_dimension
-        for i in range(num_mlp_layers):
-            if i == num_mlp_layers-1:
-                op_dim = 2
-            else:
-                op_dim = layer_dimensions[i]
-            self.mlp_layers[i] = nn.Linear(inp_dim, op_dim )
-            self.register_parameter(
-                'mlp_' + str(i),
-                self.mlp_layers[i].weight
-            )
-            print(self.mlp_layers[i])
-            inp_dim = op_dim
+
+        self.mlp_layers_1 = nn.Linear(inp_dim, layer_dimensions[0])
+        self.mlp_layers_2 = nn.Linear(layer_dimensions[0], layer_dimensions[1])
+        self.mlp_layers_3 = nn.Linear(layer_dimensions[1], layer_dimensions[2])
 
         self.dropout = nn.Dropout(dropout)
         self.activation = nn.LeakyReLU()
@@ -81,12 +73,15 @@ class clf_net_v1(nn.Module):
     # Output :
     # shape : [ ?, output_dimension ]
     def forward(self, input_x):
+
         x = input_x
-        for i in range(self.num_mlp_layers):
-            x = self.dropout(x)
-            x = self.mlp_layers[i](x)
-            if i != self.num_mlp_layers-1 :
-                x = self.activation(x)
+        x = self.mlp_layers_1(x)
+        x = self.dropout(x)
+        x = self.mlp_layers_2(x)
+        x = self.activation(x)
+        x = self.dropout(x)
+        x = self.mlp_layers_3(x)
+        x = self.activation(x)
 
         op_x = self.softmax_1(x)
         return op_x

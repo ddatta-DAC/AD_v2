@@ -959,6 +959,10 @@ NN = net(
     clf_inp_emb_dimension=node_emb_dim * num_domains,
     clf_layer_dimensions=clf_mlp_layer_dimesnions
 )
-NN.to(DEVICE)
 
+if torch.cuda.device_count() > 1:
+    print('Using multiple GPUs!!')
+    NN = nn.DataParallel(NN)
+
+NN.to(DEVICE)
 train_model(df, NN)
