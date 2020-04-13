@@ -466,11 +466,11 @@ class net(nn.Module):
             x1 = input_x[0]
             x2 = input_x[1]
             # print('[Forward] g ; shapes of x1 and x2 :', x1.shape, x2.shape)
-            x1 = self.graph_net(x1)
-            x2 = self.graph_net(x2)
+            x1 = self.module.graph_net(x1)
+            x2 = self.module.graph_net(x2)
 
 
-            y_pred = self.gam_net(
+            y_pred = self.module.gam_net(
                 x1,
                 x2
             )
