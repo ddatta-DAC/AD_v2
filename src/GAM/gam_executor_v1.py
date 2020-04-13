@@ -32,7 +32,7 @@ import torch.nn as nn
 from torch.nn import Parameter
 from torch import tensor
 HAS_CUDA = False
-DEVICE = "cpu"
+DEVICE = None
 
 try:
     if torch.cuda.is_available():
@@ -424,6 +424,9 @@ class net(nn.Module):
             clf_inp_emb_dimension,
             clf_layer_dimensions
     ):
+        global HAS_CUDA
+        global DEVICE
+
         self.graph_net = graph_net(
             node_emb_dimension,
             num_domains,
@@ -438,13 +441,10 @@ class net(nn.Module):
             clf_inp_emb_dimension,
             clf_layer_dimensions
         )
-        global HAS_CUDA
-        global DEVICE
-        if HAS_CUDA:
-            print( "CUDA available")
-            self.clf_net.cuda(DEVICE)
-            self.gam_net.cuda(DEVICE)
-            self.graph_net.cuda(DEVICE)
+
+        self.clf_net.to(DEVICE)
+        self.gam_net.to(DEVICE)
+        self.graph_net.to(DEVICE)
 
         return
 
@@ -649,8 +649,6 @@ def train_model(df, NN):
                         x2 = data_j[0]
                         y2 = data_j[1]
                         input_x = [x1, x2]
-
-                        print(' >> ', x1.device, x2.device)
 
                         true_agreement = np.array(y1 == y2).astype(float)
                         true_agreement = np.reshape(true_agreement, [-1, 1])
@@ -935,6 +933,7 @@ def evaluate_1(
 
 # ---------------------------------- #
 
+DEVICE = "cpu"
 DIR = 'us_import2'
 setup_config(DIR)
 df = read_scored_data()
@@ -943,11 +942,8 @@ df = set_label_in_top_perc(df, 10)
 matrix_node_emb = read_matrix_node_emb()
 num_domains = len(domain_dims)
 gam_encoder_dimensions = [512, 512, 256]
-if HAS_CUDA:
-    matrix_node_emb = FT(matrix_node_emb).cuda()
-else:
-    matrix_node_emb = FT(matrix_node_emb)
 
+matrix_node_emb = FT(matrix_node_emb).to(DEVICE)
 print(clf_mlp_layer_dimesnions)
 NN = net(
     node_emb_dimension=node_emb_dim,
