@@ -38,6 +38,16 @@ try :
         print('Set cudnn benchmark to True')
 except:
     pass
+try:
+    print('Cuda available ::', torch.cuda.is_available(), 'Cuda current device ::', torch.cuda.current_device(),
+          torch.cuda.get_device_name(0))
+    if torch.cuda.is_available():
+        dev = "cuda:3"
+    else:
+        dev = "cpu"
+    device = torch.device(dev)
+except:
+    print('No CUDA')
 
 
 
