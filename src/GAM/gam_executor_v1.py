@@ -31,13 +31,14 @@ import torch
 import torch.nn as nn
 from torch.nn import Parameter
 from torch import tensor
+has_cuda = torch.cuda.is_available()
 try :
-    from torch import has_cudnn
-    if has_cudnn:
+    if has_cuda:
         torch.cudnn.benchmark = True
         print('Set cudnn benchmark to True')
 except:
     pass
+
 
 
 try:
@@ -417,14 +418,14 @@ class net(nn.Module):
     def forward(
             self, input_x, input_y=None
     ):
-
+        global has_cuda
         # ----------------
         # Train the agreement module
         # ----------------
         if self.train_mode == 'g':
             x1 = input_x[0]
             x2 = input_x[1]
-            if has_cudnn:
+            if has_cuda:
                 x1 = x1.cuda()
                 x2 = x2.cuda()
 
@@ -903,8 +904,8 @@ NN.setup_Net(
 )
 
 NN.cuda()
-if torch.cuda.is_available():
-    device = "cuda:0"
+if torch.cuda.is_available() :
+    device = "cuda:3"
 else:
     device = "cpu"
 device = torch.device(device)
