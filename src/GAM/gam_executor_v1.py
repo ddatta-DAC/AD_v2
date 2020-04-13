@@ -751,7 +751,7 @@ def train_model(df, NN):
                 NN.train_mode = 'f'
                 # Supervised Loss
                 x1 = data_L[0].to(DEVICE)
-                y_true = LT(data_L[1]).to(DEVICE)
+                y_true = data_L[1].to(DEVICE)
                 pred_label = NN(x1)
 
                 loss_s = clf_loss(pred_label, y_true)
@@ -766,7 +766,7 @@ def train_model(df, NN):
                 x2 = data_LL_x[1].to(DEVICE)
 
                 pred_agreement, pred_y1 = NN([x1, x2])
-                y2 = data_LL_y[1]
+                y2 = LT(data_LL_y[1]).to(DEVICE)
 
                 loss_LL = regularization_loss(
                     pred_agreement, [pred_y1, y2]
@@ -784,7 +784,10 @@ def train_model(df, NN):
                 _x = [x1, x2]
 
                 pred_agreement, pred_y1 = NN(_x)
-                loss_UL = regularization_loss(pred_agreement, [pred_y1, y2])
+                loss_UL = regularization_loss(
+                    pred_agreement,
+                    [pred_y1, y2]
+                )
                 # print(loss_UL.shape)
 
                 # ====================
@@ -793,8 +796,8 @@ def train_model(df, NN):
                 # print('---- > UU ')
                 NN.train_mode = 'f_uu'
                 data_UU = next(data_UU_generator)
-                x1 = data_UU[0]
-                x2 = data_UU[1]
+                x1 = data_UU[0].to(DEVICE)
+                x2 = data_UU[1].to(DEVICE)
                 _x = [x1, x2]
                 pred_agreement, pred_y1, pred_y2 = NN(_x)
                 loss_UU = regularization_loss(pred_agreement, [pred_y1, pred_y2])
