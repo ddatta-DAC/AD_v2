@@ -543,7 +543,7 @@ def train_model(df, NN):
             data_source_L1,
             batch_size=batch_size,
             shuffle=False,
-            num_workers=num_proc,
+            num_workers=0,
             sampler=RandomSampler(data_source_L1),
             drop_last=True
         )
@@ -551,7 +551,7 @@ def train_model(df, NN):
             data_source_L1,
             batch_size=batch_size,
             shuffle=False,
-            num_workers=num_proc,
+            num_workers=0,
             sampler=RandomSampler(data_source_L1),
             drop_last=True
         )
@@ -625,7 +625,7 @@ def train_model(df, NN):
             data_source_L2,
             batch_size=batch_size,
             shuffle=False,
-            num_workers=num_proc,
+            num_workers=0,
             sampler=RandomSampler(data_source_L2)
         )
         data_source_LL = pair_Dataset(
@@ -883,11 +883,11 @@ NN = net()
 NN.setup_Net(
     node_emb_dimension=node_emb_dim,
     num_domains=8,
-    gnet_output_dimensions=node_emb_dim * 8,
+    gnet_output_dimensions=node_emb_dim * num_domains,
     matrix_pretrained_node_embeddings=FT(matrix_node_emb),
-    gam_record_input_dimension=node_emb_dim * 8,
+    gam_record_input_dimension=node_emb_dim * num_domains,
     gam_encoder_dimensions=[512, 512, 256],
-    clf_inp_emb_dimension=node_emb_dim * 8,
+    clf_inp_emb_dimension=node_emb_dim * num_domains,
     clf_layer_dimensions=clf_mlp_layer_dimesnions
 )
 
