@@ -642,7 +642,7 @@ def train_model(df, NN):
                         input_x = [x1, x2]
 
                         input_x = [x1.to(DEVICE), x2.to(DEVICE)]
-                        print(' >> ', x1.device(), x2.device())
+                        print(' >> ', x1.device, x2.device)
 
                         true_agreement = np.array(y1 == y2).astype(float)
                         true_agreement = np.reshape(true_agreement, [-1, 1])
