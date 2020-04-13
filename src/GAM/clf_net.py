@@ -22,9 +22,11 @@ import torch.nn.functional as F
 # clf_net_v1 :: a simple MLP classifier
 # ----------------------------------------
 def clf_loss_v1 (y_pred, y_true):
-    loss_func = nn.CrossEntropyLoss()
-    loss = loss_func(y_pred, y_true)
-    return loss
+    loss_func = nn.NLLLoss(reduce=None)
+    y_true = y_true.squeeze(1)
+
+    loss = loss_func(y_pred, y_true )
+    return loss.mean()
 
 class clf_net_v1(nn.Module):
     def __init__(
@@ -70,6 +72,8 @@ class clf_net_v1(nn.Module):
             inp_dim = op_dim
 
         self.dropout = nn.Dropout(dropout)
+        self.activation = nn.LeakyReLU()
+        self.softmax_1 = nn.Softmax(dim=-1)
         return
 
     # Input is a tensor/array
@@ -82,8 +86,7 @@ class clf_net_v1(nn.Module):
             x = self.dropout(x)
             x = self.mlp_layers[i](x)
             if i != self.num_mlp_layers-1 :
-                x = nn.LeakyReLU(x)
+                x = self.activation(x)
 
-        op_x = nn.Softmax(x)
+        op_x = self.softmax_1(x)
         return op_x
-

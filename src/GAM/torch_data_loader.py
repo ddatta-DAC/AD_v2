@@ -67,7 +67,7 @@ class pair_Dataset(Dataset):
 
         self.data_2 = df_2
         if size_2 is None:
-            self.size_2 = len(self.data_2)
+            size_2 = len(self.data_2)
         else:
             self.data_2 = self.data_2.head(size_2)
         self.size_1 = size_1
@@ -144,7 +144,6 @@ class type1_Dataset(Dataset):
         return len(self.df)
 
     def __getitem__(self, idx):
-
         if torch.is_tensor(idx):
             idx = idx.tolist()
         x = self.df[self.x_cols].iloc[idx]
@@ -152,6 +151,8 @@ class type1_Dataset(Dataset):
         if self.y_col is not None:
             y = self.df[self.y_col].iloc[idx]
             y = np.array(y)
+            y = np.reshape(y,[-1])
+
             return (x,y)
         return x
 
@@ -194,4 +195,4 @@ def test():
     # )
 
 
-test()
+# test()

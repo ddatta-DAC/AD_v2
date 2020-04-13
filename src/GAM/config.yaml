@@ -6,3 +6,6 @@ serial_mapping_df_loc : './../GraphEmb_2/model_use_data'
 matrix_node_emb_loc: './../GraphEmb_2/model_weights_data/metapath2vec_gensim'
 matrix_node_emb_file : 'mp2v_gensim_weights.npy'
 node_embedding_size : 128
+confidence_bound : 0.20
+epochs_f : 10
+epochs_g : 10

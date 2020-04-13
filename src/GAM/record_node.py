@@ -66,7 +66,7 @@ class graph_net_v1(nn.Module):
             freeze=True
         )
         self.fc1 = torch.nn.Linear(
-            self.num_domains *self.emb_dimension,
+            self.num_domains * self.emb_dimension,
             output_dimensions
         )
 
@@ -77,8 +77,9 @@ class graph_net_v1(nn.Module):
     # shape : [ ?, output_dimension ]
     def forward(self, input_x):
         x = self.embedding(input_x)
-        x = x.view(-1, self.num_domains *self.emb_dimension)
+        x = x.view(-1, self.num_domains * self.emb_dimension)
         x = self.fc1(x)
+        # print(' [Forward] graph net ', x.shape)
         # x = nn.LeakyReLU(x)
         return x
 
