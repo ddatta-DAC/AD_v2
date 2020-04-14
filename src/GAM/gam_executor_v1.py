@@ -865,7 +865,8 @@ def train_model(df, NN):
         NN.test_mode = True
         NN.train_mode = False
         for batch_idx, data_x in enumerate(dataLoader_obj_EU):
-            _pred_y_probs = NN( data_x)
+            data_x.to(DEVICE)
+            _pred_y_probs = NN(data_x)
             _pred_y_label = torch.argmax(_pred_y_probs, dim=1).cpu().data.numpy()
             _pred_y_probs = _pred_y_probs.cpu().data.numpy()
             pred_y_label.extend(_pred_y_label)
@@ -918,6 +919,7 @@ def evaluate_1(
         x_cols,
         batch_size = 1024
 ):
+    global DEVICE
     global label_col
     global true_label_col
     df = data_df.copy()
@@ -941,6 +943,7 @@ def evaluate_1(
 
     pred_y_label = []
     for batch_idx, data_x in enumerate(dataLoader_obj_eval):
+        data_x = data_x.to(DEVICE)
         _pred_y_probs = model(data_x)
         _pred_y_label = torch.argmax(_pred_y_probs, dim=1).cpu().data.numpy()
         pred_y_label.extend(_pred_y_label)
