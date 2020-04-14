@@ -538,20 +538,26 @@ class dataGeneratorWrapper():
 
         self.obj_dataloader = copy.copy(obj_dataloader)
         self.iter_obj = iter(copy.copy(self.obj_dataloader))
+        self.allow_refresh = False
         return
+    def set_allow_refresh(self):
+        self.allow_refresh = True
 
-    def generator(self):
-        # return next( self.iter_obj )
-        for _, batch_data in enumerate():
-            yield batch_data
+    # def generator(self):
+    #     # return next( self.iter_obj )
+    #     for _, batch_data in enumerate():
+    #         yield batch_data
 
     def get_next(self):
-        print('In next...')
         try:
             return next(self.iter_obj)
         except StopIteration:
-            print('Encountered StopIteration')
-            return None
+            if self.allow_refresh :
+                self.iter_obj = iter(copy.copy(self.obj_dataloader))
+                return next(self.iter_obj)
+            else:
+                print('Encountered StopIteration')
+                return None
 
 
 # ===========================================
@@ -762,7 +768,8 @@ def train_model(df, NN):
             data_LL_generator = dataGeneratorWrapper(dataLoader_obj_L3)
             data_UL_generator = dataGeneratorWrapper(dataLoader_obj_L4)
             data_UU_generator = dataGeneratorWrapper(dataLoader_obj_L5)
-
+            data_UL_generator.set_allow_refresh()
+            data_UU_generator.set_allow_refresh()
 
 
             batch_idx_f = 0
@@ -955,11 +962,19 @@ def evaluate_1(
     pred_y_label = np.array(pred_y_label)
     df[label_col] = list(pred_y_label)
 
-    y_true = df[true_label_col]
-    y_pred = df[label_col]
-    print('Precision ', precision_score(y_true, y_pred) )
-    print('Accuracy ', accuracy_score(y_true, y_pred))
-    print('Balanced Accuracy ', balanced_accuracy_score(y_true, y_pred))
+    # Now lets ee result at various points
+    df = df.sort_values(by=['score'])
+    points = [10,20,30,40,50]
+
+    for point  in points:
+        print('Next {} % of data ::')
+        _tmp = df.head(int(len(df)*point/100))
+        y_true = _tmp[true_label_col]
+        y_pred = _tmp[label_col]
+        print('Precision ', precision_score(y_true, y_pred) )
+        print('Accuracy ', accuracy_score(y_true, y_pred))
+        print('Balanced Accuracy ', balanced_accuracy_score(y_true, y_pred))
+
     return
 
 # ---------------------------------- #
