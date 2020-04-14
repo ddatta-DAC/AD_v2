@@ -5,7 +5,7 @@
 # Author : Debanjan Datta
 # Email : ddatta@vt.edu
 # ---------------
-
+import copy
 import pandas as pd
 import numpy as np
 import os
@@ -535,9 +535,9 @@ def predict(NN , input_x ):
 class dataGeneratorWrapper():
 
     def __init__(self, obj_dataloader):
-        import copy
+
         self.obj_dataloader = copy.copy(obj_dataloader)
-        self.iter_obj = iter(self.obj_dataloader)
+        self.iter_obj = iter(copy.copy(self.obj_dataloader))
         return
 
     def generator(self):
@@ -546,7 +546,12 @@ class dataGeneratorWrapper():
             yield batch_data
 
     def get_next(self):
-        return next(self.iter_obj)
+        try:
+            return next(self.iter_obj)
+        except StopIteration:
+            self.iter_obj = iter(copy.copy(self.obj_dataloader))
+            return next(self.iter_obj)
+
 
 # ===========================================
 # Iterative training
