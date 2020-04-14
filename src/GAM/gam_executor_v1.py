@@ -565,10 +565,10 @@ class dataGeneratorWrapper():
             return next(self.iter_obj)
         except StopIteration:
             if self.allow_refresh :
+                print('Encountered StopIteration and refreshing')
                 self.iter_obj = iter(copy.copy(self.obj_dataloader))
                 return next(self.iter_obj)
             else:
-                print('Encountered StopIteration')
                 return None
 
 
@@ -774,7 +774,7 @@ def train_model(df, NN):
         print('Training Classifier ')
         optimizer_f.zero_grad()
         for epoch in range(num_epochs_f):
-            print (' Epoch :: ', epoch)
+            print ('Epoch [f]', epoch)
             # data_L_generator = dataGeneratorWrapper(dataLoader_obj_L2).generator()
             # data_LL_generator = dataGeneratorWrapper(dataLoader_obj_L3).generator()
             # data_UL_generator = dataGeneratorWrapper(dataLoader_obj_L4).generator()
@@ -875,7 +875,7 @@ def train_model(df, NN):
         )
         dataLoader_obj_EU = DataLoader(
             data_source_EU,
-            batch_size=batch_size,
+            batch_size=512,
             shuffle=False,
             num_workers=num_proc,
             sampler=SequentialSampler(data_source_EU)
