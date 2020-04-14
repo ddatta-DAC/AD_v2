@@ -533,13 +533,18 @@ def predict(NN , input_x ):
 # ================================================= #
 
 class dataGeneratorWrapper():
+
     def __init__(self, obj_dataloader):
         import copy
         self.obj_dataloader = copy.copy(obj_dataloader)
+        self.iter_obj = iter(self.obj_dataloader)
+        return
 
     def generator(self):
-        for _, batch_data in enumerate(self.obj_dataloader):
-            yield batch_data
+
+        return next( self.iter_obj )
+        # for _, batch_data in enumerate():
+        #     yield batch_data
 
 
 # ===========================================
