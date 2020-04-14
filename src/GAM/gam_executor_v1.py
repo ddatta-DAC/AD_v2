@@ -105,6 +105,11 @@ log_interval_f = 10
 log_interval_g =10
 max_IC_iter = 5
 clf_mlp_layer_dimesnions = []
+
+batch_size_g = 128
+batch_size_f = 128
+batch_size_r = 128
+
 # =================================================
 
 def setup_config(_DIR):
@@ -126,6 +131,9 @@ def setup_config(_DIR):
     global log_interval_g
     global max_IC_iter
     global clf_mlp_layer_dimesnions
+    global batch_size_g
+    global batch_size_f
+    global batch_size_r
 
     if _DIR is not None:
         DIR = _DIR
@@ -171,6 +179,10 @@ def setup_config(_DIR):
         for _ in CONFIG['classifier_mlp_layers_1'].split(',')
     ]
     print(clf_mlp_layer_dimesnions)
+
+    batch_size_g = CONFIG['batch_size_g']
+    batch_size_f = CONFIG['batch_size_f']
+    batch_size_r = CONFIG['batch_size_r']
     return
 
 # -------------------------------------
@@ -772,6 +784,7 @@ def train_model(df, NN):
             data_LL_generator = dataGeneratorWrapper(dataLoader_obj_L3)
             data_UL_generator = dataGeneratorWrapper(dataLoader_obj_L4)
             data_UU_generator = dataGeneratorWrapper(dataLoader_obj_L5)
+            data_LL_generator.set_allow_refresh()
             data_UL_generator.set_allow_refresh()
             data_UU_generator.set_allow_refresh()
 
