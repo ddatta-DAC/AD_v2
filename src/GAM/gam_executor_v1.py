@@ -865,7 +865,7 @@ def train_model(df, NN):
         NN.test_mode = True
         NN.train_mode = False
         for batch_idx, data_x in enumerate(dataLoader_obj_EU):
-            data_x.to(DEVICE)
+            data_x = data_x.to(DEVICE)
             _pred_y_probs = NN(data_x)
             _pred_y_label = torch.argmax(_pred_y_probs, dim=1).cpu().data.numpy()
             _pred_y_probs = _pred_y_probs.cpu().data.numpy()
