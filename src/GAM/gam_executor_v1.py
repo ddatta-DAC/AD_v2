@@ -15,6 +15,7 @@ from pandarallel import pandarallel
 from sklearn.metrics import precision_score
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import recall_score
 
 pandarallel.initialize()
 sys.path.append('./../..')
@@ -1009,6 +1010,7 @@ def evaluate_1(
         y_true = _tmp[true_label_col]
         y_pred = _tmp[label_col]
         print('Precision ', precision_score(y_true, y_pred) )
+        print('Recall ', recall_score(y_true, y_pred))
         print('Accuracy ', accuracy_score(y_true, y_pred))
         print('Balanced Accuracy ', balanced_accuracy_score(y_true, y_pred))
 
