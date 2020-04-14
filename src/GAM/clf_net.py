@@ -24,7 +24,6 @@ import torch.nn.functional as F
 def clf_loss_v1 (y_pred, y_true):
     loss_func = nn.NLLLoss(reduce=None)
     y_true = y_true.squeeze(1)
-
     loss = loss_func(y_pred, y_true )
     return loss.mean()
 
@@ -62,9 +61,10 @@ class clf_net_v1(nn.Module):
         self.mlp_layers_1 = nn.Linear(inp_dim, layer_dimensions[0])
         self.mlp_layers_2 = nn.Linear(layer_dimensions[0], layer_dimensions[1])
         self.mlp_layers_3 = nn.Linear(layer_dimensions[1], layer_dimensions[2])
-
+        self.mlp_layers_4 = nn.Linear(layer_dimensions[2], 2)
         self.dropout = nn.Dropout(dropout)
-        self.activation = nn.LeakyReLU()
+        self.activation_1 = torch.nn.Tanh()
+        self.activation_2 = torch.nn.LeakyReLU()
         self.softmax_1 = nn.Softmax(dim=-1)
         return
 
@@ -78,10 +78,12 @@ class clf_net_v1(nn.Module):
         x = self.mlp_layers_1(x)
         x = self.dropout(x)
         x = self.mlp_layers_2(x)
-        x = self.activation(x)
+
         x = self.dropout(x)
         x = self.mlp_layers_3(x)
-        x = self.activation(x)
+        x = self.activation_1(x)
+        x = self.mlp_layers_4(x)
+        x = self.activation_1(x)
 
         op_x = self.softmax_1(x)
         return op_x

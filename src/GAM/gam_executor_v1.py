@@ -546,9 +546,11 @@ class dataGeneratorWrapper():
             yield batch_data
 
     def get_next(self):
+        print('In next...')
         try:
             return next(self.iter_obj)
         except StopIteration:
+            print('Encountered StopIteration')
             self.iter_obj = iter(copy.copy(self.obj_dataloader))
             return next(self.iter_obj)
 
@@ -628,7 +630,7 @@ def train_model(df, NN):
             params_list_f,
             lr=0.005
         )
-        if NN.train_mode == 'g':
+        if NN.train_mode == 'g0':
             # ----
             # input_x1,y2 : from Dataloader ( L )
             # input x2,y2 : from Dataloader ( L )
