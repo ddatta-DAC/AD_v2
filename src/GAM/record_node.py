@@ -67,8 +67,6 @@ class graph_net_v1(nn.Module):
         x = self.embedding(input_x)
         x = x.view(-1, self.num_domains * self.emb_dimension)
         x = self.fc1(x)
-        # print(' [Forward] graph net ', x.shape)
-        # x = nn.LeakyReLU(x)
         return x
 
 # ------------------------------------------------------------------------------- #

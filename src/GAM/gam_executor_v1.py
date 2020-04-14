@@ -29,6 +29,8 @@ import yaml
 import pickle
 import torch
 import torch.nn as nn
+import logging
+
 from torch.nn import Parameter
 from torch import tensor
 HAS_CUDA = False
@@ -65,6 +67,7 @@ try:
     from record_node import graph_net_v1 as graph_net
     from torch_data_loader import pair_Dataset
     from torch_data_loader import type1_Dataset
+    from torch_data_loader import dataGeneratorWrapper
 except:
     from .gam_module import gam_net
     from .gam_module import gam_loss
@@ -73,12 +76,12 @@ except:
     from .record_node import graph_net_v1 as graph_net
     from .torch_data_loader import pair_Dataset
     from .torch_data_loader import type1_Dataset
+    from .torch_data_loader import dataGeneratorWrapper
 
 from torch import FloatTensor as FT
 from torch import LongTensor as LT
 
-
-
+# ==================================== #
 
 config_file = 'config.yaml'
 CONFIG = None
@@ -86,6 +89,8 @@ DATA_SOURCE_DIR_1 = None
 DATA_SOURCE_DIR_2 = None
 model_use_data_DIR = None
 DIR = None
+logger = None
+Logging_Dir = None
 domain_dims = None
 score_col = 'score'
 fraud_col = 'fraud'
@@ -118,6 +123,7 @@ def setup_config(_DIR):
     global DATA_SOURCE_DIR_1
     global DATA_SOURCE_DIR_2
     global DIR
+    global Logging_Dir
     global model_use_data_DIR
     global domain_dims
     global feature_col_list
@@ -134,7 +140,7 @@ def setup_config(_DIR):
     global batch_size_g
     global batch_size_f
     global batch_size_r
-
+    Logging_Dir  = CONFIG['Logging_Dir']
     if _DIR is not None:
         DIR = _DIR
 
@@ -178,15 +184,41 @@ def setup_config(_DIR):
         int(_)
         for _ in CONFIG['classifier_mlp_layers_1'].split(',')
     ]
-    print(clf_mlp_layer_dimesnions)
 
     batch_size_g = CONFIG['batch_size_g']
     batch_size_f = CONFIG['batch_size_f']
     batch_size_r = CONFIG['batch_size_r']
+    logger = get_logger()
     return
 
 # -------------------------------------
+def get_logger():
+    global Logging_Dir
+    global DIR
+    logger = logging.getLogger('main')
+    logger.setLevel(logging.INFO)
+    OP_DIR = os.path.join(Logging_Dir, DIR)
+    log_file = 'results.log'
+    if not os.path.exists(Logging_Dir):
+        os.mkdir(Logging_Dir)
 
+    if not os.path.exists(OP_DIR):
+        os.mkdir(OP_DIR)
+
+    log_file_path = os.path.join(OP_DIR, log_file)
+    handler = logging.FileHandler(log_file_path)
+    handler.setLevel(logging.INFO)
+    logger.addHandler(handler)
+    return logger
+
+def close_logger(logger):
+    handlers = logger.handlers[:]
+    for handler in handlers:
+        handler.close()
+        logger.removeHandler(handler)
+    return
+
+# --------------------------------------
 
 def set_ground_truth_labels(df):
     global true_label_col
@@ -245,7 +277,6 @@ def read_matrix_node_emb():
     global matrix_node_emb_path
     emb = np.load(matrix_node_emb_path)
     node_emb_dim = emb.shape[-1]
-
     return emb
 
 
@@ -310,6 +341,7 @@ def find_most_confident_samples(
 
     U_df_0 = U_df_0.loc[(U_df_0[valid_flag] == True)]
     U_df_1 = U_df_1.loc[(U_df_1[valid_flag] == True)]
+
     try:
         del U_df_0['diff']
         del U_df_1['diff']
@@ -317,8 +349,7 @@ def find_most_confident_samples(
         del U_df_1[valid_flag]
     except Exception:
         print('ERROR', Exception)
-        exit(10)
-
+        exit(1)
 
     count = int(min(min(len(U_df_0), len(U_df_1)), max_count / 2))
     res_df = U_df_1.head(count)
@@ -392,7 +423,8 @@ def regularization_loss(g_ij, fi_yj):
 3. Add in the most confident labels
 '''
 
-
+# =========================================
+# Main module that encapsulates everything.
 class net(nn.Module):
     def __init__(
             self,
@@ -534,6 +566,9 @@ class net(nn.Module):
             y_pred = self.clf_net(x1)
             return y_pred
 
+# =========================================
+# Perform prediction
+# =========================================
 def predict(NN , input_x ):
     NN.train(mode=False)
     NN.test_mode=True
@@ -544,33 +579,6 @@ def predict(NN , input_x ):
 
 # ================================================= #
 
-class dataGeneratorWrapper():
-
-    def __init__(self, obj_dataloader):
-
-        self.obj_dataloader = copy.copy(obj_dataloader)
-        self.iter_obj = iter(copy.copy(self.obj_dataloader))
-        self.allow_refresh = False
-        return
-    def set_allow_refresh(self):
-        self.allow_refresh = True
-
-    # def generator(self):
-    #     # return next( self.iter_obj )
-    #     for _, batch_data in enumerate():
-    #         yield batch_data
-
-    def get_next(self):
-        try:
-            return next(self.iter_obj)
-        except StopIteration:
-            if self.allow_refresh :
-                print('Encountered StopIteration and refreshing')
-                self.iter_obj = iter(copy.copy(self.obj_dataloader))
-                return next(self.iter_obj)
-            else:
-                return None
-
 
 # ===========================================
 # Iterative training
@@ -578,6 +586,7 @@ class dataGeneratorWrapper():
 
 
 def train_model(df, NN):
+
     global epochs_f
     global epochs_g
     global log_interval_f
@@ -589,8 +598,6 @@ def train_model(df, NN):
     global batch_size_g
     global batch_size_f
     global batch_size_r
-
-    print(' Device :: ',DEVICE )
 
     num_epochs_g = epochs_g
     num_epochs_f = epochs_f
@@ -612,7 +619,6 @@ def train_model(df, NN):
         g_feature_cols = serialized_feature_col_list
 
         NN.train_mode = 'g'
-
         data_source_L1 = type1_Dataset(
             df_L,
             x_cols=g_feature_cols,
@@ -646,11 +652,12 @@ def train_model(df, NN):
         )
         params_list_f = [_ for _ in NN.graph_net.parameters()]
         params_list_f = params_list_f + [_ for _ in NN.gam_net.parameters()]
-
+        print('# of parameters to be obtimized for g ', len(params_list_f))
         optimizer_f = torch.optim.Adam(
             params_list_f,
             lr=0.005
         )
+
         if NN.train_mode == 'g':
             # ----
             # input_x1,y2 : from Dataloader ( L )
@@ -706,7 +713,6 @@ def train_model(df, NN):
         # To do separate out f and g features
 
         optimizer_f.zero_grad()
-
         data_source_L2 = type1_Dataset(
             df_L,
             x_cols=g_feature_cols,
@@ -982,9 +988,8 @@ def evaluate_1(
     # Now lets ee result at various points
     df = df.sort_values(by=['score'])
     points = [10,20,30,40,50]
-
     for point  in points:
-        print('Next {} % of data ::')
+        print('Next {} % of data ::'.format(point))
         _tmp = df.head(int(len(df)*point/100))
         y_true = _tmp[true_label_col]
         y_pred = _tmp[label_col]
@@ -1019,6 +1024,9 @@ NN = net(
     clf_layer_dimensions=clf_mlp_layer_dimesnions
 )
 
-
 NN.to(DEVICE)
 train_model(df, NN)
+
+
+
+

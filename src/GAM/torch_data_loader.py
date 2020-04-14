@@ -7,18 +7,18 @@
 # ---------------
 import os
 import sys
-from torch import FloatTensor as FT
-from torch import LongTensor as LT
-
+import copy
+import pandas as pd
+import numpy as np
+import torch
 sys.path.append('./../..')
 sys.path.append('./..')
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 from torch.utils.data import RandomSampler
+from torch import FloatTensor as FT
+from torch import LongTensor as LT
 
-import pandas as pd
-import numpy as np
-import torch
 
 
 class custom_dataset_type_1(Dataset):
@@ -128,7 +128,7 @@ class pair_Dataset(Dataset):
 
 
 # ================================
-#
+# This custom dataset can load single labelled or unlabelled dataset.
 # ================================
 class type1_Dataset(Dataset):
     def __init__(
@@ -157,6 +157,34 @@ class type1_Dataset(Dataset):
 
             return (x,y)
         return x
+
+# ------------------------------------------------- #
+
+# ================================
+# Wrapper to get iterator over dataloader.
+# Set  'set_allow_refresh' if stop iteration is to be ignored.
+# ================================
+class dataGeneratorWrapper():
+
+    def __init__(self, obj_dataloader):
+        self.obj_dataloader = copy.copy(obj_dataloader)
+        self.iter_obj = iter(copy.copy(self.obj_dataloader))
+        self.allow_refresh = False
+        return
+
+    def set_allow_refresh(self):
+        self.allow_refresh = True
+
+    def get_next(self):
+        try:
+            return next(self.iter_obj)
+        except StopIteration:
+            if self.allow_refresh :
+                print('Encountered StopIteration and refreshing')
+                self.iter_obj = iter(copy.copy(self.obj_dataloader))
+                return next(self.iter_obj)
+            else:
+                return None
 
 # ------------------------------------------------- #
 
