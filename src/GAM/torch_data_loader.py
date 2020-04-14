@@ -135,11 +135,14 @@ class type1_Dataset(Dataset):
             self,
             df,
             x_cols,
-            y_col=None
+            y_col=None,
+            return_id_col = False
     ):
+        self.id_col = 'PanjivaRecordID'
         self.df = df
         self.x_cols = x_cols
         self.y_col = y_col
+        self.return_id_col = return_id_col
 
 
     def __len__(self):
@@ -150,13 +153,23 @@ class type1_Dataset(Dataset):
             idx = idx.tolist()
         x = self.df[self.x_cols].iloc[idx]
         x = np.array(x)
+        id = None
+        if self.return_id_col:
+            id = np.array(self.df[self.id_col].iloc[idx])
+
         if self.y_col is not None:
             y = self.df[self.y_col].iloc[idx]
             y = np.array(y)
             y = np.reshape(y,[-1])
+            if id is not None:
+                return (id, x, y)
+            else:
+                return (x,y)
+        if id is not None:
+            return (id,x)
+        else:
+            return x
 
-            return (x,y)
-        return x
 
 # ------------------------------------------------- #
 

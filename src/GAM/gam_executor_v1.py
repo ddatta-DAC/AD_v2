@@ -140,7 +140,7 @@ def setup_config(_DIR):
     global batch_size_g
     global batch_size_f
     global batch_size_r
-    Logging_Dir  = CONFIG['Logging_Dir']
+
     if _DIR is not None:
         DIR = _DIR
 
@@ -188,6 +188,7 @@ def setup_config(_DIR):
     batch_size_g = CONFIG['batch_size_g']
     batch_size_f = CONFIG['batch_size_f']
     batch_size_r = CONFIG['batch_size_r']
+    Logging_Dir = CONFIG['Logging_Dir']
     logger = get_logger()
     return
 
@@ -652,7 +653,7 @@ def train_model(df, NN):
         )
         params_list_f = [_ for _ in NN.graph_net.parameters()]
         params_list_f = params_list_f + [_ for _ in NN.gam_net.parameters()]
-        print('# of parameters to be obtimized for g ', len(params_list_f))
+        print('# of parameters to be obtimized for f ', len(params_list_f))
         optimizer_f = torch.optim.Adam(
             params_list_f,
             lr=0.005
@@ -947,12 +948,14 @@ def evaluate_1(
         model,
         data_df,
         x_cols,
-        batch_size = 1024
+        batch_size = 3096
 ):
     global DEVICE
     global label_col
+    global id_col
     global true_label_col
     df = data_df.copy()
+
     model.train(mode=False)
     model.test_mode = True
     model.train_mode = False
@@ -960,7 +963,8 @@ def evaluate_1(
     data_source_eval = type1_Dataset(
         df,
         x_cols=x_cols,
-        y_col=None
+        y_col=None,
+        return_id_col = True
     )
 
     dataLoader_obj_eval = DataLoader(
@@ -971,9 +975,13 @@ def evaluate_1(
         sampler=SequentialSampler(data_source_eval)
     )
 
+    id_list = []
     pred_y_label = []
-    for batch_idx, data_x in enumerate(dataLoader_obj_eval):
-        data_x = data_x.to(DEVICE)
+    for batch_idx, data in enumerate(dataLoader_obj_eval):
+        _id = data[0].data.numpy()
+        _id = np.reshape(_id,-1)
+        id_list.extend(_id)
+        data_x = data[1].to(DEVICE)
         _pred_y_probs = model(data_x)
         _pred_y_label = torch.argmax(_pred_y_probs, dim=1).cpu().data.numpy()
         pred_y_label.extend(_pred_y_label)
@@ -981,9 +989,16 @@ def evaluate_1(
     model.train(mode=True)
     model.test_mode = False
     model.train_mode = True
-
     pred_y_label = np.array(pred_y_label)
-    df[label_col] = list(pred_y_label)
+
+    res_df = pd.DataFrame(
+        np.stack([id_list,pred_y_label],axis=1), columns = [id_col, label_col]
+    )
+
+    del df[label_col]
+    # merge
+    df = df.merge( res_df, on=[id_col], how = 'left')
+   # df[label_col] = list(pred_y_label)
 
     # Now lets ee result at various points
     df = df.sort_values(by=['score'])
@@ -997,10 +1012,11 @@ def evaluate_1(
         print('Accuracy ', accuracy_score(y_true, y_pred))
         print('Balanced Accuracy ', balanced_accuracy_score(y_true, y_pred))
 
+
+
     return
 
 # ---------------------------------- #
-
 
 DIR = 'us_import2'
 setup_config(DIR)
