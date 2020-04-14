@@ -630,7 +630,7 @@ def train_model(df, NN):
             params_list_f,
             lr=0.005
         )
-        if NN.train_mode == 'g0':
+        if NN.train_mode == 'g':
             # ----
             # input_x1,y2 : from Dataloader ( L )
             # input x2,y2 : from Dataloader ( L )
