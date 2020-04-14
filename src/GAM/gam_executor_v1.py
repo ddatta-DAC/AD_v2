@@ -574,8 +574,12 @@ def train_model(df, NN):
     global serialized_feature_col_list
     global feature_col_list
     global DEVICE
+    global batch_size_g
+    global batch_size_f
+    global batch_size_r
+
     print(' Device :: ',DEVICE )
-    batch_size = 256
+
     num_epochs_g = epochs_g
     num_epochs_f = epochs_f
 
@@ -605,7 +609,7 @@ def train_model(df, NN):
 
         dataLoader_obj_L1a = DataLoader(
             data_source_L1,
-            batch_size=batch_size,
+            batch_size=batch_size_g,
             shuffle=False,
             pin_memory=True,
             num_workers=num_proc,
@@ -614,7 +618,7 @@ def train_model(df, NN):
         )
         dataLoader_obj_L1b = DataLoader(
             data_source_L1,
-            batch_size=batch_size,
+            batch_size=batch_size_g,
             shuffle=False,
             pin_memory=True,
             num_workers=num_proc,
@@ -699,7 +703,7 @@ def train_model(df, NN):
 
         dataLoader_obj_L2 = DataLoader(
             data_source_L2,
-            batch_size=batch_size,
+            batch_size=batch_size_f,
             shuffle=False,
             pin_memory=True,
             num_workers=0,
@@ -715,7 +719,7 @@ def train_model(df, NN):
 
         dataLoader_obj_L3 = DataLoader(
             data_source_LL,
-            batch_size=batch_size,
+            batch_size=batch_size_r,
             shuffle=False,
             pin_memory=True,
             num_workers=0,
@@ -732,7 +736,7 @@ def train_model(df, NN):
 
         dataLoader_obj_L4 = DataLoader(
             data_source_UL,
-            batch_size=batch_size,
+            batch_size=batch_size_r,
             shuffle=False,
             pin_memory=True,
             num_workers=0,
@@ -748,7 +752,7 @@ def train_model(df, NN):
 
         dataLoader_obj_L5 = DataLoader(
             data_source_UU,
-            batch_size=batch_size,
+            batch_size=batch_size_r,
             shuffle=False,
             pin_memory=True,
             num_workers=0,
