@@ -541,11 +541,12 @@ class dataGeneratorWrapper():
         return
 
     def generator(self):
+        # return next( self.iter_obj )
+        for _, batch_data in enumerate():
+            yield batch_data
 
-        return next( self.iter_obj )
-        # for _, batch_data in enumerate():
-        #     yield batch_data
-
+    def get_next(self):
+        return next(self.iter_obj)
 
 # ===========================================
 # Iterative training
@@ -745,13 +746,20 @@ def train_model(df, NN):
         optimizer_f.zero_grad()
         for epoch in range(num_epochs_f):
             print (' Epoch :: ', epoch)
-            data_L_generator = dataGeneratorWrapper(dataLoader_obj_L2).generator()
-            data_LL_generator = dataGeneratorWrapper(dataLoader_obj_L3).generator()
-            data_UL_generator = dataGeneratorWrapper(dataLoader_obj_L4).generator()
-            data_UU_generator = dataGeneratorWrapper(dataLoader_obj_L5).generator()
+            # data_L_generator = dataGeneratorWrapper(dataLoader_obj_L2).generator()
+            # data_LL_generator = dataGeneratorWrapper(dataLoader_obj_L3).generator()
+            # data_UL_generator = dataGeneratorWrapper(dataLoader_obj_L4).generator()
+            # data_UU_generator = dataGeneratorWrapper(dataLoader_obj_L5).generator()
+
+            data_L_generator = dataGeneratorWrapper(dataLoader_obj_L2)
+            data_LL_generator = dataGeneratorWrapper(dataLoader_obj_L3)
+            data_UL_generator = dataGeneratorWrapper(dataLoader_obj_L4)
+            data_UU_generator = dataGeneratorWrapper(dataLoader_obj_L5)
+
+
 
             batch_idx_f = 0
-            data_L = next(data_L_generator)
+            data_L = data_L_generator.get_next()
             while data_L is not None:
                 NN.train_mode = 'f'
                 # Supervised Loss
@@ -766,7 +774,7 @@ def train_model(df, NN):
                 # ====================
                 # print('---- > LL ')
                 NN.train_mode = 'f_ll'
-                data_LL_x, data_LL_y = next(data_LL_generator)
+                data_LL_x, data_LL_y = data_LL_generator.get_next()
                 x1 = data_LL_x[0].to(DEVICE)
                 x2 = data_LL_x[1].to(DEVICE)
 
@@ -781,7 +789,7 @@ def train_model(df, NN):
                 # UL
                 NN.train_mode = 'f_ul'
 
-                data_UL_x, data_UL_y = next(data_UL_generator)
+                data_UL_x, data_UL_y = data_UL_generator.get_next()
 
                 x1 = data_UL_x[0].to(DEVICE)
                 x2 = data_UL_x[1].to(DEVICE)
@@ -800,7 +808,7 @@ def train_model(df, NN):
                 # ====================
                 # print('---- > UU ')
                 NN.train_mode = 'f_uu'
-                data_UU = next(data_UU_generator)
+                data_UU = data_UU_generator.get_next()
                 x1 = data_UU[0].to(DEVICE)
                 x2 = data_UU[1].to(DEVICE)
                 _x = [x1, x2]
@@ -815,8 +823,10 @@ def train_model(df, NN):
                 loss_total.backward()
                 optimizer_f.step()
                 try:
-                    data_L = next(data_L_generator)
-                except StopIteration:
+                    data_L = data_L_generator.get_next()
+                    # data_L = next(data_L_generator)
+                except Exception:
+                    print('Exception on iterator', Exception)
                     data_L = None
 
                 batch_idx_f += 1
