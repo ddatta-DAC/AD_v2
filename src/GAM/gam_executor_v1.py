@@ -551,8 +551,7 @@ class dataGeneratorWrapper():
             return next(self.iter_obj)
         except StopIteration:
             print('Encountered StopIteration')
-            self.iter_obj = iter(copy.copy(self.obj_dataloader))
-            return next(self.iter_obj)
+            return None
 
 
 # ===========================================
@@ -698,7 +697,8 @@ def train_model(df, NN):
             shuffle=False,
             pin_memory=True,
             num_workers=0,
-            sampler=RandomSampler(data_source_L2)
+            sampler=RandomSampler(data_source_L2),
+            drop_last = True
         )
         data_source_LL = pair_Dataset(
             df_L,
