@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 import os
 import sys
+
 from pandarallel import pandarallel
 
 from sklearn.metrics import precision_score
@@ -63,21 +64,23 @@ except:
 try:
     from gam_module import gam_net
     from gam_module import gam_loss
-    from clf_net import clf_net_v1 as clf_net
+    from clf_net import clf_net_v2 as clf_net
     from clf_net import clf_loss_v1 as clf_loss
-    from record_node import graph_net_v1 as graph_net
+    from record_node import graph_net_v2 as graph_net
     from torch_data_loader import pair_Dataset
     from torch_data_loader import type1_Dataset
     from torch_data_loader import dataGeneratorWrapper
+    import  train_utils
 except:
     from .gam_module import gam_net
     from .gam_module import gam_loss
-    from .clf_net import clf_net_v1 as clf_net
+    from .clf_net import clf_net_v2 as clf_net
     from .clf_net import clf_loss_v1 as clf_loss
-    from .record_node import graph_net_v1 as graph_net
+    from .record_node import graph_net_v2 as graph_net
     from .torch_data_loader import pair_Dataset
     from .torch_data_loader import type1_Dataset
     from .torch_data_loader import dataGeneratorWrapper
+    from . import train_utils
 
 from torch import FloatTensor as FT
 from torch import LongTensor as LT
@@ -111,7 +114,7 @@ log_interval_f = 10
 log_interval_g =10
 max_IC_iter = 5
 clf_mlp_layer_dimesnions = []
-
+gam_encoder_dimensions_mlp = []
 batch_size_g = 128
 batch_size_f = 128
 batch_size_r = 128
@@ -138,6 +141,7 @@ def setup_config(_DIR):
     global log_interval_g
     global max_IC_iter
     global clf_mlp_layer_dimesnions
+    global gam_encoder_dimensions_mlp
     global batch_size_g
     global batch_size_f
     global batch_size_r
@@ -184,6 +188,10 @@ def setup_config(_DIR):
     clf_mlp_layer_dimesnions = [
         int(_)
         for _ in CONFIG['classifier_mlp_layers_1'].split(',')
+    ]
+    gam_encoder_dimensions_mlp = [
+        int(_)
+        for _ in CONFIG['gam_encoder_dimensions_mlp'].split(',')
     ]
 
     batch_size_g = CONFIG['batch_size_g']
@@ -450,7 +458,6 @@ class net(nn.Module):
         self.setup_Net(
             node_emb_dimension,
             num_domains,
-            gnet_output_dimensions,
             matrix_pretrained_node_embeddings,
             gam_record_input_dimension,
             gam_encoder_dimensions,
@@ -464,7 +471,6 @@ class net(nn.Module):
             self,
             node_emb_dimension,
             num_domains,
-            gnet_output_dimensions,
             matrix_pretrained_node_embeddings,
             gam_record_input_dimension,
             gam_encoder_dimensions,
@@ -477,7 +483,6 @@ class net(nn.Module):
         self.graph_net = graph_net(
             node_emb_dimension,
             num_domains,
-            gnet_output_dimensions,
             matrix_pretrained_node_embeddings
         )
         self.gam_net = gam_net(
@@ -613,8 +618,12 @@ def train_model(df, NN):
 
     df_L = extract_labelled_df(df)
     df_U = extract_unlabelled_df(df)
+    df_L =  df_L.copy()
+    df_L, df_L_validation = train_utils.obtain_train_validation(
+        df_L
+    )
     df_U_original = df_U.copy()
-
+    print(' Data set lengths :', len(df_L), len(df_L_validation), len(df_U))
     while continue_training:
         # GAM gets inputs as embeddings, which are obtained through the graph embeddings
         # that requires serialized feature ids
@@ -653,13 +662,14 @@ def train_model(df, NN):
             lr=0.005
         )
         params_list_f = [_ for _ in NN.graph_net.parameters()]
-        params_list_f = params_list_f + [_ for _ in NN.gam_net.parameters()]
+        params_list_f = params_list_f + [_ for _ in NN.clf_net.parameters()]
+
         print('# of parameters to be obtimized for f ', len(params_list_f))
         optimizer_f = torch.optim.Adam(
             params_list_f,
             lr=0.005
         )
-
+        final_epoch = False # To check convergence
         if NN.train_mode == 'g':
             # ----
             # input_x1,y2 : from Dataloader ( L )
@@ -668,6 +678,8 @@ def train_model(df, NN):
             # -----
             print('Training Agreement model .... ')
             optimizer_g.zero_grad()
+            prev_loss = 0
+            iter_below_tol = 0
             for epoch in range(num_epochs_g):
                 print('Epoch [g]', epoch )
                 record_loss = []
@@ -707,6 +719,26 @@ def train_model(df, NN):
                                 'Epoch {}, Batch [g] {} :: Loss {}'.format(
                                     epoch, batch_idx, loss)
                             )
+                        cur_loss = loss
+                        # ------------------------
+                        # If training performance is not improving, stop training
+                        # ------------------------
+                        iter_below_tol, is_converged = train_utils.check_convergence(
+                            prev_loss = prev_loss,
+                            cur_loss=loss,
+                            cur_step = batch_idx,
+                            iter_below_tol= iter_below_tol,
+                            abs_loss_chg_tol = 0.001,
+                            min_num_iter = 100,
+                            max_iter_below_tol = 50
+                        )
+                        prev_loss = cur_loss
+                        if is_converged :
+                            final_epoch =True
+                if final_epoch :
+                    break
+
+
 
         # -----------------------
         # Train the classifier
@@ -939,7 +971,7 @@ def train_model(df, NN):
 
         evaluate_1(
             NN,
-            df_U_original,
+            df_L_validation,
             x_cols=g_feature_cols
         )
     return
@@ -1014,8 +1046,6 @@ def evaluate_1(
         print('Accuracy ', accuracy_score(y_true, y_pred))
         print('Balanced Accuracy ', balanced_accuracy_score(y_true, y_pred))
 
-
-
     return
 
 # ---------------------------------- #
@@ -1027,7 +1057,6 @@ df = convert_to_serial_IDs(df, True)
 df = set_label_in_top_perc(df, 10)
 matrix_node_emb = read_matrix_node_emb()
 num_domains = len(domain_dims)
-gam_encoder_dimensions = [512, 512, 256]
 
 # matrix_node_emb = FT(matrix_node_emb).to(DEVICE)
 matrix_node_emb = FT(matrix_node_emb)
@@ -1037,7 +1066,7 @@ NN = net(
     gnet_output_dimensions=node_emb_dim * num_domains,
     matrix_pretrained_node_embeddings=matrix_node_emb,
     gam_record_input_dimension=node_emb_dim * num_domains,
-    gam_encoder_dimensions=gam_encoder_dimensions,
+    gam_encoder_dimensions=gam_encoder_dimensions_mlp,
     clf_inp_emb_dimension=node_emb_dim * num_domains,
     clf_layer_dimensions=clf_mlp_layer_dimesnions
 )

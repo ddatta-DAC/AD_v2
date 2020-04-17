@@ -6,6 +6,8 @@
 # Author : Debanjan Datta
 # Email : ddatta@vt.edu
 # ---------------
+from sklearn.model_selection import train_test_split
+import numpy as np
 
 
 # ---------------------------------------------------
@@ -18,7 +20,7 @@ def check_convergence(
         iter_below_tol,
         abs_loss_chg_tol = 0.001,
         min_num_iter = 100,
-        max_iter_below_tol = 20
+        max_iter_below_tol = 50
 ):
     """Checks if training for a model has converged."""
     has_converged = False
@@ -38,3 +40,17 @@ def check_convergence(
 
     return has_converged, iter_below_tol
 
+
+def obtain_train_validation(
+        df,
+        split_ratio=0.10
+):
+    res = train_test_split(
+        df,
+        test_size = split_ratio
+    )
+
+    df_train = res[0]
+    df_valid = res[1]
+
+    return df_train, df_valid

@@ -12,49 +12,56 @@ import torch.nn.functional as F
 
 # -------------------------------- #
 
-
-
-
 class gam_net(nn.Module):
 
     def __init__(
             self,
-            node_input_dimension,
+            input_dimension,
             encoder_dimensions,
     ):
         super(gam_net, self).__init__()
         self.setup_Net(
-            node_input_dimension,
+            input_dimension,
             encoder_dimensions
         )
         return
 
     def setup_Net(
             self,
-            node_input_dimension,
-            encoder_op_dimensions
+            input_dimension,
+            encoder_dimensions
     ):
         print(' Graph Agreement Module ')
-        num_encoder_layers = len(encoder_op_dimensions)
+        num_encoder_layers = len(encoder_dimensions) + 1
         self.num_encoder_layers = num_encoder_layers
-        self.encoder_dimensions = encoder_op_dimensions
+        self.encoder_dimensions = encoder_dimensions
+        self.encoder_layers = nn.ModuleList()
+
+        if type(input_dimension) == list:
+            num_domains = input_dimension[0]
+            node_emb_dim = input_dimension[1]
+            encoder_inp_dim = num_domains * node_emb_dim
+        else:
+            encoder_inp_dim = input_dimension
+
+        inp_dim = encoder_inp_dim
+        for i in range(self.num_encoder_layers):
+            op_dim = encoder_dimensions[i-1]
+            self.encoder_layers.append(nn.Linear(inp_dim, op_dim))
+            inp_dim = op_dim
 
         # Encoder
         # 3 layer MLP
         # self.encoder = [None] * num_encoder_layers
-        inp_dim = node_input_dimension
-        self.encoder_1 = nn.Linear(inp_dim, encoder_op_dimensions[0])
-        self.encoder_2 = nn.Linear(encoder_op_dimensions[0], encoder_op_dimensions[1])
-        self.encoder_3 = nn.Linear(encoder_op_dimensions[1], encoder_op_dimensions[2])
-        print('Encoder Layer :: \n',
-              self.encoder_1, self.encoder_2, self.encoder_3)
+
+        print('Encoder Layer :: \n', self.encoder_layers)
         # Aggregator
         # Just d = (ei -ej)^2
 
         # Predictor
         # 1 layer MLP
         # output should be a value
-        self.predictor_layer = nn.Linear(encoder_op_dimensions[-1], 1)
+        self.predictor_layer = nn.Linear(encoder_dimensions[-1], 1)
         print('Predictor Layer ::', self.predictor_layer)
         return
 
@@ -63,24 +70,20 @@ class gam_net(nn.Module):
             x1,
             x2
     ):
+        if len(x1.shape) > 2:
+            x1 = x1.view(-1, x1.shape[-2] * x1.shape[-1])
+        if len(x2.shape) > 2:
+            x2 = x2.view(-1, x2.shape[-2] * x2.shape[-1])
+
+
         e_1 = x1
         e_2 = x2
 
-        e_1 = self.encoder_1(e_1)
-        e_1 = self.encoder_2(e_1)
-        e_1 = self.encoder_3(e_1)
-
-        e_2 = self.encoder_1(e_2)
-        e_2 = self.encoder_2(e_2)
-        e_2 = self.encoder_3(e_2)
-
-        e_1 = torch.tanh(e_1)
-        e_2 = torch.tanh(e_2)
-        # for i in range(self.num_encoder_layers):
-        #     e_1 = self.encoder[i](e_1)
-        #     e_2 = self.encoder[i](e_2)
-        #     e_1 = torch.tanh(e_1)
-        #     e_2 = torch.tanh(e_2)
+        for i in range(self.num_encoder_layers):
+            e_1 = self.encoder_layers[i](e_1)
+            e_2 = self.encoder_layers[i](e_2)
+            e_1 = torch.tanh(e_1)
+            e_2 = torch.tanh(e_2)
 
         # Aggregator
         d = e_1 - e_2
