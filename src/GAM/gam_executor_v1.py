@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 import os
 import sys
-
+from time import time
 from pandarallel import pandarallel
 
 from sklearn.metrics import precision_score
@@ -846,10 +846,12 @@ def train_model(df, NN):
                 # ====================
                 # print('---- > LL ')
                 NN.train_mode = 'f_ll'
+                t1 = time()
                 data_LL_x, data_LL_y = data_LL_generator.get_next()
                 x1 = data_LL_x[0].to(DEVICE)
                 x2 = data_LL_x[1].to(DEVICE)
-
+                t2= time()
+                print(round(t2-t1,4))
                 pred_agreement, pred_y1 = NN([x1, x2])
                 y2 = LT(data_LL_y[1]).to(DEVICE)
 
@@ -860,12 +862,15 @@ def train_model(df, NN):
                 # print('---- > UL ')
                 # UL
                 NN.train_mode = 'f_ul'
-
+                t1 = time()
                 data_UL_x, data_UL_y = data_UL_generator.get_next()
 
                 x1 = data_UL_x[0].to(DEVICE)
                 x2 = data_UL_x[1].to(DEVICE)
                 y2 = data_UL_y[1].to(DEVICE)
+                t2 = time()
+                print(round(t2 - t1, 4))
+
                 _x = [x1, x2]
 
                 pred_agreement, pred_y1 = NN(_x)
@@ -880,9 +885,12 @@ def train_model(df, NN):
                 # ====================
                 # print('---- > UU ')
                 NN.train_mode = 'f_uu'
+                t1 = time()
                 data_UU = data_UU_generator.get_next()
                 x1 = data_UU[0].to(DEVICE)
                 x2 = data_UU[1].to(DEVICE)
+                t2 = time()
+                print(round(t2 - t1, 4))
                 _x = [x1, x2]
                 pred_agreement, pred_y1, pred_y2 = NN(_x)
                 loss_UU = regularization_loss(pred_agreement, [pred_y1, pred_y2])
@@ -969,10 +977,16 @@ def train_model(df, NN):
         current_iter_count += 1
         if current_iter_count > max_IC_iter:
             continue_training = False
-
+        print('----- Validation set ')
         evaluate_1(
             NN,
             df_L_validation,
+            x_cols=g_feature_cols
+        )
+        print( '----- Test set ')
+        evaluate_1(
+            NN,
+            df_U_original,
             x_cols=g_feature_cols
         )
     return
