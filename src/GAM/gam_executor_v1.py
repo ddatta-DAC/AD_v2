@@ -624,6 +624,7 @@ def train_model(df, NN):
     )
     df_U_original = df_U.copy()
     print(' Data set lengths :', len(df_L), len(df_L_validation), len(df_U))
+
     while continue_training:
         # GAM gets inputs as embeddings, which are obtained through the graph embeddings
         # that requires serialized feature ids
@@ -669,7 +670,7 @@ def train_model(df, NN):
             params_list_f,
             lr=0.005
         )
-        final_epoch = False # To check convergence
+        final_epoch_g = False # To check convergence
         if NN.train_mode == 'g':
             # ----
             # input_x1,y2 : from Dataloader ( L )
@@ -723,7 +724,7 @@ def train_model(df, NN):
                         # ------------------------
                         # If training performance is not improving, stop training
                         # ------------------------
-                        iter_below_tol, is_converged = train_utils.check_convergence(
+                        is_converged, iter_below_tol, = train_utils.check_convergence(
                             prev_loss = prev_loss,
                             cur_loss=loss,
                             cur_step = batch_idx,
@@ -734,8 +735,8 @@ def train_model(df, NN):
                         )
                         prev_loss = cur_loss
                         if is_converged :
-                            final_epoch =True
-                if final_epoch :
+                            final_epoch_g =True
+                if final_epoch_g :
                     break
 
 
