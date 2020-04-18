@@ -829,6 +829,15 @@ def train_model(df, NN):
             # data_UL_generator = dataGeneratorWrapper(dataLoader_obj_L4)
             # data_UU_generator = dataGeneratorWrapper(dataLoader_obj_L5)
 
+            data_LL_generator = pairDataGenerator(
+                df_1 = df_L,
+                df_2 = df_L,
+                x_cols=g_feature_cols,
+                y1_col= None,
+                y2_col= label_col,
+                batch_size=batch_size_r)
+
+
             data_UL_generator = pairDataGenerator(
                 df_1 = df_U,
                 df_2 = df_L,
