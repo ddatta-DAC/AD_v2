@@ -242,6 +242,7 @@ def get_normal_data_sample(
     global feature_col_list
     global is_labelled_col
     global label_col
+    global true_label_col
 
     df =  pd.read_csv(
         os.path.join(
@@ -251,7 +252,7 @@ def get_normal_data_sample(
     df = df.sample(data_size)
     df['fraud'] = False
     df['anomaly'] = False
-
+    df[true_label_col] = 0
     df[is_labelled_col] = True
     df[label_col] = 0
     # ---------------------
@@ -709,7 +710,7 @@ def train_model(df, NN):
         print('# of parameters to be obtimized for g ', len(params_list_g))
         optimizer_g = torch.optim.Adam(
             params_list_g,
-            lr=0.005
+            lr=0.01
         )
         params_list_f = [_ for _ in NN.graph_net.parameters()]
         params_list_f = params_list_f + [_ for _ in NN.clf_net.parameters()]
@@ -924,12 +925,11 @@ def train_model(df, NN):
                 # ====================
                 # print('---- > LL ')
                 NN.train_mode = 'f_ll'
-                t1 = time()
+
                 data_LL_x, data_LL_y = data_LL_generator.get_next()
                 x1 = data_LL_x[0].to(DEVICE)
                 x2 = data_LL_x[1].to(DEVICE)
-                t2= time()
-                print(round(t2-t1,4))
+
                 pred_agreement, pred_y1 = NN([x1, x2])
                 y2 = LT(data_LL_y[1]).to(DEVICE)
 
@@ -940,14 +940,13 @@ def train_model(df, NN):
                 # print('---- > UL ')
                 # UL
                 NN.train_mode = 'f_ul'
-                t1 = time()
+
                 data_UL_x, data_UL_y = data_UL_generator.get_next()
 
                 x1 = data_UL_x[0].to(DEVICE)
                 x2 = data_UL_x[1].to(DEVICE)
                 y2 = data_UL_y[1].to(DEVICE)
-                t2 = time()
-                print(round(t2 - t1, 4))
+
 
                 _x = [x1, x2]
 
@@ -966,7 +965,6 @@ def train_model(df, NN):
                 data_UU = data_UU_generator.get_next()
                 x1 = data_UU[0].to(DEVICE)
                 x2 = data_UU[1].to(DEVICE)
-
 
                 _x = [x1, x2]
                 pred_agreement, pred_y1, pred_y2 = NN(_x)
