@@ -245,7 +245,7 @@ def get_normal_data_sample(
 
     df =  pd.read_csv(
         os.path.join(
-            DATA_SOURCE_DIR_1, 'train_data_csv'
+            DATA_SOURCE_DIR_1, 'train_data.csv'
         ),index_col=None
     )
     df = df.sample(data_size)
