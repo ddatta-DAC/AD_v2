@@ -71,6 +71,7 @@ try:
     from torch_data_loader import type1_Dataset
     from torch_data_loader import dataGeneratorWrapper
     import  train_utils
+    from torch_data_loader import pairDataGenerator
 except:
     from .gam_module import gam_net
     from .gam_module import gam_loss
@@ -81,6 +82,7 @@ except:
     from .torch_data_loader import type1_Dataset
     from .torch_data_loader import dataGeneratorWrapper
     from . import train_utils
+    from .torch_data_loader import pairDataGenerator
 
 from torch import FloatTensor as FT
 from torch import LongTensor as LT
@@ -625,6 +627,7 @@ def train_model(df, NN):
     df_U_original = df_U.copy()
     print(' Data set lengths :', len(df_L), len(df_L_validation), len(df_U))
 
+
     while continue_training:
         # GAM gets inputs as embeddings, which are obtained through the graph embeddings
         # that requires serialized feature ids
@@ -823,11 +826,31 @@ def train_model(df, NN):
 
             data_L_generator = dataGeneratorWrapper(dataLoader_obj_L2)
             data_LL_generator = dataGeneratorWrapper(dataLoader_obj_L3)
-            data_UL_generator = dataGeneratorWrapper(dataLoader_obj_L4)
-            data_UU_generator = dataGeneratorWrapper(dataLoader_obj_L5)
+            # data_UL_generator = dataGeneratorWrapper(dataLoader_obj_L4)
+            # data_UU_generator = dataGeneratorWrapper(dataLoader_obj_L5)
+
+            data_UL_generator = pairDataGenerator(
+                df_1 = df_U,
+                df_2 = df_L,
+                x_cols=g_feature_cols,
+                y1_col= None,
+                y2_col= label_col,
+                batch_size=batch_size_r
+            )
+
+            data_UU_generator = pairDataGenerator(
+                df_1 = df_U,
+                df_2 = df_U,
+                x_cols=g_feature_cols,
+                y1_col=None,
+                y2_col=None,
+                batch_size= batch_size_r
+            )
+
+
             data_LL_generator.set_allow_refresh()
-            data_UL_generator.set_allow_refresh()
-            data_UU_generator.set_allow_refresh()
+            # data_UL_generator.set_allow_refresh()
+            # data_UU_generator.set_allow_refresh()
 
 
             batch_idx_f = 0
@@ -864,7 +887,7 @@ def train_model(df, NN):
                 NN.train_mode = 'f_ul'
                 t1 = time()
                 data_UL_x, data_UL_y = data_UL_generator.get_next()
-
+                print( len(data_UL_x[0]), len(data_UL_y) )
                 x1 = data_UL_x[0].to(DEVICE)
                 x2 = data_UL_x[1].to(DEVICE)
                 y2 = data_UL_y[1].to(DEVICE)
@@ -885,16 +908,15 @@ def train_model(df, NN):
                 # ====================
                 # print('---- > UU ')
                 NN.train_mode = 'f_uu'
-                t1 = time()
                 data_UU = data_UU_generator.get_next()
                 x1 = data_UU[0].to(DEVICE)
                 x2 = data_UU[1].to(DEVICE)
-                t2 = time()
-                print(round(t2 - t1, 4))
+
+
                 _x = [x1, x2]
                 pred_agreement, pred_y1, pred_y2 = NN(_x)
                 loss_UU = regularization_loss(pred_agreement, [pred_y1, pred_y2])
-                # print(loss_UU.shape)
+
 
                 # ====================
                 # Loss

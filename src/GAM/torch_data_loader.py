@@ -11,6 +11,7 @@ import copy
 import pandas as pd
 import numpy as np
 import torch
+
 sys.path.append('./../..')
 sys.path.append('./..')
 from torch.utils.data import DataLoader
@@ -18,7 +19,6 @@ from torch.utils.data import Dataset
 from torch.utils.data import RandomSampler
 from torch import FloatTensor as FT
 from torch import LongTensor as LT
-
 
 
 class custom_dataset_type_1(Dataset):
@@ -57,7 +57,7 @@ class pair_Dataset(Dataset):
             y_col=None,
             size_1=None,
             size_2=None,
-            shuffle_prob = 0.25
+            shuffle_prob=0.25
     ):
         self.data_1 = df_1
         if size_1 is None:
@@ -89,7 +89,7 @@ class pair_Dataset(Dataset):
             idx_s = [_ for _ in map(lambda x: x % min_size, idx)]
         except:
             idx_s = idx % min_size
-        shuffle_flag = np.random.uniform(0,1) <= self.shuffle_prob
+        shuffle_flag = np.random.uniform(0, 1) <= self.shuffle_prob
 
         if self.size_1 < self.size_2:
             if shuffle_flag:
@@ -125,8 +125,6 @@ class pair_Dataset(Dataset):
             return x1, x2
 
 
-
-
 # ================================
 # This custom dataset can load single labelled or unlabelled dataset.
 # ================================
@@ -136,14 +134,13 @@ class type1_Dataset(Dataset):
             df,
             x_cols,
             y_col=None,
-            return_id_col = False
+            return_id_col=False
     ):
         self.id_col = 'PanjivaRecordID'
         self.df = df
         self.x_cols = x_cols
         self.y_col = y_col
         self.return_id_col = return_id_col
-
 
     def __len__(self):
         return len(self.df)
@@ -160,13 +157,13 @@ class type1_Dataset(Dataset):
         if self.y_col is not None:
             y = self.df[self.y_col].iloc[idx]
             y = np.array(y)
-            y = np.reshape(y,[-1])
+            y = np.reshape(y, [-1])
             if id is not None:
                 return (id, x, y)
             else:
-                return (x,y)
-        if id is not None:
-            return (id,x)
+                return (x, y)
+        elif id is not None:
+            return (id, x)
         else:
             return x
 
@@ -192,14 +189,108 @@ class dataGeneratorWrapper():
         try:
             return next(self.iter_obj)
         except StopIteration:
-            if self.allow_refresh :
+            if self.allow_refresh:
                 print('Encountered StopIteration and refreshing')
                 self.iter_obj = iter(copy.copy(self.obj_dataloader))
                 return next(self.iter_obj)
             else:
                 return None
 
+
 # ------------------------------------------------- #
+
+class pairDataGenerator():
+    def __init__(
+            self,
+            df_1,
+            df_2,
+            x_cols,
+            batch_size=256,
+            y1_col =None,
+            y2_col =None,
+            num_workers=0
+    ):
+        print(y1_col, y2_col)
+        self.x_cols = x_cols
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+
+        self.ds1 = type1_Dataset(
+            df_1,
+            x_cols,
+            y1_col
+        )
+
+        self.ds2 = type1_Dataset(
+            df_2,
+            x_cols,
+            y2_col
+        )
+
+        self.iter_obj1 = iter(self.get_dataloader(self.ds1))
+        self.iter_obj2 = iter(self.get_dataloader(self.ds2))
+        self.y1_col = y1_col
+        self.y2_col = y2_col
+        return
+
+    def get_dataloader(
+            self,
+            ds
+    ):
+        dl = DataLoader(
+            ds,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+            sampler=RandomSampler(ds),
+            drop_last=True
+        )
+        return dl
+
+
+
+    def get_next(self):
+        y1 = None
+        y2 = None
+        try:
+            if self.y1_col is not None:
+                x1_y1 = next(self.iter_obj1)
+                x1 = x1_y1[0]
+                y1 = x1_y1[1]
+            else:
+                x1 = next(self.iter_obj1)
+        except StopIteration:
+            self.iter_obj1 = iter(self.get_dataloader(self.ds1))
+
+            if self.y1_col is not None:
+                x1_y1 = next(self.iter_obj1)
+                x1 = x1_y1[0]
+                y1 = x1_y1[1]
+            else:
+                x1 = next(self.iter_obj1)
+
+        try:
+            if self.y2_col is not None:
+                x2_y2 = next(self.iter_obj2)
+                x2 = x2_y2[0]
+                y2 = x2_y2[1]
+            else:
+                x2 = next(self.iter_obj2)
+        except StopIteration:
+            self.iter_obj2 = iter(self.get_dataloader(self.ds2))
+            if self.y2_col is not None:
+                x2_y2 = next(self.iter_obj2)
+                x2 = x2_y2[0]
+                y2 = x2_y2[1]
+            else:
+                x2 = next(self.iter_obj2)
+
+        if self.y1_col is not None or self.y2_col is not None:
+            return (x1,x2), (y1,y2)
+        else:
+            return (x1, x2)
+
+
 
 def test():
     f_path = './../../generated_data_v1/us_import1/test_data.csv'
@@ -236,6 +327,5 @@ def test():
     #     num_workers=num_proc,
     #     sampler=RandomSampler(ds)
     # )
-
 
 # test()
