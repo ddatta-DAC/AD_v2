@@ -825,7 +825,7 @@ def train_model(df, NN):
             # data_UU_generator = dataGeneratorWrapper(dataLoader_obj_L5).generator()
 
             data_L_generator = dataGeneratorWrapper(dataLoader_obj_L2)
-            data_LL_generator = dataGeneratorWrapper(dataLoader_obj_L3)
+            # data_LL_generator = dataGeneratorWrapper(dataLoader_obj_L3)
             # data_UL_generator = dataGeneratorWrapper(dataLoader_obj_L4)
             # data_UU_generator = dataGeneratorWrapper(dataLoader_obj_L5)
 
@@ -857,7 +857,7 @@ def train_model(df, NN):
             )
 
 
-            data_LL_generator.set_allow_refresh()
+            # data_LL_generator.set_allow_refresh()
             # data_UL_generator.set_allow_refresh()
             # data_UU_generator.set_allow_refresh()
 
