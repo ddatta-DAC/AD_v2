@@ -75,7 +75,6 @@ class gam_net(nn.Module):
         if len(x2.shape) > 2:
             x2 = x2.view(-1, x2.shape[-2] * x2.shape[-1])
 
-
         e_1 = x1
         e_2 = x2
 
@@ -91,6 +90,7 @@ class gam_net(nn.Module):
 
         # Predictor
         res_pred = self.predictor_layer(d)
+
         # This should be fed to a loss function
         # torch.nn.BCELoss ; preferably torch.nn.BCEWithLogitsLoss
         # that should have inputs res_pred , agreement_indicator

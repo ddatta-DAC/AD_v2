@@ -70,7 +70,7 @@ try:
     from torch_data_loader import pair_Dataset
     from torch_data_loader import type1_Dataset
     from torch_data_loader import dataGeneratorWrapper
-    import  train_utils
+    import train_utils
     from torch_data_loader import pairDataGenerator
 except:
     from .gam_module import gam_net
@@ -201,6 +201,7 @@ def setup_config(_DIR):
     batch_size_r = CONFIG['batch_size_r']
     Logging_Dir = CONFIG['Logging_Dir']
     logger = get_logger()
+
     return
 
 # -------------------------------------
@@ -229,6 +230,52 @@ def close_logger(logger):
         handler.close()
         logger.removeHandler(handler)
     return
+
+
+# --------------------------------------
+def get_normal_data_sample(
+        data_size = 1000
+):
+    global DATA_SOURCE_DIR_1
+    global DIR
+    global serial_mapping_df
+    global feature_col_list
+    global is_labelled_col
+    global label_col
+
+    df =  pd.read_csv(
+        os.path.join(
+            DATA_SOURCE_DIR_1, 'train_data_csv'
+        ),index_col=None
+    )
+    df = df.sample(data_size)
+    df['fraud'] = False
+    df['anomaly'] = False
+
+    df[is_labelled_col] = True
+    df[label_col] = 0
+    # ---------------------
+    # convert
+    # ---------------------
+    reference_dict = {}
+    for d in set(serial_mapping_df['Domain']):
+        reference_dict[d] = {}
+        _tmp = serial_mapping_df.loc[(serial_mapping_df['Domain'] == d)]
+        k = _tmp['Entity_ID']
+        v = _tmp['Serial_ID']
+        reference_dict[d] = {_k: _v for _k, _v in zip(k, v)}
+    keep_entity_ids = True
+    # Inplace conversion
+    def aux_conv_toSerialID(_row):
+        row = _row.copy()
+        for fc in feature_col_list:
+            col_name = fc
+            if keep_entity_ids:
+                col_name = '_' + fc
+            row[col_name] = reference_dict[fc][row[fc]]
+        return row
+    df = df.parallel_apply(aux_conv_toSerialID, axis=1)
+    return df
 
 # --------------------------------------
 
@@ -265,7 +312,6 @@ def extract_unlabelled_df(df):
         copy=True
     )
     return res
-
 
 # -----------------------
 # Get o/p from the AD system
@@ -402,11 +448,7 @@ def convert_to_serial_IDs(
             col_name = fc
             if keep_entity_ids:
                 col_name = '_' + fc
-            # row[col_name] = list(
-            #     serial_mapping_df.loc[
-            #         (serial_mapping_df['Domain'] == fc) &
-            #         (serial_mapping_df['Entity_ID'] == row[fc])
-            #     ]['Serial_ID'])[0]
+
             row[col_name] = reference_dict[fc][row[fc]]
 
         return row
@@ -624,9 +666,13 @@ def train_model(df, NN):
     df_L, df_L_validation = train_utils.obtain_train_validation(
         df_L
     )
+    # Add in normal data to validation data
+    df_L_validation = df_L_validation.append(
+        get_normal_data_sample(len(df_L_validation)),
+        ignore_index=True
+    )
     df_U_original = df_U.copy()
     print(' Data set lengths :', len(df_L), len(df_L_validation), len(df_U))
-
 
     while continue_training:
         # GAM gets inputs as embeddings, which are obtained through the graph embeddings
@@ -896,7 +942,7 @@ def train_model(df, NN):
                 NN.train_mode = 'f_ul'
                 t1 = time()
                 data_UL_x, data_UL_y = data_UL_generator.get_next()
-                print( len(data_UL_x[0]), len(data_UL_y) )
+
                 x1 = data_UL_x[0].to(DEVICE)
                 x2 = data_UL_x[1].to(DEVICE)
                 y2 = data_UL_y[1].to(DEVICE)
@@ -1009,7 +1055,7 @@ def train_model(df, NN):
         if current_iter_count > max_IC_iter:
             continue_training = False
         print('----- Validation set ')
-        evaluate_1(
+        evaluate_validation(
             NN,
             df_L_validation,
             x_cols=g_feature_cols
@@ -1093,6 +1139,73 @@ def evaluate_1(
         print('Balanced Accuracy ', balanced_accuracy_score(y_true, y_pred))
 
     return
+
+
+def evaluate_validation(
+        model,
+        data_df,
+        x_cols,
+        batch_size = 3096
+):
+    global DEVICE
+    global label_col
+    global id_col
+    global true_label_col
+    df = data_df.copy()
+
+    model.train(mode=False)
+    model.test_mode = True
+    model.train_mode = False
+
+    data_source_eval = type1_Dataset(
+        df,
+        x_cols=x_cols,
+        y_col=None,
+        return_id_col = True
+    )
+
+    dataLoader_obj_eval = DataLoader(
+        data_source_eval,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=0,
+        sampler=SequentialSampler(data_source_eval)
+    )
+
+    id_list = []
+    pred_y_label = []
+    for batch_idx, data in enumerate(dataLoader_obj_eval):
+        _id = data[0].data.numpy()
+        _id = np.reshape(_id,-1)
+        id_list.extend(_id)
+        data_x = data[1].to(DEVICE)
+        _pred_y_probs = model(data_x)
+        _pred_y_label = torch.argmax(_pred_y_probs, dim=1).cpu().data.numpy()
+        pred_y_label.extend(_pred_y_label)
+
+    model.train(mode=True)
+    model.test_mode = False
+    model.train_mode = True
+    pred_y_label = np.array(pred_y_label)
+
+    res_df = pd.DataFrame(
+        np.stack([id_list,pred_y_label],axis=1), columns = [id_col, label_col]
+    )
+
+    del df[label_col]
+    # merge
+    df = df.merge( res_df, on=[id_col], how = 'left')
+    # df[label_col] = list(pred_y_label)
+    # Now lets ee result at various points
+    df = df.sort_values(by=['score'])
+    y_true = df[true_label_col]
+    y_pred = df[label_col]
+    print('Precision ', precision_score(y_true, y_pred) )
+    print('Recall ', recall_score(y_true, y_pred))
+    print('Accuracy ', accuracy_score(y_true, y_pred))
+    print('Balanced Accuracy ', balanced_accuracy_score(y_true, y_pred))
+    return
+
 
 # ---------------------------------- #
 
