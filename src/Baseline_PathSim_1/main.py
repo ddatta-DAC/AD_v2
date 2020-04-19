@@ -24,6 +24,7 @@ sys.path.append('./..')
 sys.path.append('./../..')
 import pickle
 import logging
+from datetime import datetime
 import argparse
 import multiprocessing
 from sklearn.metrics import accuracy_score
@@ -122,6 +123,7 @@ def get_logger():
     handler = logging.FileHandler(log_file_path)
     handler.setLevel(logging.INFO)
     logger.addHandler(handler)
+    logger.info(str(datetime.utcnow()))
     return logger
 
 def close_logger(logger):
@@ -504,6 +506,7 @@ def read_target_data():
     global TARGET_DATA_SOURCE
     global data_max_size
     global id_col
+    global LOGGER
 
     csv_f_name = 'scored_test_data.csv'
     df = pd.read_csv(
@@ -526,7 +529,7 @@ def read_target_data():
         df = df.loc[df[id_col].isin(valid_ids)]
     else:
         df = df.sample(data_max_size)
-
+    LOGGER.info('Length of data :: ', df )
     df = df.sort_values(
         by=['score']
     )
