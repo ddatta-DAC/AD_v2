@@ -554,7 +554,8 @@ def get_record_2_serial_ID_df(target_df):
     }
 
     record_2_serial_ID_df = pd.DataFrame(
-        record_2_serial_ID.items(), columns=[id_col, 'Serial_ID']
+        record_2_serial_ID.items(),
+        columns=[id_col, 'Serial_ID']
     )
 
     record_2_serial_ID_df.to_csv(
@@ -579,7 +580,7 @@ def get_record_2_serial_ID_df(target_df):
 # ------------------------------------------
 def execute_iterative_classification(
     df,
-    cur_checkpoint =10
+    cur_checkpoint = 10
 ):
     global id_col
     global domain_dims
@@ -604,19 +605,21 @@ def execute_iterative_classification(
 
     def update_label(row, ref_df, epsilon, _k):
         _id = row[id_col]
-        lamdba = 0.25
+        _lambda = 0.5
         ref_df = ref_df[[id_col,label_col]]
         f_path = os.path.join(KNN_dir,str(_id) + '.csv')
         _sim_df = pd.read_csv(f_path,index_col=None)
-        _sim_df = _sim_df.merge(ref_df,
-            on=id_col, how ='left'
+        _sim_df = _sim_df.merge(
+            ref_df,
+            on=id_col,
+            how ='left'
         )
         _sim_df = _sim_df.head(_k+1)
         _sim_df = _sim_df.tail(_k)
         _l = list(_sim_df[label_col])
         _s = list(_sim_df['score'])
         res = np.sum(np.multiply(_l,_s))/ np.sum(_s)
-        res = lamdba * row[label_col] + (1-lamdba) * res
+        res = _lambda * row[label_col] + (1-_lambda) * res
         if np.abs(res) >= epsilon :
             return np.sign(res)
         else :
@@ -948,7 +951,7 @@ set_checkpoints = [ 10,20,30,40,50 ]
 for checkpoint in set_checkpoints:
     execute_iterative_classification(
         target_df,
-        cur_checkpoint = 10
+        cur_checkpoint = checkpoint
     )
 
 close_logger(LOGGER)
