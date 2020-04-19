@@ -642,7 +642,7 @@ def execute_iterative_classification(
             kernel='poly',
             degree='4'
         )
-
+    LOGGER.info('Classifier type :: ' +  classifier_type)
     df_master = df.copy()
     record_count = len(df)
 
