@@ -136,8 +136,8 @@ def close_logger(logger):
 
 
 def get_training_data(DIR):
-    global SOURCE_DATA_DIR
-    data = data_fetcher.get_train_x_csv(SOURCE_DATA_DIR, DIR)
+    global SOURCE_DATA_DIR_1
+    data = data_fetcher.get_train_x_csv(SOURCE_DATA_DIR_1, DIR)
     return data
 
 
