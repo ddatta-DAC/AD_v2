@@ -28,6 +28,9 @@ import argparse
 import multiprocessing
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import balanced_accuracy_score
+
 from pandarallel import pandarallel
 pandarallel.initialize()
 import yaml
@@ -53,7 +56,7 @@ except:
 
 
 DIR = None
-TARGET_DATA_SOURCE = './../../AD_system_output'
+TARGET_DATA_SOURCE = './../../AD_system_output_v2'
 CONFIG = None
 config_file = 'config.yaml'
 KNN_k = None
@@ -72,6 +75,8 @@ Logging_Dir = 'Log'
 # Call this to set up global variables
 # ------------------------------------------------------------
 
+SOURCE_DATA_DIR_1 = './../../generated_data_v2'
+
 def setup():
     global DIR
     global config_file
@@ -81,6 +86,7 @@ def setup():
     global KNN_k
     global data_max_size
     global KNN_dir
+    global CONFIG
 
     with open(config_file) as f:
         CONFIG = yaml.safe_load(f)
@@ -96,6 +102,7 @@ def setup():
     domain_dims = get_domain_dims(DIR)
     KNN_dir = 'KNN'
     KNN_dir = os.path.join(model_use_data_DIR, KNN_dir)
+    return
 
 # ---------------------------------------
 
@@ -127,7 +134,7 @@ def close_logger(logger):
 
 
 def get_training_data(DIR):
-    SOURCE_DATA_DIR = './../../generated_data_v1'
+    global SOURCE_DATA_DIR
     data = data_fetcher.get_train_x_csv(SOURCE_DATA_DIR, DIR)
     return data
 
@@ -135,7 +142,7 @@ def get_training_data(DIR):
 def get_domain_dims(DIR):
     with open(
             os.path.join(
-                './../../generated_data_v1',
+                SOURCE_DATA_DIR_1,
                 DIR,
                 'domain_dims.pkl'
             ), 'rb') as fh:
@@ -505,10 +512,14 @@ def read_target_data():
             DIR,
             csv_f_name), index_col=None
     )
+    # ----------------
     # Check if previously target data has been read and calculations made
+    # ----------------
     f_path =  os.path.join(
-        model_use_data_DIR, 'record_2_serial_ID.csv'
+        model_use_data_DIR,
+        'record_2_serial_ID.csv'
     )
+
     if os.path.exists( f_path):
         tmp_df = pd.read_csv(f_path, index_col=None)
         valid_ids = list(tmp_df[id_col])
@@ -525,7 +536,10 @@ def read_target_data():
 def get_record_2_serial_ID_df(target_df):
     global id_col
     global model_use_data_DIR
-    record_2_serial_file = os.path.join(model_use_data_DIR, 'record_2_serial_ID.csv')
+    record_2_serial_file = os.path.join(
+        model_use_data_DIR,
+        'record_2_serial_ID.csv'
+    )
 
     if os.path.exists(record_2_serial_file):
         return pd.read_csv(
@@ -535,6 +549,7 @@ def get_record_2_serial_ID_df(target_df):
     record_2_serial_ID = {
         e[1]: e[0] for e in enumerate(list(target_df[id_col]), 0)
     }
+
     record_2_serial_ID_df = pd.DataFrame(
         record_2_serial_ID.items(), columns=[id_col, 'Serial_ID']
     )
@@ -567,10 +582,11 @@ def execute_iterative_classification(
     global domain_dims
     global classifier_type
     global LOGGER
+    global KNN_k
 
     label_col = 'y'
-    epsilon = 0.25
-    k = 10
+    epsilon = 0.20
+    k = KNN_k
 
     LOGGER.info( " K = " + str(k))
     LOGGER.info("Length of data :: " + str(len(df)))
@@ -585,7 +601,7 @@ def execute_iterative_classification(
 
     def update_label(row, ref_df, epsilon, _k):
         _id = row[id_col]
-        lamdba = 0.3
+        lamdba = 0.25
         ref_df = ref_df[[id_col,label_col]]
         f_path = os.path.join(KNN_dir,str(_id) + '.csv')
         _sim_df = pd.read_csv(f_path,index_col=None)
@@ -627,6 +643,7 @@ def execute_iterative_classification(
     l_count = int(record_count * cur_checkpoint / 100)
     u_count = record_count - l_count
     one_hot_columns = list(domain_dims.keys())
+
     df = pd.get_dummies(
         df,
         columns=one_hot_columns
@@ -672,7 +689,6 @@ def execute_iterative_classification(
             del clf_test_df[rc]
         except:
             pass
-
 
     X_test = clf_test_df.values
     Y_pred = clf.predict(X_test)
@@ -788,7 +804,7 @@ def execute_iterative_classification(
 
     print ('Starting evaluation ')
 
-    # ------- Evaluate -------- #
+    # ------- Evaluation -------- #
     true_label_name = 'y_true'
 
     def place_true_labels(val):
@@ -805,13 +821,17 @@ def execute_iterative_classification(
     for dd in domain_dims.keys():
         del df_eval[dd]
 
-
     df_eval[true_label_name] = df_eval['fraud'].parallel_apply(
         place_true_labels
     )
 
+    # df_eval1 = pd.DataFrame(
+    #     df_eval.sort_values(by=[label_col,'score'], ascending=[False,True]),
+    #     copy=True
+    # )
+
     df_eval1 = pd.DataFrame(
-        df_eval.sort_values(by=[label_col,'score'], ascending=[False,True]),
+        df_eval.sort_values(by=['score'], ascending=True),
         copy=True
     )
 
@@ -819,7 +839,9 @@ def execute_iterative_classification(
         df_eval.sort_values(by=['score'], ascending=True),
         copy=True
     )
-
+    results_print = pd.DataFrame(
+        columns=['next %', 'precision', 'recall', 'f1', 'balanced_accuracy']
+    )
 
     for point in [10, 20, 30, 40, 50]:
         _count = int(len(df_master) * point / 100)
@@ -827,46 +849,67 @@ def execute_iterative_classification(
         y_true = list(df_tmp[true_label_name])
         y_pred = list(df_tmp[label_col])
 
-        accuracy = round(accuracy_score(y_true, y_pred), 2)
-        msg = '[   With Input] accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
-        LOGGER.info(msg)
-        print(msg)
-        TP = 0
-        TP_FN = 0
-        for i, j in zip(y_true, y_pred):
-            if i == 1 and i == j:
-                TP += 1
-            if i == 1 : TP_FN += 1
+        # Calculate precision and recall
 
-        precision = round(TP / TP_FN,2)
-        msg = '[   With Input] precision at Top (next)  {} % :: {}'.format(point, precision)
-        LOGGER.info(msg)
-        print(msg)
+        precision = precision_score(y_true, y_pred, labels=[-1,1], pos_label=1)
+        recall = recall_score(y_true, y_pred, labels=None, pos_label=1)
+        f1 = 2 * precision * recall / (precision + recall)
+        b_acc = balanced_accuracy_score(y_true, y_pred)
+        _dict = {
+         'next %' : point,
+         'precision' : round(precision,3),
+         'recall' : round(recall,3),
+         'f1' : round(f1,3),
+         'balanced_accuracy': round(b_acc,3)
+        }
+
+        results_print = results_print.append(_dict, ignore_index=True)
+
+
+        # accuracy = round(accuracy_score(y_true, y_pred), 2)
+        # msg = '[   With Input] accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
+        # LOGGER.info(msg)
+        # print(msg)
+        # TP = 0
+        # FN = 0
+        # FP = 0
+        # # Labels are +1 and -1
+        # for i, j in zip(y_true, y_pred):
+        #     if i == 1 and i == j:
+        #         TP += 1
+        #     if i == -1 and j == 1:
+        #         FP += 1
+        #     if i== 1 and j == -1:
+        #         FN += 1
+        #
+        # precision = round(TP / TP_FN,4)
+        # msg = '[   With Input] precision at Top (next)  {} % :: {}'.format(point, precision)
+        # LOGGER.info(msg)
+        # print(msg)
         # --------------------
         # If we consider all the records till this point as anomalies
         # df_eval2 is sorted by score
         # --------------------
-
-        df_tmp = df_eval2.head(_count)
-        y_true = list(df_tmp[true_label_name])
-        y_pred = [1] * len(df_tmp)
-        accuracy = round(accuracy_score(y_true, y_pred),2)
-        msg = '[Without Input] accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
-        LOGGER.info(msg)
-        print(msg)
-        TP = 0
-        TP_FN = 0
-        for i, j in zip(y_true, y_pred):
-            if i == 1 and i == j:
-                TP += 1
-            if i == 1: TP_FN += 1
-        precision = round(TP / TP_FN , 2)
-        msg = '[Without Input] precision at Top (next)  {} % :: {}'.format(point, precision)
-        LOGGER.info(msg)
-        print(msg)
+        # df_tmp = df_eval2.head(_count)
+        # y_true = list(df_tmp[true_label_name])
+        # y_pred = [1] * len(df_tmp)
+        # accuracy = round(accuracy_score(y_true, y_pred),2)
+        # msg = '[Without Input] accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
+        # LOGGER.info(msg)
+        # print(msg)
+        # TP = 0
+        # TP_FN = 0
+        # for i, j in zip(y_true, y_pred):
+        #     if i == 1 and i == j:
+        #         TP += 1
+        #     if i == 1: TP_FN += 1
+        # precision = round(TP / TP_FN , 2)
+        # msg = '[Without Input] precision at Top (next)  {} % :: {}'.format(point, precision)
+        # LOGGER.info(msg)
+        # print(msg)
+    LOGGER.info(results_print.to_string())
 
 # -----------------------------------
-
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
@@ -888,13 +931,14 @@ train_df = get_training_data(DIR)
 FLAG_network_setup_needed =  not os.path.exists(KNN_dir)
 target_df = read_target_data()
 record_2_serial_ID_df = get_record_2_serial_ID_df(target_df)
+max_K = 100
 
 if FLAG_network_setup_needed:
     network_initialize( )
     process_target_data(
         target_df,
         record_2_serial_ID_df,
-        100
+        max_K
     )
 
 set_checkpoints = [ 10,20,30,40,50 ]
