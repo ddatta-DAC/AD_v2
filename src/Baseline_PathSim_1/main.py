@@ -529,7 +529,7 @@ def read_target_data():
         df = df.loc[df[id_col].isin(valid_ids)]
     else:
         df = df.sample(data_max_size)
-    LOGGER.info('Length of data :: ', df )
+    LOGGER.info('Length of data :: ' +  str(df) )
     df = df.sort_values(
         by=['score']
     )
