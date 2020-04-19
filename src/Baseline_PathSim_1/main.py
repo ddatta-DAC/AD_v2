@@ -101,7 +101,7 @@ def setup():
         os.mkdir(os.path.join(model_use_data_DIR, DIR))
     model_use_data_DIR = os.path.join(model_use_data_DIR, DIR)
     domain_dims = get_domain_dims(DIR)
-    KNN_dir = 'KNN'
+    KNN_dir = 'KNN'+ '_' + str(KNN_k)+ '_' + str(data_max_size)
     KNN_dir = os.path.join(model_use_data_DIR, KNN_dir)
     return
 
@@ -529,7 +529,7 @@ def read_target_data():
         df = df.loc[df[id_col].isin(valid_ids)]
     else:
         df = df.sample(data_max_size)
-    LOGGER.info('Length of data :: ' +  str(df) )
+    LOGGER.info('Length of data :: ' +  str(len(df)) )
     df = df.sort_values(
         by=['score']
     )
@@ -618,6 +618,7 @@ def execute_iterative_classification(
         _sim_df = _sim_df.tail(_k)
         _l = list(_sim_df[label_col])
         _s = list(_sim_df['score'])
+
         res = np.sum(np.multiply(_l,_s))/ np.sum(_s)
         res = _lambda * row[label_col] + (1-_lambda) * res
         if np.abs(res) >= epsilon :
