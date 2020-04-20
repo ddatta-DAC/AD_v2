@@ -476,7 +476,6 @@ def process_target_data(
     list_MP_OBJ = res
 
 
-
     n_jobs = multiprocessing.cpu_count()
     args = [(_record_ID, K,KNN_dir) for _record_ID in list(target_df[id_col])]
     with Pool(n_jobs) as p:
@@ -520,7 +519,7 @@ def read_target_data():
     # ----------------
     f_path =  os.path.join(
         model_use_data_DIR,
-        'record_2_serial_ID.csv'
+        'record_2_serial_ID_' + str(data_max_size) + '.csv'
     )
 
     if os.path.exists( f_path):
@@ -539,9 +538,11 @@ def read_target_data():
 def get_record_2_serial_ID_df(target_df):
     global id_col
     global model_use_data_DIR
+    global data_max_size
+
     record_2_serial_file = os.path.join(
         model_use_data_DIR,
-        'record_2_serial_ID.csv'
+        'record_2_serial_ID_' + str(data_max_size) + '.csv'
     )
 
     if os.path.exists(record_2_serial_file):
