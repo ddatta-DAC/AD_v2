@@ -632,7 +632,7 @@ def execute_iterative_classification(
     # Train initial Classifier model
     if classifier_type == 'RF':
         clf = RandomForestClassifier(
-            n_estimators=50,
+            n_estimators=100,
             n_jobs=-1,
             verbose=1,
             warm_start=False
