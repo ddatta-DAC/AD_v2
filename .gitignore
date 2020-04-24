@@ -34,9 +34,6 @@ src/**/__pycache__/**
 /generated_data_v2/
 /AD_system_output_v2/
 /src/GAM/model_use_data/
-<<<<<<< HEAD
-
 /src/GAM_base/model_use_data/
-=======
 /src/Ablation_1/model_use_data/
->>>>>>> 6ce4d4ea62c083dec5d61c9f2363c4bd9ee4e2ff
+
