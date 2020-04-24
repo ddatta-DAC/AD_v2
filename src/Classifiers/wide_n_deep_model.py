@@ -18,7 +18,7 @@ import sys
 import pickle
 import argparse
 import math
-import  torch.functional as F
+import torch.functional as F
 from torch import FloatTensor as FT
 from torch import LongTensor as LT
 
@@ -61,8 +61,8 @@ def cross_feature(df, f1, f2, dim1, dim2):
 def preprocess(
         df,
         domain_dims,
-        pairs = [],
-        remove_orig_nonserial = False
+        pairs=[],
+        remove_orig_nonserial=False
 ):
     df = df.copy()
     for pair in pairs:
@@ -75,10 +75,10 @@ def preprocess(
         possible_categories = list(range(domain_dims[dom]))
         cat = pd.Series(list(df[dom]))
         cat = cat.astype(
-            pd.CategoricalDtype(categories = possible_categories)
+            pd.CategoricalDtype(categories=possible_categories)
         )
-        converted = pd.get_dummies(cat,prefix = dom)
-        df = pd.concat((df,converted))
+        converted = pd.get_dummies(cat, prefix=dom)
+        df = pd.concat((df, converted))
 
     if remove_orig_nonserial:
         for dom in domain_dims.keys():
@@ -86,51 +86,81 @@ def preprocess(
     return df
 
 
-
 # ----------------------------------------------- #
 
 class wide_n_deep(nn.Module):
     def __init__(
             self,
-            deep_FC_layer_inp_dim,
-            deep_FC_layer_dims,
-            wide_inp_dim,
-            wide_op_dim
+            wide_inp_01_dim=None,
+            pretrained_node_embeddings=None,  # type : FloatTensor,
+            tune_entity_emb=False,
+            deep_FC_layer_dims=None,
+            num_entities=None,  # total number of entities (reqd if no pretrained emb)
+            entity_emb_dim=None,
+            num_domains=None
     ):
-        super(wide_n_deep).__init__()
-        self.num_deep_FC_layers = len(deep_FC_layer_dims)
+        super(wide_n_deep, self).__init__()
 
+        self.wide_inp_dim = wide_inp_01_dim
+        self.wide_Linear = nn.Linear(wide_inp_01_dim, 1)
+
+        if pretrained_node_embeddings is not None:
+            self.embedding = torch.nn.Embedding.from_pretrained(
+                pretrained_node_embeddings,
+                freeze=tune_entity_emb
+            )
+        else:
+            self.embedding = torch.nn.Embedding(
+                num_entities,
+                entity_emb_dim
+            )
+
+        self.entity_emb_dim = entity_emb_dim
+        self.num_domains = num_domains
+        self.concat_emb_dim = self.num_domains * self.entity_emb_dim
+        inp_dim = self.concat_emb_dim  # Concatenation
         self.deep_mlp = MLP(
-            deep_FC_layer_inp_dim,
-            deep_FC_layer_dims,
-            batch_norm_flag = True
+            inp_dim,
+            deep_FC_layer_dims
         )
 
-        self.wide_inp_dim = wide_inp_dim
-        self.wide_Linear = nn.Linear(wide_inp_dim,wide_op_dim)
-        self.o_bias = torch.Variable(
-            torch.FloatTensor([ wide_op_dim + deep_FC_layer_dims[-1]])
-        )
+        self.wide_inp_dim = wide_inp_01_dim
+        # self.o_bias = torch.Variable(
+        #     torch.FloatTensor([wide_op_dim + deep_FC_layer_dims[-1]])
+        # )
         return
 
-
     def forward(self, input_x):
-        w_indices = list(range(self.wide_inp_dim))
-        x_wide = input_x[:,:w_indices]
-        x_deep = input_x[:,w_indices:]
 
-        x_w = self.wide_Linear(x_wide)
-        x_d = x_deep
-        for i in range(self.num_deep_FC_layers):
-            x_d = self.deep_FC_layers[i](x_d)
-            x_d = nn.functional.relu(x_d)
-
-        x_o = x_w + x_d + self.o_bias
-
+        x_wide = input_x[:, :self.wide_inp_dim]
+        x_deep = input_x[:, self.wide_inp_dim:]
+        x_deep = self.embedding(x_deep)
+        x_deep = x_deep.view(-1, self.concat_emb_dim)
+        x_d = self.deep_mlp(x_deep)
+        x_o = self.wide_Linear(x_wide.float()) + x_d
         res = nn.functional.sigmoid(x_o)
         return res
 
-# ---
-# loss : BCELoss
-# ---
 
+def test():
+    # ---
+    # loss : BCELoss
+    # ---
+    model = wide_n_deep(
+        wide_inp_01_dim=7,
+        num_domains=3,
+        entity_emb_dim=4,
+        deep_FC_layer_dims=[5, 6],
+        pretrained_node_embeddings=torch.FloatTensor(np.random.random([15, 4]))
+    )
+
+    x0 = np.random.randint(0, 2, size=[16, 7])
+    x1 = np.random.randint(0, 2, size=[16, 3])
+    x2 = np.hstack([x0, x1])
+    x = LT(x2)
+
+    print(' Input :: ', x.shape)
+    y_pred = model(x)
+    y_true = FT(np.random.randint(0, 2, size=[16, 1]))
+    criterion = nn.BCELoss()
+    loss = criterion(y_pred, y_true)

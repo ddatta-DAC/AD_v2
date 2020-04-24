@@ -19,6 +19,7 @@ import torch.nn as nn
 from torch import FloatTensor as FT
 from torch import LongTensor as LT
 import torch.nn.functional as F
+
 try:
     from .MLP import MLP
 except:
@@ -31,7 +32,7 @@ class clf_dfm(nn.Module):
 
     def __init__(
             self,
-            wide_inp_01_dim, # the size of the 1-0 vector
+            wide_inp_01_dim,  # the size of the 1-0 vector
             num_domains,  # number of fields
             entity_emb_dimensions,  # emb dimension of each entity
             FM_inp_dim=None,
@@ -67,7 +68,7 @@ class clf_dfm(nn.Module):
             inp_dim,
             dnn_layer_dimensions
         )
-        if FM_inp_dim is None :
+        if FM_inp_dim is None:
             self.transform_emb = False
         else:
             self.transform_emb = True
@@ -78,8 +79,6 @@ class clf_dfm(nn.Module):
                     for _ in range(self.num_domains)
                 ]
             )
-
-
 
         return
 
@@ -92,13 +91,10 @@ class clf_dfm(nn.Module):
         x_deep = input_x[:, self.wide_inp_dim:]
 
         # Pass input through embedding look up
-        print(x_deep.shape)
         x = self.embedding(x_deep)
-        print(x.shape)
 
         # ----- DNN ------- #
         x_dnn = x.view(-1, self.concat_emb_dim)
-        print(x_dnn.shape)
         x_dnn = self.dnn_fc(x_dnn)
 
         # ----- FM --------- #
@@ -138,33 +134,27 @@ class clf_dfm(nn.Module):
         return x_op
 
 
-
-
-
-
 def test():
     model = clf_dfm(
-        wide_inp_01_dim = 7,
+        wide_inp_01_dim=7,
         num_domains=3,
         entity_emb_dimensions=4,
-        FM_inp_dim=8,
         dnn_layer_dimensions=[5, 6],
         pretrained_node_embeddings=torch.FloatTensor(np.random.random([15, 4]))
     )
 
-    x0 = np.random.randint(0, 2, size = [16, 7])
-    x1 = np.random.randint(0, 2, size= [16, 3])
-    x2 = np.hstack([x0,x1])
+    x0 = np.random.randint(0, 2, size=[16, 7])
+    x1 = np.random.randint(0, 2, size=[16, 3])
+    x2 = np.hstack([x0, x1])
     x = LT(x2)
 
     print(' Input :: ', x.shape)
     y_pred = model(x)
-    y_true = FT(np.random.randint(0, 2, size =[16, 1]))
-    criterion =  nn.BCELoss()
-    loss = criterion( y_pred, y_true)
+    y_true = FT(np.random.randint(0, 2, size=[16, 1]))
+    criterion = nn.BCELoss()
+    loss = criterion(y_pred, y_true)
 
     # loss.backward()
 
+
 test()
-
-
