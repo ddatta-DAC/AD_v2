@@ -1,0 +1,20 @@
+DATA_SOURCE_DIR_1 : './../../generated_data_v1'
+DATA_SOURCE_DIR_2 : './../../AD_system_output_v2'
+model_use_data_DIR : 'model_use_data'
+
+serial_mapping_df_name : 'Serialized_Mapping.csv'
+serial_mapping_df_loc : './../GraphEmb_2/model_use_data'
+matrix_node_emb_loc: './../GraphEmb_2/model_weights_data/metapath2vec_gensim'
+matrix_node_emb_file : 'mp2v_gensim_weights.npy'
+node_embedding_size : 128
+confidence_bound : 0.20
+epochs_f : 10
+epochs_g : 10
+Logging_Dir : 'Logs'
+classifier_mlp_layers_1 : '512,512,256'
+log_interval_f : 250
+log_interval_g : 250
+max_IC_iter : 20
+batch_size_g : 512
+batch_size_f : 512
+batch_size_r : 512
