@@ -6,12 +6,11 @@
 # Email : ddatta@vt.edu
 # ---------------
 import os
-import sys
 import copy
 import pandas as pd
 import numpy as np
 import torch
-
+import sys
 sys.path.append('./../..')
 sys.path.append('./..')
 from torch.utils.data import DataLoader
@@ -19,7 +18,6 @@ from torch.utils.data import Dataset
 from torch.utils.data import RandomSampler
 from torch import FloatTensor as FT
 from torch import LongTensor as LT
-
 
 class custom_dataset_type_1(Dataset):
     def __init__(
@@ -171,32 +169,76 @@ class type1_Dataset(Dataset):
 # ------------------------------------------------- #
 
 # ================================
-# Wrapper to get iterator over dataloader.
-# Set  'set_allow_refresh' if stop iteration is to be ignored.
+# This generates a single of x1,[y1]
 # ================================
-class dataGeneratorWrapper():
+class singleDataGenerator():
+    def __init__(self,
+                 df,
+                 x_cols,
+                 batch_size=256,
+                 y_col=None,
+                 num_workers=0
+        ):
+        self.x_cols = x_cols
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.y_col = y_col
 
-    def __init__(self, obj_dataloader):
-        self.obj_dataloader = copy.copy(obj_dataloader)
-        self.iter_obj = iter(copy.copy(self.obj_dataloader))
-        self.allow_refresh = False
+        self.ds1 = type1_Dataset(
+            df,
+            x_cols,
+            y_col
+        )
+        self.iter_obj1 = iter(self.get_dataloader(self.ds1))
+
         return
 
-    def set_allow_refresh(self):
-        self.allow_refresh = True
+    def get_dataloader(
+            self,
+            ds
+    ):
+        dl = DataLoader(
+            ds,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+            sampler=RandomSampler(ds),
+            drop_last=True
+        )
+        return dl
 
     def get_next(self):
+        y1 = None
+
         try:
-            return next(self.iter_obj)
+            x1_y1 = next(self.iter_obj1)
         except StopIteration:
-            if self.allow_refresh:
-                print('Encountered StopIteration and refreshing')
-                self.iter_obj = iter(copy.copy(self.obj_dataloader))
-                return next(self.iter_obj)
-            else:
-                return None
+            return None
+
+        if self.y_col is not None:
+            x1 = x1_y1[0]
+            y1 = x1_y1[1]
+        else:
+            x1 = x1_y1
+
+        if self.y_col is not None :
+            return x1, y1
+        else:
+            return  x1
 
 
+
+data_LL_generator = pairDataGenerator(
+                df_1 = df_L,
+                df_2 = df_L,
+                x_cols=g_feature_cols,
+                y1_col= None,
+                y2_col= label_col,
+                batch_size=batch_size_r)
+
+# ------------------------------------------------- #
+# This generates a pair of (x1,[y1]), (x2,[y2])
+# If allow_refresh = False : return None on exhausting one data set
 # ------------------------------------------------- #
 
 class pairDataGenerator():
@@ -210,7 +252,6 @@ class pairDataGenerator():
             y2_col =None,
             num_workers=0
     ):
-        print(y1_col, y2_col)
         self.x_cols = x_cols
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -231,7 +272,11 @@ class pairDataGenerator():
         self.iter_obj2 = iter(self.get_dataloader(self.ds2))
         self.y1_col = y1_col
         self.y2_col = y2_col
+        self.allow_refresh = False
+
         return
+    def set_allow_refresh(self, flag=True):
+        self.allow_refresh = flag
 
     def get_dataloader(
             self,
@@ -247,11 +292,39 @@ class pairDataGenerator():
         )
         return dl
 
+    def noRefresh_get_next(self):
+        y1 = None
+        y2 = None
+        try:
+            x1_y1 = next(self.iter_obj1)
+        except StopIteration:
+            return None
+        try:
+            x2_y2 = next(self.iter_obj2)
+        except StopIteration:
+            return None
+        if self.y1_col is not None:
+            x1 = x1_y1[0]
+            y1 = x1_y1[1]
+        else:
+            x1 = x1_y1
+        if self.y2_col is not None:
+            x2 = x2_y2[0]
+            y2 = x2_y2[1]
+        else:
+            x2 = x2_y2
+        if self.y1_col is not None or self.y2_col is not None:
+            return (x1, x2), (y1, y2)
+        else:
+            return (x1, x2)
 
 
     def get_next(self):
         y1 = None
         y2 = None
+        if not self.allow_refresh :
+            return self.noRefresh_get_next()
+
         try:
             if self.y1_col is not None:
                 x1_y1 = next(self.iter_obj1)
