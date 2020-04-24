@@ -34,3 +34,5 @@ src/**/__pycache__/**
 /generated_data_v2/
 /AD_system_output_v2/
 /src/GAM/model_use_data/
+
+/src/GAM_base/model_use_data/
