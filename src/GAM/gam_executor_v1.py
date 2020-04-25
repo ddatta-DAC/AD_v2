@@ -820,15 +820,6 @@ def train_model(df, NN):
             y_col=label_col
         )
 
-        dataLoader_obj_L3 = DataLoader(
-            data_source_LL,
-            batch_size=batch_size_r,
-            shuffle=False,
-            pin_memory=True,
-            num_workers=0,
-            sampler=RandomSampler(data_source_LL),
-            drop_last=True
-        )
 
         data_source_UL = pair_Dataset(
             df_U,
@@ -837,14 +828,7 @@ def train_model(df, NN):
             y_col=label_col
         )
 
-        dataLoader_obj_L4 = DataLoader(
-            data_source_UL,
-            batch_size=batch_size_r,
-            shuffle=False,
-            pin_memory=True,
-            num_workers=0,
-            sampler=RandomSampler(data_source_LL)
-        )
+
 
         data_source_UU = pair_Dataset(
             df_U,
@@ -853,37 +837,26 @@ def train_model(df, NN):
             y_col=None
         )
 
-        dataLoader_obj_L5 = DataLoader(
-            data_source_UU,
-            batch_size=batch_size_r,
-            shuffle=False,
-            pin_memory=True,
-            num_workers=0,
-            sampler=RandomSampler(data_source_UU)
-        )
-
-        print('Training Classifier ')
+        print(' Training Classifier ')
         optimizer_f.zero_grad()
+
         for epoch in range(num_epochs_f):
             print ('Epoch [f]', epoch)
-            # data_L_generator = dataGeneratorWrapper(dataLoader_obj_L2).generator()
-            # data_LL_generator = dataGeneratorWrapper(dataLoader_obj_L3).generator()
-            # data_UL_generator = dataGeneratorWrapper(dataLoader_obj_L4).generator()
-            # data_UU_generator = dataGeneratorWrapper(dataLoader_obj_L5).generator()
 
-            data_L_generator = dataGeneratorWrapper(dataLoader_obj_L2)
-            # data_LL_generator = dataGeneratorWrapper(dataLoader_obj_L3)
-            # data_UL_generator = dataGeneratorWrapper(dataLoader_obj_L4)
-            # data_UU_generator = dataGeneratorWrapper(dataLoader_obj_L5)
+            from .torch_data_loader import singleDataGenerator
+            data_L_generator = singleDataGenerator(
+                df_L,
+                x_cols = f_feature_cols,
+                y_col = label_col
+            )
 
             data_LL_generator = pairDataGenerator(
                 df_1 = df_L,
                 df_2 = df_L,
-                x_cols=g_feature_cols,
-                y1_col= None,
-                y2_col= label_col,
+                x_cols = g_feature_cols,
+                y1_col = None,
+                y2_col = label_col,
                 batch_size=batch_size_r)
-
 
             data_UL_generator = pairDataGenerator(
                 df_1 = df_U,
@@ -903,27 +876,21 @@ def train_model(df, NN):
                 batch_size= batch_size_r
             )
 
-
-            # data_LL_generator.set_allow_refresh()
-            # data_UL_generator.set_allow_refresh()
-            # data_UU_generator.set_allow_refresh()
-
-
             batch_idx_f = 0
             data_L = data_L_generator.get_next()
             while data_L is not None:
                 NN.train_mode = 'f'
-                # Supervised Loss
+
+                # ------  Supervised Loss ------ #
                 x1 = data_L[0].to(DEVICE)
                 y_true = data_L[1].to(DEVICE)
                 pred_label = NN(x1)
-
                 loss_s = clf_loss(pred_label, y_true)
-                # print(' Loss_s shape', loss_s.shape)
+
                 # ====================
                 # LL :: lambda_LL * g(x_i,x_j) * d (f(x_i),y_j)
                 # ====================
-                # print('---- > LL ')
+
                 NN.train_mode = 'f_ll'
 
                 data_LL_x, data_LL_y = data_LL_generator.get_next()
@@ -936,17 +903,13 @@ def train_model(df, NN):
                 loss_LL = regularization_loss(
                     pred_agreement, [pred_y1, y2]
                 )
-                # print(loss_LL.shape)
-                # print('---- > UL ')
+
                 # UL
                 NN.train_mode = 'f_ul'
-
                 data_UL_x, data_UL_y = data_UL_generator.get_next()
-
                 x1 = data_UL_x[0].to(DEVICE)
                 x2 = data_UL_x[1].to(DEVICE)
                 y2 = data_UL_y[1].to(DEVICE)
-
 
                 _x = [x1, x2]
 
@@ -955,7 +918,6 @@ def train_model(df, NN):
                     pred_agreement,
                     [pred_y1, y2]
                 )
-                # print(loss_UL.shape)
 
                 # ====================
                 # UU
@@ -965,11 +927,9 @@ def train_model(df, NN):
                 data_UU = data_UU_generator.get_next()
                 x1 = data_UU[0].to(DEVICE)
                 x2 = data_UU[1].to(DEVICE)
-
                 _x = [x1, x2]
                 pred_agreement, pred_y1, pred_y2 = NN(_x)
                 loss_UU = regularization_loss(pred_agreement, [pred_y1, pred_y2])
-
 
                 # ====================
                 # Loss
@@ -979,9 +939,7 @@ def train_model(df, NN):
                 optimizer_f.step()
                 try:
                     data_L = data_L_generator.get_next()
-                    # data_L = next(data_L_generator)
                 except Exception:
-                    print('Exception on iterator', Exception)
                     data_L = None
 
                 batch_idx_f += 1
@@ -1005,7 +963,6 @@ def train_model(df, NN):
             sampler=SequentialSampler(data_source_EU)
         )
 
-        # data_EU_generator = dataGeneratorWrapper(dataLoader_obj_EU).generator()
         pred_y_label = []
         pred_y_probs = []
 
