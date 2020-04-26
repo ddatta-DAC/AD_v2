@@ -9,7 +9,8 @@
 import torch
 from torch import nn
 from pandarallel import pandarallel
-
+from joblib import Parallel, delayed
+import multiprocessing
 pandarallel.initialize()
 import numpy as np
 import os
@@ -31,7 +32,7 @@ except:
 
 def cross_feature_generator(df, f1, f2, dim1, dim2):
     pandarallel.initialize()
-    h1 = max(23, 6 * int(math.sqrt(dim1 * dim2) // 6) - 1)
+    h1 = max(19, 6 * int((math.sqrt(dim1 * dim2)/4) // 6) - 1)
     h2 = max(7, 6 * int((h1 // 2) // 6) - 1, 7)
     if f1 > f2:  # Sorted lexicographically
         f1, f2 = f2, f1
@@ -108,10 +109,9 @@ def wide_N_deep_data_preprocess(
         )
         return (df_op, [f1,f2])
 
+    n_jobs = multiprocessing.cpu_count()
 
-
-    from joblib import Parallel,delayed
-    result = Parallel(n_jobs=10)(delayed(parallel_comb)(df,pair,) for pair in pairs)
+    result = Parallel(n_jobs=n_jobs)(delayed(parallel_comb)(df,pair,) for pair in pairs)
 
     for item in result:
         _df = item[0]
