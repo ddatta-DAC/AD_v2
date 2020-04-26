@@ -111,7 +111,7 @@ def wide_N_deep_data_preprocess(
 
 
     from joblib import Parallel,delayed
-    result = Parallel(n_jobs=10)(delayed(parallel_comb)(pair) for pair in pairs)
+    result = Parallel(n_jobs=10)(delayed(parallel_comb)(df,pair,) for pair in pairs)
 
     for item in result:
         _df = item[0]
