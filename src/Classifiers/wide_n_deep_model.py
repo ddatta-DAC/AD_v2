@@ -21,6 +21,7 @@ import math
 import torch.functional as F
 from torch import FloatTensor as FT
 from torch import LongTensor as LT
+from itertools import combinations
 
 try:
     from .MLP import MLP
@@ -28,49 +29,84 @@ except:
     from MLP import MLP
 
 
-def cross_feature(df, f1, f2, dim1, dim2):
-    h1 = 6 * int(math.sqrt(dim1 * dim2) // 6) - 1
-    h2 = 6 * int((h1 // 2) // 6) + 1
-    print(h1, h2)
+def cross_feature_generator(df, f1, f2, dim1, dim2):
+    pandarallel.initialize()
+    h1 = max(23, 6 * int(math.sqrt(dim1 * dim2) // 6) - 1)
+    h2 = max(7, 6 * int((h1 // 2) // 6) - 1, 7)
+    if f1 > f2:  # Sorted lexicographically
+        f1, f2 = f2, f1
+        dim1, dim2 = dim2, dim1
 
     def feature_hash(x):
-        return int((x + x % h2) % h1)
+        return int((x + (x % h2)) % h1)
 
-    def _cross(row):
-        return str(row[f1]) + '_' + str(row[f2])
+    def _cross_value(row):
+        return str(int(row[f1])) + '_' + str(int(row[f2]))
 
-    new_col = f1 + '_' + f2
-    df[new_col] = df.parallel_apply(_cross)
-    _dict = {}
-    for k, v in enumerate(set(df[new_col])):
-        _dict[v] = feature_hash(k)
+    new_cross_col = f1 + '_' + f2
+    df[new_cross_col] = df.parallel_apply(_cross_value, axis=1)
 
-    # replace
-    def replace(_row):
+    # possible values
+    value2hash_dict = {}
+    possible_values = []
+    for i in range(dim1):
+        for j in range(dim2):
+            possible_values.append(str(i) + '_' + str(j))
+
+    for e in enumerate(possible_values, 0):
+        value2hash_dict[e[1]] = feature_hash(e[0])
+
+    # HashReplace value with hashed value
+    def HashReplace(_row):
         row = _row.copy()
-        row[new_col] = _dict[row[new_col]]
+        row[new_cross_col] = value2hash_dict[row[new_cross_col]]
         return row
 
-    df = df.parallel_apply(replace, axis=1)
-    df = pd.get_dummies(
-        df, columns=[new_col]
+    df = df.parallel_apply(HashReplace, axis=1)
+    possible_categories = list(range(h1))
+    cat = pd.Series(list(df[new_cross_col]))
+    cat = cat.astype(
+        pd.CategoricalDtype(categories=possible_categories)
     )
+    converted = pd.get_dummies(cat, prefix=new_cross_col)
+    df = pd.concat((df, converted), axis=1)
+    try:
+        del df[new_cross_col]
+    except:
+        pass
+
     return df
 
 
-def preprocess(
+def wide_N_deep_data_preprocess(
         df,
         domain_dims,
         pairs=[],
-        remove_orig_nonserial=False
+        remove_orig_nonserial=False,
+        id_col = 'PanjivaRecordID'
 ):
     df = df.copy()
+    if pairs is None or len(pairs) == 0:
+        domains = list(domain_dims.keys())
+        pairs = []
+        for p in combinations(domains, 2):
+            pairs.append(p)
+
     for pair in pairs:
         f1 = pair[0]
         f2 = pair[1]
-        df = cross_feature(df, f1, f2, domain_dims[f1], domain_dims[f2])
-    # convert the regular domains to one-hot
+        df_inp = pd.DataFrame(df[[id_col,f1,f2]],copy=True)
+        df_op = cross_feature_generator(
+            df_inp,
+            f1, f2,
+            domain_dims[f1],
+            domain_dims[f2]
+        )
+        df = df.merge(df_op, on =[id_col,f1,f2],how='inner')
 
+    # -----------------
+    # Convert the regular domains to one-hot
+    # -----------------
     for dom in domain_dims.keys():
         possible_categories = list(range(domain_dims[dom]))
         cat = pd.Series(list(df[dom]))
@@ -78,7 +114,7 @@ def preprocess(
             pd.CategoricalDtype(categories=possible_categories)
         )
         converted = pd.get_dummies(cat, prefix=dom)
-        df = pd.concat((df, converted))
+        df = pd.concat((df, converted),axis=1)
 
     if remove_orig_nonserial:
         for dom in domain_dims.keys():
@@ -125,9 +161,9 @@ class wide_n_deep(nn.Module):
         )
 
         self.wide_inp_dim = wide_inp_01_dim
-        # self.o_bias = torch.Variable(
-        #     torch.FloatTensor([wide_op_dim + deep_FC_layer_dims[-1]])
-        # )
+        self.o_bias = nn.Parameter(
+            torch.FloatTensor([1])
+        )
         return
 
     def forward(self, input_x):
@@ -137,8 +173,8 @@ class wide_n_deep(nn.Module):
         x_deep = self.embedding(x_deep)
         x_deep = x_deep.view(-1, self.concat_emb_dim)
         x_d = self.deep_mlp(x_deep)
-        x_o = self.wide_Linear(x_wide.float()) + x_d
-        res = nn.functional.sigmoid(x_o)
+        x_o = self.wide_Linear(x_wide.float()) + x_d + self.o_bias
+        res = torch.sigmoid(x_o)
         return res
 
 
