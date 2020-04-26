@@ -21,8 +21,8 @@ from sklearn.metrics import recall_score
 pandarallel.initialize()
 sys.path.append('./../..')
 sys.path.append('./..')
-
 import argparse
+from datetime import datetime
 import multiprocessing
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
@@ -32,18 +32,17 @@ import pickle
 import torch
 import torch.nn as nn
 import logging
+from torch import FloatTensor as FT
+from torch import LongTensor as LT
 
-from torch.nn import Parameter
-from torch import tensor
-HAS_CUDA = False
 DEVICE = None
 
 try:
     if torch.cuda.is_available():
         dev = "cuda:0"
-        HAS_CUDA = True
     else:
         dev = "cpu"
+
     DEVICE = torch.device(dev)
     print('Set Device :: ', DEVICE)
     print('Cuda available ::', torch.cuda.is_available(),
@@ -54,38 +53,36 @@ except:
 
 try:
     from torch import has_cudnn
+
     if has_cudnn:
         torch.cudnn.benchmark = False
         print('Set cudnn benchmark to True')
 except:
     pass
 
+import train_utils
 
 try:
-    from gam_module import gam_net
-    from gam_module import gam_loss
-    from clf_net import clf_net_v2 as clf_net
-    from clf_net import clf_loss_v1 as clf_loss
-    from record_node import graph_net_v2 as graph_net
-    from torch_data_loader import pair_Dataset
-    from torch_data_loader import type1_Dataset
-    from torch_data_loader import dataGeneratorWrapper
-    import train_utils
-    from torch_data_loader import pairDataGenerator
-except:
-    from .gam_module import gam_net
+    from .gam_module import gam_net_v1 as gam_net
     from .gam_module import gam_loss
     from .clf_net import clf_net_v2 as clf_net
     from .clf_net import clf_loss_v1 as clf_loss
     from .record_node import graph_net_v2 as graph_net
-    from .torch_data_loader import pair_Dataset
     from .torch_data_loader import type1_Dataset
     from .torch_data_loader import dataGeneratorWrapper
     from . import train_utils
     from .torch_data_loader import pairDataGenerator
+    from .torch_data_loader import singleDataGenerator
+except:
+    from gam_module import gam_net_v1 as gam_net
+    from gam_module import gam_loss
+    from clf_net import clf_net_v2 as clf_net
+    from clf_net import clf_loss_v1 as clf_loss
+    from record_node import graph_net_v2 as graph_net
+    from torch_data_loader import type1_Dataset
+    from torch_data_loader import pairDataGenerator
+    from torch_data_loader import singleDataGenerator
 
-from torch import FloatTensor as FT
-from torch import LongTensor as LT
 
 # ==================================== #
 
@@ -110,16 +107,17 @@ serial_mapping_df = None
 is_labelled_col = 'labelled'
 matrix_node_emb_path = None
 confidence_bound = 0.2
-epochs_f = 10
-epochs_g = 10
+epochs_f = 0
+epochs_g = 0
 log_interval_f = 10
-log_interval_g =10
+log_interval_g = 10
 max_IC_iter = 5
 clf_mlp_layer_dimesnions = []
 gam_encoder_dimensions_mlp = []
 batch_size_g = 128
 batch_size_f = 128
 batch_size_r = 128
+
 
 # =================================================
 
@@ -182,8 +180,8 @@ def setup_config(_DIR):
     serial_mapping_df = pd.read_csv(serial_mapping_df_path, index_col=None)
     matrix_node_emb_path = os.path.join(CONFIG['matrix_node_emb_loc'], DIR, CONFIG['matrix_node_emb_file'])
     confidence_bound = CONFIG['confidence_bound']
-    epochs_g =  CONFIG['epochs_g']
-    epochs_f =  CONFIG['epochs_f']
+    epochs_g = CONFIG['epochs_g']
+    epochs_f = CONFIG['epochs_f']
     log_interval_f = CONFIG['log_interval_f']
     log_interval_g = CONFIG['log_interval_g']
     max_IC_iter = CONFIG['max_IC_iter']
@@ -201,8 +199,9 @@ def setup_config(_DIR):
     batch_size_r = CONFIG['batch_size_r']
     Logging_Dir = CONFIG['Logging_Dir']
     logger = get_logger()
-
+    logger.info(str(datetime.utcnow()))
     return
+
 
 # -------------------------------------
 def get_logger():
@@ -224,6 +223,7 @@ def get_logger():
     logger.addHandler(handler)
     return logger
 
+
 def close_logger(logger):
     handlers = logger.handlers[:]
     for handler in handlers:
@@ -234,7 +234,7 @@ def close_logger(logger):
 
 # --------------------------------------
 def get_normal_data_sample(
-        data_size = 1000
+        data_size=1000
 ):
     global DATA_SOURCE_DIR_1
     global DIR
@@ -244,10 +244,10 @@ def get_normal_data_sample(
     global label_col
     global true_label_col
 
-    df =  pd.read_csv(
+    df = pd.read_csv(
         os.path.join(
             DATA_SOURCE_DIR_1, 'train_data.csv'
-        ),index_col=None
+        ), index_col=None
     )
     df = df.sample(data_size)
     df['fraud'] = False
@@ -266,6 +266,7 @@ def get_normal_data_sample(
         v = _tmp['Serial_ID']
         reference_dict[d] = {_k: _v for _k, _v in zip(k, v)}
     keep_entity_ids = True
+
     # Inplace conversion
     def aux_conv_toSerialID(_row):
         row = _row.copy()
@@ -275,8 +276,10 @@ def get_normal_data_sample(
                 col_name = '_' + fc
             row[col_name] = reference_dict[fc][row[fc]]
         return row
+
     df = df.parallel_apply(aux_conv_toSerialID, axis=1)
     return df
+
 
 # --------------------------------------
 
@@ -314,6 +317,7 @@ def extract_unlabelled_df(df):
     )
     return res
 
+
 # -----------------------
 # Get o/p from the AD system
 # -----------------------
@@ -331,90 +335,14 @@ def read_scored_data():
     return df
 
 
-def read_matrix_node_emb():
-    global node_emb_dim
-    global matrix_node_emb_path
+def read_matrix_node_emb (matrix_node_emb_path):
     emb = np.load(matrix_node_emb_path)
-    node_emb_dim = emb.shape[-1]
     return emb
 
 
-def set_label_in_top_perc(df, perc):
-    global score_col
-    global true_label_col
-    global id_col
-    global is_labelled_col
-
-    df = df.sort_values(by=[score_col])
-    if perc > 1:
-        perc = perc / 100
-    count = int(len(df) * perc)
-    df[is_labelled_col] = False
-
-    _tmp = df.head(count)
-    cand = list(_tmp[id_col])
-    df.loc[df[id_col].isin(cand), label_col] = df.loc[df[id_col].isin(cand), true_label_col]
-    df.loc[df[id_col].isin(cand), is_labelled_col] = True
-
-    return df
 
 
-# --------------------------
-# Return the id list of new samples to be aded to labelled set.
-# Ensure balance in labelled and unlabelled samples
-# --------------------------
-def find_most_confident_samples(
-        U_df,
-        y_probs,  # np.array [?, 2]
-        y_pred_label,  # np.array [?,]
-        confidence_lb=0.2,
-        max_count=None
-):
-    global label_col
-    global id_col
-    global is_labelled_col
 
-    pandarallel.initialize()
-
-    if max_count is None:
-        max_count = 0.10 * len(U_df)
-
-    # Assuming binary classification : labels are 0 and 1
-    y_pred = label_col
-    U_df['diff'] = abs(y_probs[:, 0] - y_probs[:, 1])
-    U_df[y_pred] = y_pred_label
-    valid_flag = 'valid'
-    U_df[valid_flag] = False
-    U_df_0 = U_df.loc[U_df[y_pred] == 0]
-    U_df_1 = U_df.loc[U_df[y_pred] == 1]
-
-    U_df_0 = U_df_0.sort_values(by=['diff'], ascending=False)
-    U_df_1 = U_df_1.sort_values(by=['diff'], ascending=False)
-
-    def aux_1(val):
-        if val > confidence_lb : return True
-        else: return False
-
-    U_df_0[valid_flag] = U_df_0['diff'].apply(aux_1)
-    U_df_1[valid_flag] = U_df_1['diff'].apply(aux_1)
-
-    U_df_0 = U_df_0.loc[(U_df_0[valid_flag] == True)]
-    U_df_1 = U_df_1.loc[(U_df_1[valid_flag] == True)]
-
-    try:
-        del U_df_0['diff']
-        del U_df_1['diff']
-        del U_df_0[valid_flag]
-        del U_df_1[valid_flag]
-    except Exception:
-        print('ERROR', Exception)
-        exit(1)
-
-    count = int(min(min(len(U_df_0), len(U_df_1)), max_count / 2))
-    res_df = U_df_1.head(count)
-    res_df = res_df.append(U_df_0.head(count), ignore_index=True)
-    res_df[is_labelled_col] = True
-    return res_df
 
 
 def convert_to_serial_IDs(
@@ -478,6 +406,7 @@ def regularization_loss(g_ij, fi_yj):
 3. Add in the most confident labels
 '''
 
+
 # =========================================
 # Main module that encapsulates everything.
 class net(nn.Module):
@@ -511,7 +440,6 @@ class net(nn.Module):
         )
         return
 
-
     def setup_Net(
             self,
             node_emb_dimension,
@@ -544,7 +472,6 @@ class net(nn.Module):
         self.graph_net.to(DEVICE)
 
         return
-
 
     # ---------------------------
     # Input should be [ Batch, record( list of entities ) ]
@@ -618,16 +545,18 @@ class net(nn.Module):
             y_pred = self.clf_net(x1)
             return y_pred
 
+
 # =========================================
 # Perform prediction
 # =========================================
-def predict(NN , input_x ):
+def predict(NN, input_x):
     NN.train(mode=False)
-    NN.test_mode=True
+    NN.test_mode = True
     result = NN(input_x)
     NN.test_mode = False
     NN.train(mode=True)
     return result
+
 
 # ================================================= #
 
@@ -638,7 +567,6 @@ def predict(NN , input_x ):
 
 
 def train_model(df, NN):
-
     global epochs_f
     global epochs_g
     global log_interval_f
@@ -654,19 +582,20 @@ def train_model(df, NN):
     num_epochs_g = epochs_g
     num_epochs_f = epochs_f
 
-    num_proc =  multiprocessing.cpu_count()
+    num_proc = multiprocessing.cpu_count()
     lambda_LL = 0.1
-    lambda_UL = 0.1
-    lambda_UU = 0.05
+    lambda_UL = 0.01
+    lambda_UU = 0.005
     current_iter_count = 0
     continue_training = True
 
     df_L = extract_labelled_df(df)
     df_U = extract_unlabelled_df(df)
-    df_L =  df_L.copy()
+    df_L = df_L.copy()
     df_L, df_L_validation = train_utils.obtain_train_validation(
         df_L
     )
+    f_feature_cols = None
     # Add in normal data to validation data
     df_L_validation = df_L_validation.append(
         get_normal_data_sample(len(df_L_validation)),
@@ -707,20 +636,22 @@ def train_model(df, NN):
         )
         params_list_g = [_ for _ in NN.graph_net.parameters()]
         params_list_g = params_list_g + ([_ for _ in NN.gam_net.parameters()])
-        print('# of parameters to be obtimized for g ', len(params_list_g))
+        print('# of parameters to be optimized for g ', len(params_list_g))
         optimizer_g = torch.optim.Adam(
             params_list_g,
             lr=0.01
         )
+
         params_list_f = [_ for _ in NN.graph_net.parameters()]
         params_list_f = params_list_f + [_ for _ in NN.clf_net.parameters()]
 
-        print('# of parameters to be obtimized for f ', len(params_list_f))
+        print('# of parameters to be optimized for f ', len(params_list_f))
         optimizer_f = torch.optim.Adam(
             params_list_f,
-            lr=0.005
+            lr = 0.01
         )
-        final_epoch_g = False # To check convergence
+
+        final_epoch_g = False  # To check convergence
         if NN.train_mode == 'g':
             # ----
             # input_x1,y2 : from Dataloader ( L )
@@ -732,11 +663,11 @@ def train_model(df, NN):
             prev_loss = 0
             iter_below_tol = 0
             for epoch in range(num_epochs_g):
-                print('Epoch [g]', epoch )
+                print('Epoch [g]', epoch)
                 record_loss = []
                 batch_idx = 0
                 for i, data_i in enumerate(dataLoader_obj_L1a):
-                    if type(data_i) == list :
+                    if type(data_i) == list:
                         data_i = [_.to(DEVICE) for _ in data_i]
                     else:
                         data_i = data_i.to(DEVICE)
@@ -775,21 +706,19 @@ def train_model(df, NN):
                         # If training performance is not improving, stop training
                         # ------------------------
                         is_converged, iter_below_tol, = train_utils.check_convergence(
-                            prev_loss = prev_loss,
+                            prev_loss=prev_loss,
                             cur_loss=loss,
-                            cur_step = batch_idx,
-                            iter_below_tol= iter_below_tol,
-                            abs_loss_chg_tol = 0.001,
-                            min_num_iter = 100,
-                            max_iter_below_tol = 50
+                            cur_step=batch_idx,
+                            iter_below_tol=iter_below_tol,
+                            abs_loss_chg_tol=0.01,
+                            min_num_iter=50,
+                            max_iter_below_tol=20
                         )
                         prev_loss = cur_loss
-                        if is_converged :
-                            final_epoch_g =True
-                if final_epoch_g :
+                        if is_converged:
+                            final_epoch_g = True
+                if final_epoch_g:
                     break
-
-
 
         # -----------------------
         # Train the classifier
@@ -804,76 +733,43 @@ def train_model(df, NN):
             y_col=label_col
         )
 
-        dataLoader_obj_L2 = DataLoader(
-            data_source_L2,
-            batch_size=batch_size_f,
-            shuffle=False,
-            pin_memory=True,
-            num_workers=0,
-            sampler=RandomSampler(data_source_L2),
-            drop_last = True
-        )
-        data_source_LL = pair_Dataset(
-            df_L,
-            df_L,
-            x_cols=g_feature_cols,
-            y_col=label_col
-        )
-
-
-        data_source_UL = pair_Dataset(
-            df_U,
-            df_L,
-            x_cols=g_feature_cols,
-            y_col=label_col
-        )
-
-
-
-        data_source_UU = pair_Dataset(
-            df_U,
-            df_U,
-            x_cols=g_feature_cols,
-            y_col=None
-        )
-
         print(' Training Classifier ')
         optimizer_f.zero_grad()
 
         for epoch in range(num_epochs_f):
-            print ('Epoch [f]', epoch)
+            print('Epoch [f]', epoch)
 
             from .torch_data_loader import singleDataGenerator
             data_L_generator = singleDataGenerator(
                 df_L,
-                x_cols = f_feature_cols,
-                y_col = label_col
+                x_cols=f_feature_cols,
+                y_col=label_col
             )
 
             data_LL_generator = pairDataGenerator(
-                df_1 = df_L,
-                df_2 = df_L,
-                x_cols = g_feature_cols,
-                y1_col = None,
-                y2_col = label_col,
+                df_1=df_L,
+                df_2=df_L,
+                x_cols=g_feature_cols,
+                y1_col=None,
+                y2_col=label_col,
                 batch_size=batch_size_r)
 
             data_UL_generator = pairDataGenerator(
-                df_1 = df_U,
-                df_2 = df_L,
+                df_1=df_U,
+                df_2=df_L,
                 x_cols=g_feature_cols,
-                y1_col= None,
-                y2_col= label_col,
+                y1_col=None,
+                y2_col=label_col,
                 batch_size=batch_size_r
             )
 
             data_UU_generator = pairDataGenerator(
-                df_1 = df_U,
-                df_2 = df_U,
+                df_1=df_U,
+                df_2=df_U,
                 x_cols=g_feature_cols,
                 y1_col=None,
                 y2_col=None,
-                batch_size= batch_size_r
+                batch_size=batch_size_r
             )
 
             batch_idx_f = 0
@@ -980,7 +876,6 @@ def train_model(df, NN):
         NN.train(mode=True)
         NN.test_mode = False
         pred_y_probs = np.array(pred_y_probs)
-        pred_y_label = np.array(pred_y_label)
 
         # ----------------
         # Find the top-k most confident label
@@ -988,21 +883,21 @@ def train_model(df, NN):
         # ----------------
 
         k = int(len(df_U) * 0.05)
-        self_labelled_samples = find_most_confident_samples(
+        self_labelled_samples = train_utils.find_most_confident_samples(
             U_df=df_U.copy(),
-            y_probs=pred_y_probs,
-            y_pred_label=pred_y_label,
-            confidence_lb=0.20,
+            y_prob = pred_y_probs,
+            threshold=0.4,
             max_count=k
         )
-        print( ' number of self labelled samples ::', len(self_labelled_samples))
+        print(' number of self labelled samples ::', len(self_labelled_samples))
+
         # remove those ids from df_U
         rmv_id_list = list(self_labelled_samples[id_col])
         df_L = df_L.append(self_labelled_samples, ignore_index=True)
         df_U = df_U.loc[~(df_U[id_col].isin(rmv_id_list))]
 
         print(' Len of L and U ', len(df_L), len(df_U))
-        if len(df_U) < 0.05 * len(df_L):
+        if len(df_U) < 0.5 * len(df_L):
             continue_training = False
 
         # Also check for convergence
@@ -1015,8 +910,8 @@ def train_model(df, NN):
             df_L_validation,
             x_cols=g_feature_cols
         )
-        print( '----- Test set ')
-        evaluate_1(
+        print('----- Test set ')
+        evaluate_test(
             NN,
             df_U_original,
             x_cols=g_feature_cols
@@ -1024,11 +919,11 @@ def train_model(df, NN):
     return
 
 
-def evaluate_1(
+def evaluate_test(
         model,
         data_df,
         x_cols,
-        batch_size = 3096
+        batch_size=3096
 ):
     global DEVICE
     global label_col
@@ -1044,7 +939,7 @@ def evaluate_1(
         df,
         x_cols=x_cols,
         y_col=None,
-        return_id_col = True
+        return_id_col=True
     )
 
     dataLoader_obj_eval = DataLoader(
@@ -1059,7 +954,7 @@ def evaluate_1(
     pred_y_label = []
     for batch_idx, data in enumerate(dataLoader_obj_eval):
         _id = data[0].data.numpy()
-        _id = np.reshape(_id,-1)
+        _id = np.reshape(_id, -1)
         id_list.extend(_id)
         data_x = data[1].to(DEVICE)
         _pred_y_probs = model(data_x)
@@ -1072,23 +967,23 @@ def evaluate_1(
     pred_y_label = np.array(pred_y_label)
 
     res_df = pd.DataFrame(
-        np.stack([id_list,pred_y_label],axis=1), columns = [id_col, label_col]
+        np.stack([id_list, pred_y_label], axis=1), columns=[id_col, label_col]
     )
 
     del df[label_col]
     # merge
-    df = df.merge( res_df, on=[id_col], how = 'left')
-   # df[label_col] = list(pred_y_label)
+    df = df.merge(res_df, on=[id_col], how='left')
+    # df[label_col] = list(pred_y_label)
 
     # Now lets ee result at various points
     df = df.sort_values(by=['score'])
-    points = [10,20,30,40,50]
-    for point  in points:
+    points = [10, 20, 30, 40, 50]
+    for point in points:
         print('Next {} % of data ::'.format(point))
-        _tmp = df.head(int(len(df)*point/100))
+        _tmp = df.head(int(len(df) * point / 100))
         y_true = _tmp[true_label_col]
         y_pred = _tmp[label_col]
-        print('Precision ', precision_score(y_true, y_pred) )
+        print('Precision ', precision_score(y_true, y_pred))
         print('Recall ', recall_score(y_true, y_pred))
         print('Accuracy ', accuracy_score(y_true, y_pred))
         print('Balanced Accuracy ', balanced_accuracy_score(y_true, y_pred))
@@ -1100,7 +995,7 @@ def evaluate_validation(
         model,
         data_df,
         x_cols,
-        batch_size = 3096
+        batch_size=3096
 ):
     global DEVICE
     global label_col
@@ -1116,7 +1011,7 @@ def evaluate_validation(
         df,
         x_cols=x_cols,
         y_col=None,
-        return_id_col = True
+        return_id_col=True
     )
 
     dataLoader_obj_eval = DataLoader(
@@ -1131,7 +1026,7 @@ def evaluate_validation(
     pred_y_label = []
     for batch_idx, data in enumerate(dataLoader_obj_eval):
         _id = data[0].data.numpy()
-        _id = np.reshape(_id,-1)
+        _id = np.reshape(_id, -1)
         id_list.extend(_id)
         data_x = data[1].to(DEVICE)
         _pred_y_probs = model(data_x)
@@ -1144,18 +1039,18 @@ def evaluate_validation(
     pred_y_label = np.array(pred_y_label)
 
     res_df = pd.DataFrame(
-        np.stack([id_list,pred_y_label],axis=1), columns = [id_col, label_col]
+        np.stack([id_list, pred_y_label], axis=1), columns=[id_col, label_col]
     )
 
     del df[label_col]
     # merge
-    df = df.merge( res_df, on=[id_col], how = 'left')
+    df = df.merge(res_df, on=[id_col], how='left')
     # df[label_col] = list(pred_y_label)
     # Now lets ee result at various points
     df = df.sort_values(by=['score'])
     y_true = df[true_label_col]
     y_pred = df[label_col]
-    print('Precision ', precision_score(y_true, y_pred) )
+    print('Precision ', precision_score(y_true, y_pred))
     print('Recall ', recall_score(y_true, y_pred))
     print('Accuracy ', accuracy_score(y_true, y_pred))
     print('Balanced Accuracy ', balanced_accuracy_score(y_true, y_pred))
@@ -1168,8 +1063,9 @@ DIR = 'us_import2'
 setup_config(DIR)
 df = read_scored_data()
 df = convert_to_serial_IDs(df, True)
-df = set_label_in_top_perc(df, 10)
-matrix_node_emb = read_matrix_node_emb()
+df = train_utils.set_label_in_top_perc( df, 10, score_col, true_label_col )
+matrix_node_emb = read_matrix_node_emb(matrix_node_emb_path)
+node_emb_dim = matrix_node_emb.shape[-1]
 num_domains = len(domain_dims)
 
 # matrix_node_emb = FT(matrix_node_emb).to(DEVICE)
@@ -1187,7 +1083,3 @@ NN = net(
 
 NN.to(DEVICE)
 train_model(df, NN)
-
-
-
-

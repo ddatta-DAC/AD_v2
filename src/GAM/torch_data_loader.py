@@ -123,7 +123,6 @@ class singleDataGenerator():
             return  x1
 
 
-
 # ------------------------------------------------- #
 # This generates a pair of (x1,[y1]), (x2,[y2])
 # If allow_refresh = False : return None on exhausting one data set

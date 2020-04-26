@@ -74,8 +74,8 @@ def find_most_confident_samples(
         is_labelled_col='labelled',
         threshold = 0.4,
         id_col='PanjivaRecordID'
-
 ):
+
     if max_count is None:
         max_count = 0.10 * len(U_df)
 
@@ -136,3 +136,28 @@ def find_most_confident_samples(
     res_df = res_df.append(U_df_0.head(count), ignore_index=True)
     res_df[is_labelled_col] = True
     return res_df
+
+
+
+def set_label_in_top_perc(
+        df,
+        perc,
+        score_col,
+        true_label_col,
+        id_col = 'PanjivaRecordID',
+        is_labelled_col = 'is_labelled',
+        label_col = 'y'
+):
+
+    df = df.sort_values(by=[score_col])
+    if perc > 1:
+        perc = perc / 100
+    count = int(len(df) * perc)
+    df[is_labelled_col] = False
+
+    _tmp = df.head(count)
+    cand = list(_tmp[id_col])
+    df.loc[df[id_col].isin(cand), label_col] = df.loc[df[id_col].isin(cand), true_label_col]
+    df.loc[df[id_col].isin(cand), is_labelled_col] = True
+    return df
+
