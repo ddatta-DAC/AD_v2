@@ -66,7 +66,7 @@ try:
     from .gam_module import gam_net_v1 as gam_net
     from .gam_module import gam_loss
     from .clf_net import clf_net_v2 as clf_net
-    from .clf_net import clf_loss_v1 as clf_loss
+    from .clf_net import clf_loss as clf_loss
     from .record_node import graph_net_v2 as graph_net
     from .torch_data_loader import type1_Dataset
     from .torch_data_loader import dataGeneratorWrapper
@@ -77,7 +77,7 @@ except:
     from gam_module import gam_net_v1 as gam_net
     from gam_module import gam_loss
     from clf_net import clf_net_v2 as clf_net
-    from clf_net import clf_loss_v1 as clf_loss
+    from clf_net import clf_loss as clf_loss
     from record_node import graph_net_v2 as graph_net
     from torch_data_loader import type1_Dataset
     from torch_data_loader import pairDataGenerator
@@ -245,13 +245,11 @@ def get_normal_data_sample(
     global true_label_col
 
     df = pd.read_csv(
-        os.path.join(
-            DATA_SOURCE_DIR_1, 'train_data.csv'
-        ), index_col=None
+        os.path.join( DATA_SOURCE_DIR_1, 'train_data.csv'), index_col=None
     )
     df = df.sample(data_size)
-    df['fraud'] = False
-    df['anomaly'] = False
+    df[fraud_col] = False
+    df[anomaly_col] = False
     df[true_label_col] = 0
     df[is_labelled_col] = True
     df[label_col] = 0
@@ -340,11 +338,6 @@ def read_matrix_node_emb (matrix_node_emb_path):
     return emb
 
 
-
-
-
-
-
 def convert_to_serial_IDs(
         df,
         keep_entity_ids=False
@@ -414,7 +407,6 @@ class net(nn.Module):
             self,
             node_emb_dimension,
             num_domains,
-            gnet_output_dimensions,
             matrix_pretrained_node_embeddings,
             gam_record_input_dimension,
             gam_encoder_dimensions,
@@ -481,7 +473,6 @@ class net(nn.Module):
     def forward(
             self, input_x, input_y=None
     ):
-        global HAS_CUDA
         # ----------------
         # Train the agreement module
         # ----------------
@@ -549,12 +540,12 @@ class net(nn.Module):
 # =========================================
 # Perform prediction
 # =========================================
-def predict(NN, input_x):
-    NN.train(mode=False)
-    NN.test_mode = True
+def predict(model_obj, input_x):
+    model_obj.train(mode=False)
+    model_obj.test_mode = True
     result = NN(input_x)
-    NN.test_mode = False
-    NN.train(mode=True)
+    model_obj.test_mode = False
+    model_obj.train(mode=True)
     return result
 
 
@@ -566,7 +557,10 @@ def predict(NN, input_x):
 # ===========================================
 
 
-def train_model(df, NN):
+def train_model(
+        df,
+        NN
+):
     global epochs_f
     global epochs_g
     global log_interval_f
@@ -586,8 +580,8 @@ def train_model(df, NN):
     lambda_LL = 0.1
     lambda_UL = 0.01
     lambda_UU = 0.005
-    current_iter_count = 0
-    continue_training = True
+
+
 
     df_L = extract_labelled_df(df)
     df_U = extract_unlabelled_df(df)
@@ -604,6 +598,8 @@ def train_model(df, NN):
     df_U_original = df_U.copy()
     print(' Data set lengths :', len(df_L), len(df_L_validation), len(df_U))
 
+    current_iter_count = 0
+    continue_training = True
     while continue_training:
         # GAM gets inputs as embeddings, which are obtained through the graph embeddings
         # that requires serialized feature ids
@@ -918,143 +914,6 @@ def train_model(df, NN):
         )
     return
 
-
-def evaluate_test(
-        model,
-        data_df,
-        x_cols,
-        batch_size=3096
-):
-    global DEVICE
-    global label_col
-    global id_col
-    global true_label_col
-    df = data_df.copy()
-
-    model.train(mode=False)
-    model.test_mode = True
-    model.train_mode = False
-
-    data_source_eval = type1_Dataset(
-        df,
-        x_cols=x_cols,
-        y_col=None,
-        return_id_col=True
-    )
-
-    dataLoader_obj_eval = DataLoader(
-        data_source_eval,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=0,
-        sampler=SequentialSampler(data_source_eval)
-    )
-
-    id_list = []
-    pred_y_label = []
-    for batch_idx, data in enumerate(dataLoader_obj_eval):
-        _id = data[0].data.numpy()
-        _id = np.reshape(_id, -1)
-        id_list.extend(_id)
-        data_x = data[1].to(DEVICE)
-        _pred_y_probs = model(data_x)
-        _pred_y_label = torch.argmax(_pred_y_probs, dim=1).cpu().data.numpy()
-        pred_y_label.extend(_pred_y_label)
-
-    model.train(mode=True)
-    model.test_mode = False
-    model.train_mode = True
-    pred_y_label = np.array(pred_y_label)
-
-    res_df = pd.DataFrame(
-        np.stack([id_list, pred_y_label], axis=1), columns=[id_col, label_col]
-    )
-
-    del df[label_col]
-    # merge
-    df = df.merge(res_df, on=[id_col], how='left')
-    # df[label_col] = list(pred_y_label)
-
-    # Now lets ee result at various points
-    df = df.sort_values(by=['score'])
-    points = [10, 20, 30, 40, 50]
-    for point in points:
-        print('Next {} % of data ::'.format(point))
-        _tmp = df.head(int(len(df) * point / 100))
-        y_true = _tmp[true_label_col]
-        y_pred = _tmp[label_col]
-        print('Precision ', precision_score(y_true, y_pred))
-        print('Recall ', recall_score(y_true, y_pred))
-        print('Accuracy ', accuracy_score(y_true, y_pred))
-        print('Balanced Accuracy ', balanced_accuracy_score(y_true, y_pred))
-
-    return
-
-
-def evaluate_validation(
-        model,
-        data_df,
-        x_cols,
-        batch_size=3096
-):
-    global DEVICE
-    global label_col
-    global id_col
-    global true_label_col
-    df = data_df.copy()
-
-    model.train(mode=False)
-    model.test_mode = True
-    model.train_mode = False
-
-    data_source_eval = type1_Dataset(
-        df,
-        x_cols=x_cols,
-        y_col=None,
-        return_id_col=True
-    )
-
-    dataLoader_obj_eval = DataLoader(
-        data_source_eval,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=0,
-        sampler=SequentialSampler(data_source_eval)
-    )
-
-    id_list = []
-    pred_y_label = []
-    for batch_idx, data in enumerate(dataLoader_obj_eval):
-        _id = data[0].data.numpy()
-        _id = np.reshape(_id, -1)
-        id_list.extend(_id)
-        data_x = data[1].to(DEVICE)
-        _pred_y_probs = model(data_x)
-        _pred_y_label = torch.argmax(_pred_y_probs, dim=1).cpu().data.numpy()
-        pred_y_label.extend(_pred_y_label)
-
-    model.train(mode=True)
-    model.test_mode = False
-    model.train_mode = True
-    pred_y_label = np.array(pred_y_label)
-
-    res_df = pd.DataFrame(
-        np.stack([id_list, pred_y_label], axis=1), columns=[id_col, label_col]
-    )
-
-    del df[label_col]
-    # merge
-    df = df.merge(res_df, on=[id_col], how='left')
-    # df[label_col] = list(pred_y_label)
-    # Now lets ee result at various points
-    df = df.sort_values(by=['score'])
-    y_true = df[true_label_col]
-    y_pred = df[label_col]
-    print('Precision ', precision_score(y_true, y_pred))
-    print('Recall ', recall_score(y_true, y_pred))
-    print('Accuracy ', accuracy_score(y_true, y_pred))
-    print('Balanced Accuracy ', balanced_accuracy_score(y_true, y_pred))
-    return
 
 
 # ---------------------------------- #

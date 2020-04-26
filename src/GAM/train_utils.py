@@ -7,6 +7,12 @@
 # ---------------
 from sklearn.model_selection import train_test_split
 from pandarallel import pandarallel
+from sklearn.metrics import precision_score
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import recall_score
+
 
 pandarallel.initialize()
 import pandas as pd
@@ -160,4 +166,144 @@ def set_label_in_top_perc(
     df.loc[df[id_col].isin(cand), label_col] = df.loc[df[id_col].isin(cand), true_label_col]
     df.loc[df[id_col].isin(cand), is_labelled_col] = True
     return df
+
+
+def evaluate_test(
+        model,
+        data_df,
+        x_cols,
+        batch_size=3096,
+
+):
+    global DEVICE
+    global label_col
+    global id_col
+    global true_label_col
+    df = data_df.copy()
+
+    model.train(mode=False)
+    model.test_mode = True
+    model.train_mode = False
+
+    data_source_eval = type1_Dataset(
+        df,
+        x_cols=x_cols,
+        y_col=None,
+        return_id_col=True
+    )
+
+    dataLoader_obj_eval = DataLoader(
+        data_source_eval,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=0,
+        sampler=SequentialSampler(data_source_eval)
+    )
+
+    id_list = []
+    pred_y_label = []
+    for batch_idx, data in enumerate(dataLoader_obj_eval):
+        _id = data[0].data.numpy()
+        _id = np.reshape(_id, -1)
+        id_list.extend(_id)
+        data_x = data[1].to(DEVICE)
+        _pred_y_probs = model(data_x)
+        _pred_y_label = torch.argmax(_pred_y_probs, dim=1).cpu().data.numpy()
+        pred_y_label.extend(_pred_y_label)
+
+    model.train(mode=True)
+    model.test_mode = False
+    model.train_mode = True
+    pred_y_label = np.array(pred_y_label)
+
+    res_df = pd.DataFrame(
+        np.stack([id_list, pred_y_label], axis=1), columns=[id_col, label_col]
+    )
+
+    del df[label_col]
+    # merge
+    df = df.merge(res_df, on=[id_col], how='left')
+    # df[label_col] = list(pred_y_label)
+
+    # Now lets ee result at various points
+    df = df.sort_values(by=['score'])
+    points = [10, 20, 30, 40, 50]
+    for point in points:
+        print('Next {} % of data ::'.format(point))
+        _tmp = df.head(int(len(df) * point / 100))
+        y_true = _tmp[true_label_col]
+        y_pred = _tmp[label_col]
+        print('Precision ', precision_score(y_true, y_pred))
+        print('Recall ', recall_score(y_true, y_pred))
+        print('Accuracy ', accuracy_score(y_true, y_pred))
+        print('Balanced Accuracy ', balanced_accuracy_score(y_true, y_pred))
+
+    return
+
+
+def evaluate_validation(
+        model,
+        data_df,
+        x_cols,
+        batch_size=3096
+):
+    global DEVICE
+    global label_col
+    global id_col
+    global true_label_col
+    df = data_df.copy()
+
+    model.train(mode=False)
+    model.test_mode = True
+    model.train_mode = False
+
+    data_source_eval = type1_Dataset(
+        df,
+        x_cols=x_cols,
+        y_col=None,
+        return_id_col=True
+    )
+
+    dataLoader_obj_eval = DataLoader(
+        data_source_eval,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=0,
+        sampler=SequentialSampler(data_source_eval)
+    )
+
+    id_list = []
+    pred_y_label = []
+    for batch_idx, data in enumerate(dataLoader_obj_eval):
+        _id = data[0].data.numpy()
+        _id = np.reshape(_id, -1)
+        id_list.extend(_id)
+        data_x = data[1].to(DEVICE)
+        _pred_y_probs = model(data_x)
+        _pred_y_label = torch.argmax(_pred_y_probs, dim=1).cpu().data.numpy()
+        pred_y_label.extend(_pred_y_label)
+
+    model.train(mode=True)
+    model.test_mode = False
+    model.train_mode = True
+    pred_y_label = np.array(pred_y_label)
+
+    res_df = pd.DataFrame(
+        np.stack([id_list, pred_y_label], axis=1), columns=[id_col, label_col]
+    )
+
+    del df[label_col]
+    # merge
+    df = df.merge(res_df, on=[id_col], how='left')
+    # df[label_col] = list(pred_y_label)
+    # Now lets ee result at various points
+    df = df.sort_values(by=['score'])
+    y_true = df[true_label_col]
+    y_pred = df[label_col]
+    print('Precision ', precision_score(y_true, y_pred))
+    print('Recall ', recall_score(y_true, y_pred))
+    print('Accuracy ', accuracy_score(y_true, y_pred))
+    print('Balanced Accuracy ', balanced_accuracy_score(y_true, y_pred))
+    return
+
 
