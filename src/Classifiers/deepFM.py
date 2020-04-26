@@ -26,9 +26,37 @@ except:
     from MLP import MLP
 
 
+
+def deepFM_data_preprocess(
+        df,
+        domain_dims,
+        remove_orig_nonserial=False,
+):
+    # -----------------
+    # Convert the regular domains to one-hot
+    # -----------------
+    for dom in domain_dims.keys():
+        possible_categories = list(range(domain_dims[dom]))
+        cat = pd.Series(list(df[dom]))
+        cat = cat.astype(
+            pd.CategoricalDtype(categories=possible_categories)
+        )
+        converted = pd.get_dummies(cat, prefix=dom)
+        df = pd.concat((df, converted),axis=1)
+
+    if remove_orig_nonserial:
+        for dom in domain_dims.keys():
+            del df[dom]
+    return df
+
+
+
+
+
+
 # ------------------------------------------------ #
 
-class clf_dfm(nn.Module):
+class clf_deepFM(nn.Module):
 
     def __init__(
             self,
@@ -42,7 +70,7 @@ class clf_dfm(nn.Module):
             num_entities=None  # total number of entities (reqd if no pretrained emb)
     ):
 
-        super(clf_dfm, self).__init__()
+        super(clf_deepFM, self).__init__()
 
         self.wide_inp_dim = wide_inp_01_dim
         self.wide_Linear = nn.Linear(wide_inp_01_dim, 1)
@@ -135,7 +163,7 @@ class clf_dfm(nn.Module):
 
 
 def test():
-    model = clf_dfm(
+    model = clf_deepFM(
         wide_inp_01_dim=7,
         num_domains=3,
         entity_emb_dimensions=4,
