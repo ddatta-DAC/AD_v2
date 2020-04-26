@@ -92,17 +92,43 @@ def wide_N_deep_data_preprocess(
         for p in combinations(domains, 2):
             pairs.append(p)
 
-    for pair in pairs:
+
+    def parallel_comb(
+        df,
+        pair
+    ):
         f1 = pair[0]
         f2 = pair[1]
-        df_inp = pd.DataFrame(df[[id_col,f1,f2]],copy=True)
+        df_inp = pd.DataFrame(df[[id_col, f1, f2]], copy=True)
         df_op = cross_feature_generator(
             df_inp,
             f1, f2,
             domain_dims[f1],
             domain_dims[f2]
         )
-        df = df.merge(df_op, on =[id_col,f1,f2],how='inner')
+        return (df_op, [f1,f2])
+
+
+
+    from joblib import Parallel,delayed
+    result = Parallel(n_jobs=10)(delayed(parallel_comb)(pair) for pair in pairs)
+
+    for item in result:
+        _df = item[0]
+        merge_cols = [id_col] + item[1]
+        df =  df.merge(_df, on =merge_cols ,how = 'inner')
+
+    # for pair in pairs:
+    #     f1 = pair[0]
+    #     f2 = pair[1]
+    #     df_inp = pd.DataFrame(df[[id_col,f1,f2]],copy=True)
+    #     df_op = cross_feature_generator(
+    #         df_inp,
+    #         f1, f2,
+    #         domain_dims[f1],
+    #         domain_dims[f2]
+    #     )
+    #     df = df.merge(df_op, on =[id_col,f1,f2],how='inner')
 
     # -----------------
     # Convert the regular domains to one-hot
@@ -122,8 +148,9 @@ def wide_N_deep_data_preprocess(
     return df
 
 
-# ----------------------------------------------- #
-
+# ========================================= #
+# Wide and Deep Module
+# ========================================= #
 class wide_n_deep(nn.Module):
     def __init__(
             self,

@@ -22,7 +22,8 @@ class MLP(nn.Module):
             dropout = 0.05,
             batch_norm_flag  = False,
             output_layer=True,
-            activation = 'relu'
+            activation = 'relu',
+            output_activation = None
     ):
         super().__init__()
         layers = list()
@@ -44,8 +45,15 @@ class MLP(nn.Module):
 
             layers.append(torch.nn.Dropout(p=dropout))
             input_dim = embed_dim
+
         if output_layer:
             layers.append(torch.nn.Linear(input_dim, 1))
+
+            if output_activation == 'sigmoid':
+                layers.append(torch.nn.Sigmoid())
+            elif output_activation == 'tanh':
+                layers.append(torch.nn.Tanh())
+
         self.mlp = torch.nn.Sequential(*layers)
         return
 
