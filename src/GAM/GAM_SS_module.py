@@ -108,7 +108,7 @@ class SS_network(nn.Module):
             x1 = self.graph_net(x1)
             x2 = self.graph_net(x2)
 
-            y_pred = self.gam_net(
+            y_pred = self.agreement_net(
                 x1,
                 x2
             )
@@ -130,7 +130,7 @@ class SS_network(nn.Module):
                 dim=1
             )
 
-            pred_agreement = self.gam_net(x1, x2)
+            pred_agreement = self.agreement_net(x1, x2)
             return pred_agreement, pred_y1
 
         elif self.train_mode == 'f_ul':
