@@ -22,6 +22,32 @@ import pickle
 import numpy as np
 
 
+# -----
+# Return part of dataframe , where instances are labelled
+# -----
+def extract_labelled_df(
+    df,
+    is_labelled_col='is_labelled'
+):
+    res = pd.DataFrame(
+        df.loc[df[is_labelled_col] == True],
+        copy=True
+    )
+    return res
+
+
+def extract_unlabelled_df(
+    df,
+    is_labelled_col='is_labelled'
+):
+    res = pd.DataFrame(
+        df.loc[df[is_labelled_col] == False],
+        copy=True
+    )
+    return res
+
+
+
 # ---------------------------------------------------
 # Check convergence for classifier for early stopping
 # ---------------------------------------------------
@@ -84,7 +110,6 @@ def find_most_confident_samples(
 
     if max_count is None:
         max_count = 0.10 * len(U_df)
-
 
     y_pred = label_col
 
@@ -170,17 +195,17 @@ def set_label_in_top_perc(
 
 def evaluate_test(
         model,
+        DEVICE,
         data_df,
         x_cols,
+        label_col = 'y',
+        true_label_col = 'y_true',
+        id_col = 'PanjivaRecordID',
         batch_size=3096,
 
 ):
-    global DEVICE
-    global label_col
-    global id_col
-    global true_label_col
+    
     df = data_df.copy()
-
     model.train(mode=False)
     model.test_mode = True
     model.train_mode = False
@@ -243,16 +268,16 @@ def evaluate_test(
 
 def evaluate_validation(
         model,
+        DEVICE,
         data_df,
         x_cols,
+        label_col = 'y',
+        true_label_col = 'y_true',
+        id_col = 'PanjivaRecordID',
         batch_size=3096
 ):
-    global DEVICE
-    global label_col
-    global id_col
-    global true_label_col
-    df = data_df.copy()
 
+    df = data_df.copy()
     model.train(mode=False)
     model.test_mode = True
     model.train_mode = False
@@ -295,7 +320,7 @@ def evaluate_validation(
     del df[label_col]
     # merge
     df = df.merge(res_df, on=[id_col], how='left')
-    # df[label_col] = list(pred_y_label)
+    
     # Now lets ee result at various points
     df = df.sort_values(by=['score'])
     y_true = df[true_label_col]
