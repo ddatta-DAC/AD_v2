@@ -535,7 +535,7 @@ def exec_classifier(
     # So we try to see the metrics in the next 10% of the data
     # ---------------------------------
 
-    df_eval2 = df_eval.sort_values(by=['score'], ascending=[False, True])
+    df_eval2 = df_eval.sort_values(by=['score'], ascending=[True])
     results_print = pd.DataFrame(
         columns=['next %', 'precision', 'recall', 'f1', 'balanced_accuracy']
     )
