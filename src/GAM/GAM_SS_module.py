@@ -11,14 +11,14 @@ try:
     from src.Classifiers.deepFM import clf_deepFM  as clf_DEEP_FM
     from clf_net import clf_net_v2 as clf_MLP
     from record_node import graph_net_v2 as graph_net
-    from  gam_module import gam_net_v1 as gam_net
+    from  gam_module import agreement_net_v2 as gam_net
 
 except:
     from .src.Classifiers.wide_n_deep_model import clf_wide_n_deep as clf_WIDE_N_DEEP
     from .src.Classifiers.deepFM import clf_deepFM  as clf_DEEP_FM
     from .clf_net import clf_net_v2 as clf_MLP
     from .record_node import graph_net_v2 as graph_net
-    from .gam_module import gam_net_v1 as gam_net
+    from .gam_module import agreement_net_v2 as gam_net
 
 # =========================================
 # Main module that encapsulates everything.
@@ -50,7 +50,8 @@ class SS_network(nn.Module):
         gam_record_input_dimension = node_emb_dimension * num_domains
         self.agreement_net = gam_net(
             gam_record_input_dimension,
-            list_gam_encoder_dimensions
+            list_gam_encoder_dimensions,
+            activation = 'selu'
         )
 
         if clf_type == 'wide_n_deep':

@@ -21,6 +21,7 @@ from src.Classifiers.MLP import MLP
 import torch.nn.functional as F
 
 
+
 def clf_loss (y_pred, y_true):
     if list(y_true.size())[1] == 1 :
         y_true = y_true.squeeze(1)

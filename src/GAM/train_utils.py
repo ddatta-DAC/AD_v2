@@ -27,7 +27,7 @@ import numpy as np
 # -----
 def extract_labelled_df(
     df,
-    is_labelled_col='is_labelled'
+    is_labelled_col='labelled'
 ):
     res = pd.DataFrame(
         df.loc[df[is_labelled_col] == True],
@@ -38,7 +38,7 @@ def extract_labelled_df(
 
 def extract_unlabelled_df(
     df,
-    is_labelled_col='is_labelled'
+    is_labelled_col='labelled'
 ):
     res = pd.DataFrame(
         df.loc[df[is_labelled_col] == False],
@@ -176,7 +176,7 @@ def set_label_in_top_perc(
         score_col,
         true_label_col,
         id_col = 'PanjivaRecordID',
-        is_labelled_col = 'is_labelled',
+        is_labelled_col = 'labelled',
         label_col = 'y'
 ):
 
