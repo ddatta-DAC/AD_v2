@@ -7,15 +7,15 @@ from torch import LongTensor as LT
 
 
 try:
-    from src.Classifiers import wide_n_deep_model as clf_WIDE_N_DEEP
-    from src.Classifiers import deepFM  as clf_DEEP_FM
+    from src.Classifiers.wide_n_deep_model import clf_wide_n_deep as clf_WIDE_N_DEEP
+    from src.Classifiers.deepFM import clf_deepFM  as clf_DEEP_FM
     from clf_net import clf_net_v2 as clf_MLP
     from record_node import graph_net_v2 as graph_net
     from  gam_module import gam_net_v1 as gam_net
 
 except:
-    from .src.Classifiers import wide_n_deep_model as clf_WIDE_N_DEEP
-    from .src.Classifiers import deepFM  as clf_DEEP_FM
+    from .src.Classifiers.wide_n_deep_model import clf_wide_n_deep as clf_WIDE_N_DEEP
+    from .src.Classifiers.deepFM import clf_deepFM  as clf_DEEP_FM
     from .clf_net import clf_net_v2 as clf_MLP
     from .record_node import graph_net_v2 as graph_net
     from .gam_module import gam_net_v1 as gam_net
