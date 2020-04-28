@@ -75,9 +75,10 @@ def PreProcessData(
         clf_type,
         domain_dims,
         serial_mapping_df,
+        model_use_data_DIR,
         id_col='PanjivaRecordID'
 ):
-    global model_use_data_DIR
+    
     if clf_type is None:
         clf_type = 'MLP'
 
@@ -203,10 +204,12 @@ def PreProcessData(
     return df_target, normal_data_samples_df, features_F, features_G
 
 
-def set_ground_truth_labels(df):
-    global true_label_col
-    global fraud_col
-
+def set_ground_truth_labels(
+    df,
+    fraud_col,
+    true_label_col
+):
+   
     def aux_true_label(row):
         if row[fraud_col]:
             return 1
@@ -224,6 +227,8 @@ def read_scored_data(
         DATA_SOURCE_DIR_2,
         score_col,
         label_col,
+        fraud_col, 
+        true_label_col,
         is_labelled_col
 ):
     df = pd.read_csv(
@@ -231,7 +236,7 @@ def read_scored_data(
     )
     df = df.sort_values(by=[score_col])
     df[label_col] = 0
-    df = set_ground_truth_labels(df)
+    df = set_ground_truth_labels(df, fraud_col, true_label_col)
     df[is_labelled_col] = False
     return df
 
@@ -242,6 +247,7 @@ def read_scored_data(
 def get_data_plus_features(
         DATA_SOURCE_DIR_1,
         DATA_SOURCE_DIR_2,
+        model_use_data_DIR,
         clf_type,
         domain_dims,
         serial_mapping_df,
@@ -265,14 +271,18 @@ def get_data_plus_features(
         DATA_SOURCE_DIR_2,
         score_col,
         label_col,
-        is_labelled_col)
+        fraud_col, 
+        true_label_col,
+        is_labelled_col
+    )
     df_target = df_target.sample(5000)
 
     df_target, normal_data_samples_df, features_F, features_G = PreProcessData(
         [df_target, base_train_df],
         clf_type=clf_type,
         domain_dims=domain_dims,
-        serial_mapping_df=serial_mapping_df
+        serial_mapping_df=serial_mapping_df,
+        model_use_data_DIR = model_use_data_DIR
     )
 
     return df_target, normal_data_samples_df, features_F, features_G
