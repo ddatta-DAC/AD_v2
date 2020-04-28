@@ -33,7 +33,7 @@ except:
 
 def cross_feature_generator(df, f1, f2, dim1, dim2):
     pandarallel.initialize()
-    h1 = max(19, 6 * int((math.sqrt(dim1 * dim2)/4) // 6) - 1)
+    h1 = max(19, 6 * int(math.sqrt(dim1 * dim2/2) // 6) - 1)
     h2 = max(7, 6 * int((h1 // 2) // 6) - 1, 7)
     if f1 > f2:  # Sorted lexicographically
         f1, f2 = f2, f1
@@ -152,18 +152,18 @@ def wide_N_deep_data_preprocess(
 # ========================================= #
 # Wide and Deep Module
 # ========================================= #
-class wide_n_deep(nn.Module):
+class clf_wide_n_deep(nn.Module):
     def __init__(
             self,
             wide_inp_01_dim=None,
-            pretrained_node_embeddings=None,  # type : FloatTensor,
+            pretrained_node_embeddings = None,  # type : FloatTensor,
             tune_entity_emb=False,
             deep_FC_layer_dims=None,
             num_entities=None,  # total number of entities (reqd if no pretrained emb)
             entity_emb_dim=None,
             num_domains=None
     ):
-        super(wide_n_deep, self).__init__()
+        super(clf_wide_n_deep, self).__init__()
 
         self.wide_inp_dim = wide_inp_01_dim
         self.wide_Linear = nn.Linear(wide_inp_01_dim, 1)
