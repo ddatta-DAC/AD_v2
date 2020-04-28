@@ -1,7 +1,6 @@
 DATA_SOURCE_DIR_1 : './../../generated_data_v2'
 DATA_SOURCE_DIR_2 : './../../AD_system_output_v2'
 model_use_data_DIR : 'model_use_data'
-
 serial_mapping_df_name : 'Serialized_Mapping.csv'
 serial_mapping_df_loc : './../GraphEmb_2/model_use_data'
 matrix_node_emb_loc: './../GraphEmb_2/model_weights_data/metapath2vec_gensim'
@@ -10,6 +9,7 @@ node_embedding_size : 128
 confidence_bound : 0.20
 epochs_f : 5
 epochs_g : 20
+'clf;_type': 'MLP'
 Logging_Dir : 'Logs'
 classifier_mlp_layers_1 : '256,128,64'
 gam_encoder_dimensions_mlp : '512,256,64'

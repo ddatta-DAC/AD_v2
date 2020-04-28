@@ -901,13 +901,14 @@ def train_model(
         if current_iter_count > max_IC_iter:
             continue_training = False
         print('----- Validation set ')
-        evaluate_validation(
+        train_utils.evaluate_validation(
             NN,
             df_L_validation,
             x_cols=g_feature_cols
         )
+
         print('----- Test set ')
-        evaluate_test(
+        train_utils.evaluate_test(
             NN,
             df_U_original,
             x_cols=g_feature_cols
