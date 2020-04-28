@@ -41,6 +41,7 @@ try:
     from .torch_data_loader import pairDataGenerator
     from .torch_data_loader import singleDataGenerator
     from . import data_preprocess
+    from .GAM_SS_module import SS_network
 except:
     from gam_module import gam_net_v1 as gam_net
     from gam_module import gam_loss
@@ -52,6 +53,7 @@ except:
     from torch_data_loader import singleDataGenerator
     import train_utils
     import data_preprocess
+    from GAM_SS_module import SS_network
 
 
 DEVICE = None
@@ -252,11 +254,10 @@ def close_logger(logger):
 
 
 
-
-
 df_target, normal_data_samples_df, features_F, features_G = data_preprocess.get_data_plus_features(
         DATA_SOURCE_DIR_1,
         DATA_SOURCE_DIR_2,
+        model_use_data_DIR,
         clf_type,
         domain_dims,
         serial_mapping_df,
@@ -267,5 +268,35 @@ df_target, normal_data_samples_df, features_F, features_G = data_preprocess.get_
         fraud_col,
         anomaly_col
 )
+
+def read_matrix_node_emb (matrix_node_emb_path):
+    emb = np.load(matrix_node_emb_path)
+    return emb
+
+
+matrix_node_emb = read_matrix_node_emb(matrix_node_emb_path)
+node_emb_dim = matrix_node_emb.shape[-1]
+num_domains = len(domain_dims)
+
+# matrix_node_emb = FT(matrix_node_emb).to(DEVICE)
+matrix_node_emb = FT(matrix_node_emb)
+
+dict_clf_initilize_inputs = {
+    'mlp_layer_dims' : clf_mlp_layer_dimesnions,
+    'dropout' : 0.05,
+    'activation':'relu'
+}
+
+NN = SS_network(
+            DEVICE,
+            node_emb_dimension=node_emb_dim,
+            num_domains=num_domains,
+            matrix_pretrained_node_embeddings=matrix_node_emb, # [Number of entities, embedding dimension]
+            list_gam_encoder_dimensions = gam_encoder_dimensions_mlp,
+            clf_type = clf_type,
+            dict_clf_initilize_inputs = dict_clf_initilize_inputs
+)
+
+
 
 
