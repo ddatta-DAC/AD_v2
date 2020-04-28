@@ -6,9 +6,11 @@ import sys
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
+from datetime import datetime
 
 sys.path.append('./../..')
 sys.path.append('./..')
+
 from scipy.sparse import csr_matrix
 from src.utils import coOccMatrixGenerator
 from scipy import sparse
@@ -18,6 +20,11 @@ from pandarallel import pandarallel
 import logging
 
 pandarallel.initialize()
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import balanced_accuracy_score
+
 try:
     from src.data_fetcher import data_fetcher_v2 as data_fetcher
 except:
@@ -27,11 +34,12 @@ from sklearn.utils.sparsefuncs_fast import inplace_csr_row_normalize_l1
 from hashlib import md5
 
 DATA_SOURCE_DIR_1 = './../../generated_data_v2'
-DATA_SOURCE_DIR_2 =  './../../AD_system_output_v2'
+DATA_SOURCE_DIR_2 = './../../AD_system_output_v2'
 domain_dims = None
 Logging_Dir = 'Log'
-# ------------------------------------ #
 
+
+# ------------------------------------ #
 # Input :
 # Stage 1 :
 # Training data to create network
@@ -56,10 +64,11 @@ def get_logger():
     handler = logging.FileHandler(log_file_path)
     handler.setLevel(logging.INFO)
     logger.addHandler(handler)
+    logger.info(str(datetime.utcnow()))
     return logger
 
-def close_logger(logger):
 
+def close_logger(logger):
     handlers = logger.handlers[:]
     for handler in handlers:
         handler.close()
@@ -84,7 +93,6 @@ def get_domain_dims(DIR):
 
 def get_training_data(DIR):
     global DATA_SOURCE_DIR_1
-
     data = data_fetcher.get_train_x_csv(DATA_SOURCE_DIR_1, DIR)
     return data
 
@@ -141,6 +149,7 @@ def get_transition_matrix(domain1, domain2):
 
 class MP_object:
     id = 0
+
     @staticmethod
     def assign_id():
         t = MP_object.id
@@ -309,7 +318,7 @@ def exec_classifier(
     label_col = 'y'
     id_col = 'PanjivaRecordID'
     df = read_target_data(
-        DATA_SOURCE= DATA_SOURCE_DIR_2,
+        DATA_SOURCE=DATA_SOURCE_DIR_2,
         DIR=DIR
     )
     LOGGER.info('Size of Data set ::' + str(len(df)))
@@ -508,11 +517,12 @@ def exec_classifier(
     # Add in actual label columns
     def place_true_labels(row, ref_df):
         _id = row[id_col]
-        r = list(df.loc[ref_df[id_col]==_id]['fraud'])[0]
+        r = list(df.loc[ref_df[id_col] == _id]['fraud'])[0]
         if r is True:
             return 1
         else:
             return -1
+
     true_label_name = 'y_true'
     df_eval[true_label_name] = df_eval.parallel_apply(
         place_true_labels,
@@ -520,53 +530,40 @@ def exec_classifier(
         args=(df_master,)
     )
 
-
+    # ---------------------------------
     # We are trying to understand how input so far will improve the output in next stage
     # So we try to see the metrics in the next 10% of the data
-    from sklearn.metrics import precision_score
-    df_eval1 = df_eval.sort_values(by=['score'],ascending=True)
-    df_eval2 = df_eval.sort_values(by=[label_col,'score'], ascending=[False,True])
+    # ---------------------------------
 
-    # Take next 20% of data
-    for point in [10,20,30,40,50]:
+    df_eval2 = df_eval.sort_values(by=['score'], ascending=[False, True])
+    results_print = pd.DataFrame(
+        columns=['next %', 'precision', 'recall', 'f1', 'balanced_accuracy']
+    )
 
-        _count = int(len(df_master)*point/100)
-        df_tmp = df_eval1.head(_count)
-        y_true = list(df_tmp[true_label_name])
-        y_pred =  [1] * len(df_tmp)
-        accuracy = round(accuracy_score(y_true, y_pred),2)
-
-        msg = '[ Without Input] accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
-        LOGGER.info(msg)
-
-        TP = 0
-        TP_FN = 0
-        for i, j in zip(y_true, y_pred):
-            if i == 1 and i == j:
-                TP += 1
-            if i == 1: TP_FN += 1
-
-        precision = round(TP / TP_FN, 2)
-        msg = '[ Without Input] precision at Top (next)  {} % :: {}'.format(point, precision)
-        LOGGER.info(msg)
-
+    # Take next P% of data
+    for next_point in [10, 20, 30]:
+        _count = int(len(df_master) * next_point / 100)
         df_tmp = df_eval2.head(_count)
-        y_true = list(df_tmp[true_label_name])
-        y_pred = list(df_tmp[label_col])
-        accuracy = round(accuracy_score(y_true, y_pred), 2)
-        msg = '[  With Input ] accuracy at Top (next)  {} % :: {}'.format(point, accuracy)
-        LOGGER.info(msg)
 
-        TP = 0
-        TP_FN = 0
-        for i, j in zip(y_true, y_pred):
-            if i == 1 and i == j:
-                TP += 1
-            if i == 1: TP_FN += 1
+        y_true = list(df_tmp[true_label_name])  # Ground truth
+        y_pred = list(df_tmp[label_col])  # Predicted
 
-        precision = round(TP / TP_FN, 2)
-        msg = '[  With Input] precision at Top (next)  {} % :: {}'.format(point, precision)
-        LOGGER.info(msg)
+        precision = precision_score(y_true=y_true, y_pred=y_pred, labels=[-1, 1], pos_label=1)
+        recall = recall_score(y_true=y_true, y_pred=y_pred, labels=[-1, 1], pos_label=1)
+        b_acc = balanced_accuracy_score(y_true=y_true, y_pred=y_pred)
+        f1 = 2 * precision * recall / (precision + recall)
+
+        entry_dict = {
+            'next %': next_point,
+            'precision': round(precision, 3),
+            'recall': round(recall, 3),
+            'f1': round(f1, 3),
+            'balanced_accuracy': round(b_acc, 3)
+        }
+        results_print = results_print.append(entry_dict, ignore_index=True)
+
+    LOGGER.info(results_print.to_string())
+
     return
 
 
@@ -607,12 +604,12 @@ list_mp_obj = network_creation(
     train_x,
     MP_list
 )
-set_checkpoints =[ 10,20,30,40,50 ]
+set_checkpoints = [10, 20, 30]
 for checkpoint in set_checkpoints:
     exec_classifier(
         list_mp_obj,
-        checkpoint= checkpoint,
-        classifier_type = classifier_type
+        checkpoint=checkpoint,
+        classifier_type=classifier_type
     )
 
 close_logger(LOGGER)
