@@ -78,7 +78,6 @@ def PreProcessData(
         model_use_data_DIR,
         id_col='PanjivaRecordID'
 ):
-    
     if clf_type is None:
         clf_type = 'MLP'
 
@@ -141,7 +140,7 @@ def PreProcessData(
         )
 
         # The added domains are the ones to be fed to the linear layer
-        features_F = [ _ for _ in list(converted_df.columns) if _ not in list(df_data.columns)]
+        features_F = [_ for _ in list(converted_df.columns) if _ not in list(df_data.columns)]
 
         # ----
         converted_df, features_1 = convert_to_serial_IDs(
@@ -205,11 +204,10 @@ def PreProcessData(
 
 
 def set_ground_truth_labels(
-    df,
-    fraud_col,
-    true_label_col
+        df,
+        fraud_col,
+        true_label_col
 ):
-   
     def aux_true_label(row):
         if row[fraud_col]:
             return 1
@@ -227,7 +225,7 @@ def read_scored_data(
         DATA_SOURCE_DIR_2,
         score_col,
         label_col,
-        fraud_col, 
+        fraud_col,
         true_label_col,
         is_labelled_col
 ):
@@ -271,7 +269,7 @@ def get_data_plus_features(
         DATA_SOURCE_DIR_2,
         score_col,
         label_col,
-        fraud_col, 
+        fraud_col,
         true_label_col,
         is_labelled_col
     )
@@ -282,7 +280,7 @@ def get_data_plus_features(
         clf_type=clf_type,
         domain_dims=domain_dims,
         serial_mapping_df=serial_mapping_df,
-        model_use_data_DIR = model_use_data_DIR
+        model_use_data_DIR=model_use_data_DIR
     )
 
     return df_target, normal_data_samples_df, features_F, features_G

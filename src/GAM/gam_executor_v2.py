@@ -99,7 +99,6 @@ except:
     import train_utils
     from GAM_SS_module import SS_network
 
-
 # ==================================== #
 
 config_file = 'config.yaml'
@@ -136,7 +135,6 @@ batch_size_r = 128
 F_classifier_type = None
 WnD_dnn_layer_dimensions = None
 deepFM_dnn_layer_dimensions = None
-
 
 
 def setup_config(_DIR):
@@ -261,12 +259,9 @@ def close_logger(logger):
     return
 
 
-
-
 def read_matrix_node_emb(matrix_node_emb_path):
     emb = np.load(matrix_node_emb_path)
     return emb
-
 
 
 def regularization_loss(
@@ -694,7 +689,7 @@ df_target, normal_data_samples_df, features_F, features_G = data_preprocess.get_
     anomaly_col
 )
 
-wide_inp_01_dim =len(features_F) - len(features_G)
+wide_inp_01_dim = len(features_F) - len(features_G)
 matrix_node_emb = read_matrix_node_emb(matrix_node_emb_path)
 node_emb_dim = matrix_node_emb.shape[-1]
 num_domains = len(domain_dims)
@@ -715,12 +710,10 @@ elif F_classifier_type == 'wide_n_deep':
     dict_clf_initilize_inputs['deep_FC_layer_dims'] = WnD_dnn_layer_dimensions
     dict_clf_initilize_inputs['tune_entity_emb'] = False
 elif F_classifier_type == 'deepFM':
-    dict_clf_initilize_inputs ={}
+    dict_clf_initilize_inputs = {}
     dict_clf_initilize_inputs['wide_inp_01_dim'] = wide_inp_01_dim
     dict_clf_initilize_inputs['dnn_layer_dimensions'] = deepFM_dnn_layer_dimensions
     dict_clf_initilize_inputs['tune_entity_emb'] = False
-
-
 
     dict_clf_initilize_inputs = {
         'mlp_layer_dims': clf_mlp_layer_dimesnions,
@@ -729,7 +722,6 @@ elif F_classifier_type == 'deepFM':
     }
 else:
     dict_clf_initilize_inputs = None
-
 
 NN = SS_network(
     DEVICE,
@@ -744,4 +736,3 @@ NN = SS_network(
 NN.to(DEVICE)
 df_target = train_utils.set_label_in_top_perc(df_target, 10, score_col, true_label_col)
 train_model(NN, df_target, normal_data_samples_df, features_F, features_G)
-

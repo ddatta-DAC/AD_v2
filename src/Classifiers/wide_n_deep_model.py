@@ -11,6 +11,7 @@ from torch import nn
 from pandarallel import pandarallel
 from joblib import Parallel, delayed
 import multiprocessing
+
 pandarallel.initialize()
 import numpy as np
 import os
@@ -29,11 +30,12 @@ try:
 except:
     from MLP import MLP
 
+
 # ==================================================== #
 
 def cross_feature_generator(df, f1, f2, dim1, dim2):
     pandarallel.initialize()
-    h1 = max(19, 6 * int(math.sqrt(dim1 * dim2/2) // 6) - 1)
+    h1 = max(19, 6 * int(math.sqrt(dim1 * dim2 / 2) // 6) - 1)
     h2 = max(7, 6 * int((h1 // 2) // 6) - 1, 7)
     if f1 > f2:  # Sorted lexicographically
         f1, f2 = f2, f1
@@ -85,7 +87,7 @@ def wide_N_deep_data_preprocess(
         domain_dims,
         pairs=[],
         remove_orig_nonserial=False,
-        id_col = 'PanjivaRecordID'
+        id_col='PanjivaRecordID'
 ):
     df = df.copy()
     if pairs is None or len(pairs) == 0:
@@ -94,10 +96,9 @@ def wide_N_deep_data_preprocess(
         for p in combinations(domains, 2):
             pairs.append(p)
 
-
     def parallel_comb(
-        df,
-        pair
+            df,
+            pair
     ):
         f1 = pair[0]
         f2 = pair[1]
@@ -108,28 +109,16 @@ def wide_N_deep_data_preprocess(
             domain_dims[f1],
             domain_dims[f2]
         )
-        return (df_op, [f1,f2])
+        return (df_op, [f1, f2])
 
     n_jobs = multiprocessing.cpu_count()
 
-    result = Parallel(n_jobs=n_jobs)(delayed(parallel_comb)(df,pair,) for pair in pairs)
+    result = Parallel(n_jobs=n_jobs)(delayed(parallel_comb)(df, pair, ) for pair in pairs)
 
     for item in result:
         _df = item[0]
         merge_cols = [id_col] + item[1]
-        df = df.merge(_df, on = merge_cols ,how = 'inner')
-
-    # for pair in pairs:
-    #     f1 = pair[0]
-    #     f2 = pair[1]
-    #     df_inp = pd.DataFrame(df[[id_col,f1,f2]],copy=True)
-    #     df_op = cross_feature_generator(
-    #         df_inp,
-    #         f1, f2,
-    #         domain_dims[f1],
-    #         domain_dims[f2]
-    #     )
-    #     df = df.merge(df_op, on =[id_col,f1,f2],how='inner')
+        df = df.merge(_df, on=merge_cols, how='inner')
 
     # -----------------
     # Convert the regular domains to one-hot
@@ -141,7 +130,7 @@ def wide_N_deep_data_preprocess(
             pd.CategoricalDtype(categories=possible_categories)
         )
         converted = pd.get_dummies(cat, prefix=dom)
-        df = pd.concat((df, converted),axis=1)
+        df = pd.concat((df, converted), axis=1)
 
     if remove_orig_nonserial:
         for dom in domain_dims.keys():
@@ -157,7 +146,7 @@ class clf_wide_n_deep(nn.Module):
     def __init__(
             self,
             wide_inp_01_dim=None,
-            pretrained_node_embeddings = None,  # type : FloatTensor,
+            pretrained_node_embeddings=None,  # type : FloatTensor,
             tune_entity_emb=False,
             deep_FC_layer_dims=None,
             num_entities=None,  # total number of entities (reqd if no pretrained emb)
