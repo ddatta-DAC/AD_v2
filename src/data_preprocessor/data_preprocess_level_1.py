@@ -61,7 +61,7 @@ def get_regex(_type):
         if _type == 'train':
             return '.*(0[3-6]_2016).csv'
         if _type == 'test':
-            return '.*0[7-6]_2016.csv'
+            return '.*0[7-8]_2016.csv'
 
     return '*.csv'
 
@@ -75,12 +75,13 @@ def get_files(DIR, _type='all'):
 
     def glob_re(pattern, strings):
         return filter(re.compile(pattern).match, strings)
+
     files = sorted([_ for _ in glob_re(regex, c)])
     print('DIR ::', DIR, ' Type ::', _type, 'Files count::', len(files))
     return files
 
 
-def set_up_config(_DIR = None):
+def set_up_config(_DIR=None):
     global DIR
     global CONFIG
     global CONFIG_FILE
@@ -105,7 +106,7 @@ def set_up_config(_DIR = None):
 
     DIR_LOC = re.sub('[0-9]', '', DIR)
     DATA_SOURCE = os.path.join('./../../Data_Raw', DIR_LOC)
-    save_dir =  CONFIG['save_dir']
+    save_dir = CONFIG['save_dir']
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
     save_dir = os.path.join(
@@ -181,7 +182,6 @@ def convert_to_ids(
         }
         col_val2id_dict[col] = val2id_dict
 
-
         # Replace
         df[col] = df.parallel_apply(
             replace_attr_with_id,
@@ -235,6 +235,7 @@ Input : file_path_list
 '''
 Remove the rows with entities that have very low frequency.
 '''
+
 
 def remove_low_frequency_values(df):
     global id_col
@@ -436,7 +437,7 @@ def setup_testing_data(
     test_df = test_df.dropna()
     test_df = lexical_sort_cols(test_df, id_col)
     print(' Length of testing data', len(test_df))
-    return  test_df
+    return test_df
 
     # '''
     # For now deactiavate
@@ -544,8 +545,8 @@ def create_train_test_sets():
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    '--DIR', choices=['us_import1', 'us_import2', 'us_import3' ],
-    default= 'us_import2'
+    '--DIR', choices=['us_import4', 'us_import5', 'us_import6'],
+    default='us_import4'
 )
 
 args = parser.parse_args()
