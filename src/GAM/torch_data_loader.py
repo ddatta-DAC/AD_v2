@@ -285,7 +285,10 @@ class pairDataGenerator_v2():
 
         self.iter_obj1 = self.get_indices_iter(self.index_1, batch_size, allow_refresh)
         self.iter_obj2 = self.get_indices_iter(self.index_2, batch_size, allow_refresh)
-
+        print(self.iter_obj1)
+        print(self.iter_obj2)
+        return
+        
 
     def get_indices_iter(self, index_i, batch_size, allow_refresh):
         def next_indices(
@@ -352,6 +355,7 @@ class pairDataGenerator_v2:
 
         self.iter_obj1 = self._get_indices_iter(index_1, batch_size, allow_refresh)
         self.iter_obj2 = self._get_indices_iter(index_2, batch_size, allow_refresh)
+        
         return
 
     def _get_indices_iter(self, index_i, batch_size, allow_refresh):
@@ -367,7 +371,6 @@ class pairDataGenerator_v2:
                         cur_idx = 0
                         np.random.shuffle(index_i)
                     else:
-                        print(cur_idx + batch_size)
                         break
 
                 yield np.array(index_i[cur_idx:cur_idx + batch_size])
@@ -379,7 +382,6 @@ class pairDataGenerator_v2:
     def get_next(self):
         try:
             next_1_idx = next(self.iter_obj1)
-            print(next_1_idx)
         except StopIteration:
             next_1_idx = None
 

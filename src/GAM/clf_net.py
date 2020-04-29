@@ -47,7 +47,8 @@ class clf_net_v2(nn.Module):
             dropout = dropout,
             batch_norm_flag = False,
             output_layer = True,
-            activation = activation
+            activation = activation,
+            output_activation = 'sigmoid'
         )
 
         return
@@ -59,14 +60,8 @@ class clf_net_v2(nn.Module):
         if len(x.shape)>2 :
             x = x.view(-1, x.shape[-2] * x.shape[-1])
 
-        for i in range(self.num_mlp_layers):
-            if i > 0 :
-                x = self.dropout(x)
-
-            x = self.mlp_layers[i](x)
-            x = self.activation_1(x)
-
-        op_x = self.softmax_1(x)
+        op_x = self.mlp(x)
+     
         return op_x
 
 
