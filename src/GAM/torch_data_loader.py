@@ -135,7 +135,7 @@ class pairDataGenerator_v1():
             df_1,
             df_2,
             x_cols,
-            batch_size=256,
+            batch_size=128,
             y1_col =None,
             y2_col =None,
             num_workers=0
@@ -348,8 +348,11 @@ class pairDataGenerator_v2:
         self.y2_col = y2_col
         self.batch_size = batch_size
         # Shuffle
-        self.df_1 = df_1.reindex(np.random.permutation(df_1.index))
-        self.df_2 = df_2.reindex(np.random.permutation(df_2.index))
+        df_1 = df_1.sample(frac=1)
+        df_2 = df_2.sample(frac=1)
+        self.df_1 = df_1.reset_index(drop=True)
+        self.df_2 = df_2.reset_index(drop=True)
+        
         index_1 = np.random.permutation(len(self.df_1))
         index_2 = np.random.permutation(len(self.df_2))
 
@@ -399,35 +402,28 @@ class pairDataGenerator_v2:
         x2_G = None
         y1 = None
         y2 = None
-
-        try:
+        
+    
+        if self.x1_F_col is not None :
             x1_F = LT(self.df_1.loc[next_1_idx, self.x1_F_col].values).to(self.device)
-        except:
-            pass
-
-        try:
+        
+        if self.x1_G_col is not None :
             x1_G = LT(self.df_1.loc[next_1_idx, self.x1_G_col].values).to(self.device)
-        except:
-            pass
-
-        try:
+       
+        if self.x2_F_col is not None :
             x2_F = LT(self.df_2.loc[next_2_idx, self.x2_F_col].values).to(self.device)
-        except:
-            pass
+        
 
-        try:
+        if self.x2_G_col is not None :
             x2_G = LT(self.df_2.loc[next_2_idx, self.x2_G_col].values).to(self.device)
-        except:
-            pass
+        
 
-        try:
+        if self.y1_col is not None :
             y1 = FT(self.df_1.loc[next_1_idx, self.y1_col].values).to(self.device)
-        except:
-            pass
-
-        try:
+      
+    
+        if self.y2_col is not None :
             y2 = FT(self.df_2.loc[next_2_idx, self.y2_col].values).to(self.device)
-        except:
-            pass
+   
 
         return (x1_F, x1_G, y1), (x2_F, x2_G, y2)

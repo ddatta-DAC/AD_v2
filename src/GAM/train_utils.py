@@ -12,7 +12,16 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.metrics import f1_score
 from sklearn.metrics import recall_score
-
+import torch
+from torch.nn import functional as F
+import torch.nn
+from torch.utils.data import DataLoader
+from torch.utils.data import Dataset
+from torch.utils.data import RandomSampler, SequentialSampler
+try:
+    from torch_data_loader import type1_Dataset
+except:
+    from .torch_data_loader import type1_Dataset
 
 pandarallel.initialize()
 import pandas as pd
@@ -141,10 +150,10 @@ def find_most_confident_samples(
     U_df_1 = U_df_1.sort_values(by=[var_col], ascending=False)
 
     def _set_valid_flag(row):
-        return row[diff_val] > threshold
-
-    U_df_0[valid_flag] = U_df_0[diff_val].apply(_set_valid_flag)
-    U_df_1[valid_flag] = U_df_1[diff_val].apply(_set_valid_flag)
+        return row[diff_val] >= threshold
+    
+    U_df_0[valid_flag] = U_df_0.apply(_set_valid_flag,axis=1)
+    U_df_1[valid_flag] = U_df_1.apply(_set_valid_flag,axis=1)
 
     # Select Equal number of samples with labels 0 and 1
 
@@ -201,8 +210,7 @@ def evaluate_test(
         label_col = 'y',
         true_label_col = 'y_true',
         id_col = 'PanjivaRecordID',
-        batch_size=3096,
-
+        batch_size=3096
 ):
     
     df = data_df.copy()
