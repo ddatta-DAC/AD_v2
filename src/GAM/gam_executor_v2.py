@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# coding: utf-8
+
+# !/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # ---------------
@@ -10,6 +13,9 @@ import pandas as pd
 import numpy as np
 import os
 import sys
+
+sys.path.append('./../..')
+sys.path.append('./..')
 from time import time
 from pandarallel import pandarallel
 
@@ -19,8 +25,7 @@ from sklearn.metrics import balanced_accuracy_score
 from sklearn.metrics import recall_score
 
 pandarallel.initialize()
-sys.path.append('./../..')
-sys.path.append('./..')
+
 import argparse
 from datetime import datetime
 import multiprocessing
@@ -34,6 +39,7 @@ import torch.nn as nn
 import logging
 from torch import FloatTensor as FT
 from torch import LongTensor as LT
+from torch.nn import functional as F
 
 DEVICE = None
 
@@ -60,29 +66,38 @@ try:
 except:
     pass
 
-import train_utils
-
 try:
-    from .gam_module import gam_net_v1 as gam_net
+    from .gam_module import agreement_net_v2 as gam_net
     from .gam_module import gam_loss
-    from .clf_net import clf_net_v2 as clf_net
+    from .clf_net import clf_net_v2 as clf_MLP
     from .clf_net import clf_loss as clf_loss
     from .record_node import graph_net_v2 as graph_net
     from .torch_data_loader import type1_Dataset
     from .torch_data_loader import dataGeneratorWrapper
     from . import train_utils
-    from .torch_data_loader import pairDataGenerator
+    from . import data_preprocess
+    from .torch_data_loader import pairDataGenerator_v1
     from .torch_data_loader import singleDataGenerator
+    from .torch_data_loader import pairDataGenerator_v2
+    from .src.Classifiers import wide_n_deep_model as clf_WIDE_N_DEEP
+    from .src.Classifiers import deepFM  as clf_DEEP_FM
+    from .GAM_SS_module import SS_network
 except:
-    from gam_module import gam_net_v1 as gam_net
+    from gam_module import agreement_net_v2 as gam_net
     from gam_module import gam_loss
-    from clf_net import clf_net_v2 as clf_net
+    from clf_net import clf_net_v2 as clf_MLP
     from clf_net import clf_loss as clf_loss
     from record_node import graph_net_v2 as graph_net
     from torch_data_loader import type1_Dataset
-    from torch_data_loader import pairDataGenerator
+    from torch_data_loader import pairDataGenerator_v1
+    from torch_data_loader import pairDataGenerator_v2
     from torch_data_loader import singleDataGenerator
-
+    from src.Classifiers import wide_n_deep_model as clf_WIDE_N_DEEP
+    from src.Classifiers import deepFM  as clf_DEEP_FM
+    from torch_data_loader import singleDataGenerator
+    import data_preprocess
+    import train_utils
+    from GAM_SS_module import SS_network
 
 # ==================================== #
 
@@ -117,9 +132,10 @@ gam_encoder_dimensions_mlp = []
 batch_size_g = 128
 batch_size_f = 128
 batch_size_r = 128
+F_classifier_type = None
+WnD_dnn_layer_dimensions = None
+deepFM_dnn_layer_dimensions = None
 
-
-# =================================================
 
 def setup_config(_DIR):
     global CONFIG
@@ -145,6 +161,9 @@ def setup_config(_DIR):
     global batch_size_g
     global batch_size_f
     global batch_size_r
+    global F_classifier_type
+    global WnD_dnn_layer_dimensions
+    global deepFM_dnn_layer_dimensions
 
     if _DIR is not None:
         DIR = _DIR
@@ -152,6 +171,7 @@ def setup_config(_DIR):
     with open(config_file) as f:
         CONFIG = yaml.safe_load(f)
 
+    F_classifier_type = CONFIG['clf_type']
     DATA_SOURCE_DIR_1 = CONFIG['DATA_SOURCE_DIR_1']
     DATA_SOURCE_DIR_2 = CONFIG['DATA_SOURCE_DIR_2']
 
@@ -189,6 +209,14 @@ def setup_config(_DIR):
         int(_)
         for _ in CONFIG['classifier_mlp_layers_1'].split(',')
     ]
+    WnD_dnn_layer_dimensions = [
+        int(_)
+        for _ in CONFIG['WnD_dnn_layer_dimensions'].split(',')
+    ]
+    deepFM_dnn_layer_dimensions = [
+        int(_)
+        for _ in CONFIG['deepFM_dnn_layer_dimensions'].split(',')
+    ]
     gam_encoder_dimensions_mlp = [
         int(_)
         for _ in CONFIG['gam_encoder_dimensions_mlp'].split(',')
@@ -203,7 +231,6 @@ def setup_config(_DIR):
     return
 
 
-# -------------------------------------
 def get_logger():
     global Logging_Dir
     global DIR
@@ -232,158 +259,15 @@ def close_logger(logger):
     return
 
 
-# --------------------------------------
-def get_normal_data_sample(
-        data_size=1000
-):
-    global DATA_SOURCE_DIR_1
-    global DIR
-    global serial_mapping_df
-    global feature_col_list
-    global is_labelled_col
-    global label_col
-    global true_label_col
-
-    df = pd.read_csv(
-        os.path.join( DATA_SOURCE_DIR_1, 'train_data.csv'), index_col=None
-    )
-    df = df.sample(data_size)
-    df[fraud_col] = False
-    df[anomaly_col] = False
-    df[true_label_col] = 0
-    df[is_labelled_col] = True
-    df[label_col] = 0
-    # ---------------------
-    # convert
-    # ---------------------
-    reference_dict = {}
-    for d in set(serial_mapping_df['Domain']):
-        reference_dict[d] = {}
-        _tmp = serial_mapping_df.loc[(serial_mapping_df['Domain'] == d)]
-        k = _tmp['Entity_ID']
-        v = _tmp['Serial_ID']
-        reference_dict[d] = {_k: _v for _k, _v in zip(k, v)}
-    keep_entity_ids = True
-
-    # Inplace conversion
-    def aux_conv_toSerialID(_row):
-        row = _row.copy()
-        for fc in feature_col_list:
-            col_name = fc
-            if keep_entity_ids:
-                col_name = '_' + fc
-            row[col_name] = reference_dict[fc][row[fc]]
-        return row
-
-    df = df.parallel_apply(aux_conv_toSerialID, axis=1)
-    return df
-
-
-# --------------------------------------
-
-def set_ground_truth_labels(df):
-    global true_label_col
-    global fraud_col
-
-    def aux_true_label(row):
-        if row[fraud_col]:
-            return 1
-        else:
-            return 0
-
-    df[true_label_col] = df.parallel_apply(aux_true_label, axis=1)
-    return df
-
-
-# -----
-# Return part of dataframe , where instances are labelled
-# -----
-def extract_labelled_df(df):
-    global is_labelled_col
-    res = pd.DataFrame(
-        df.loc[df[is_labelled_col] == True],
-        copy=True
-    )
-    return res
-
-
-def extract_unlabelled_df(df):
-    global is_labelled_col
-    res = pd.DataFrame(
-        df.loc[df[is_labelled_col] == False],
-        copy=True
-    )
-    return res
-
-
-# -----------------------
-# Get o/p from the AD system
-# -----------------------
-def read_scored_data():
-    global score_col
-    global DATA_SOURCE_DIR_2
-    global label_col
-
-    df = pd.read_csv(
-        os.path.join(DATA_SOURCE_DIR_2, 'scored_test_data.csv'), index_col=None
-    )
-    df = df.sort_values(by=[score_col])
-    df[label_col] = 0
-    df = set_ground_truth_labels(df)
-    return df
-
-
-def read_matrix_node_emb (matrix_node_emb_path):
+def read_matrix_node_emb(matrix_node_emb_path):
     emb = np.load(matrix_node_emb_path)
     return emb
 
 
-def convert_to_serial_IDs(
-        df,
-        keep_entity_ids=False
+def regularization_loss(
+        g_ij,
+        fi_yj
 ):
-    global feature_col_list
-    global serial_mapping_df
-    global model_use_data_DIR
-
-    # Save
-    f_name = 'data_serializedID_wOrig_' + str(keep_entity_ids) + '.csv'
-    f_path = os.path.join(model_use_data_DIR, f_name)
-    if os.path.exists(f_path):
-        return pd.read_csv(
-            f_path,
-            index_col=None
-        )
-
-    reference_dict = {}
-    for d in set(serial_mapping_df['Domain']):
-        reference_dict[d] = {}
-        _tmp = serial_mapping_df.loc[(serial_mapping_df['Domain'] == d)]
-        k = _tmp['Entity_ID']
-        v = _tmp['Serial_ID']
-        reference_dict[d] = {_k: _v for _k, _v in zip(k, v)}
-
-    # Inplace conversion
-    def aux_conv_toSerialID(_row):
-        row = _row.copy()
-        for fc in feature_col_list:
-            col_name = fc
-            if keep_entity_ids:
-                col_name = '_' + fc
-
-            row[col_name] = reference_dict[fc][row[fc]]
-
-        return row
-
-    df = df.parallel_apply(aux_conv_toSerialID, axis=1)
-    df.to_csv(f_path, index=False)
-    return df
-
-
-# ============================================== #
-# Custom regularization_loss
-# ============================================== #
-def regularization_loss(g_ij, fi_yj):
     g_ij = g_ij.view(-1)
     val1 = (fi_yj[0] - fi_yj[1]) ** 2
     val2 = val1.float() * g_ij
@@ -391,175 +275,8 @@ def regularization_loss(g_ij, fi_yj):
     return val3
 
 
-# -------------------------------------------------- #
-
-'''
-1. Train g
-2. Train f
-3. Add in the most confident labels
-'''
-
-
-# =========================================
-# Main module that encapsulates everything.
-class net(nn.Module):
-    def __init__(
-            self,
-            node_emb_dimension,
-            num_domains,
-            matrix_pretrained_node_embeddings,
-            gam_record_input_dimension,
-            gam_encoder_dimensions,
-            clf_inp_emb_dimension,
-            clf_layer_dimensions
-    ):
-        super(net, self).__init__()
-        # valid values for train_mode are 'f', 'g', False
-        self.train_mode = False
-        self.test_mode = False
-        self.graph_net = None
-        self.gam_net = None
-        self.clf_net = None
-
-        self.setup_Net(
-            node_emb_dimension,
-            num_domains,
-            matrix_pretrained_node_embeddings,
-            gam_record_input_dimension,
-            gam_encoder_dimensions,
-            clf_inp_emb_dimension,
-            clf_layer_dimensions
-        )
-        return
-
-    def setup_Net(
-            self,
-            node_emb_dimension,
-            num_domains,
-            matrix_pretrained_node_embeddings,
-            gam_record_input_dimension,
-            gam_encoder_dimensions,
-            clf_inp_emb_dimension,
-            clf_layer_dimensions
-    ):
-        global HAS_CUDA
-        global DEVICE
-
-        self.graph_net = graph_net(
-            node_emb_dimension,
-            num_domains,
-            matrix_pretrained_node_embeddings
-        )
-        self.gam_net = gam_net(
-            gam_record_input_dimension,
-            gam_encoder_dimensions,
-        )
-        self.clf_net = clf_net(
-            clf_inp_emb_dimension,
-            clf_layer_dimensions
-        )
-
-        self.clf_net.to(DEVICE)
-        self.gam_net.to(DEVICE)
-        self.graph_net.to(DEVICE)
-
-        return
-
-    # ---------------------------
-    # Input should be [ Batch, record( list of entities ) ]
-    # record( list of entities ) should have serialized entity id
-    # ---------------------------
-    # input_xy is an list
-    def forward(
-            self, input_x, input_y=None
-    ):
-        # ----------------
-        # Train the agreement module
-        # ----------------
-        if self.train_mode == 'g':
-            x1 = input_x[0]
-            x2 = input_x[1]
-            # print('[Forward] g ; shapes of x1 and x2 :', x1.shape, x2.shape)
-            x1 = self.graph_net(x1)
-            x2 = self.graph_net(x2)
-
-            y_pred = self.gam_net(
-                x1,
-                x2
-            )
-            return y_pred
-
-        elif self.train_mode == 'f':
-            x1 = input_x
-            x1 = self.graph_net(x1)
-            y_pred = self.clf_net(x1)
-            return y_pred
-        elif self.train_mode == 'f_ll':
-            x1 = input_x[0]
-            x2 = input_x[1]
-            x1 = self.graph_net(x1)
-            x2 = self.graph_net(x2)
-
-            pred_y1 = torch.argmax(
-                NN.clf_net(x1),
-                dim=1
-            )
-
-            pred_agreement = self.gam_net(x1, x2)
-            return pred_agreement, pred_y1
-
-        elif self.train_mode == 'f_ul':
-            x1 = input_x[0]
-            x2 = input_x[1]
-            x1 = self.graph_net(x1)
-            y1 = self.clf_net(x1)
-            x2 = self.graph_net(x2)
-
-            pred_y1 = torch.argmax(y1, dim=1)
-            pred_agreement = self.gam_net(x1, x2)
-            return pred_agreement, pred_y1
-
-        elif self.train_mode == 'f_uu':
-            x1 = input_x[0]
-            x2 = input_x[1]
-            x1 = self.graph_net(x1)
-            x2 = self.graph_net(x2)
-
-            pred_y1 = torch.argmax(self.clf_net(x1), dim=1)
-            pred_y2 = torch.argmax(self.clf_net(x2), dim=1)
-            pred_agreement = self.gam_net(x1, x2)
-            return pred_agreement, pred_y1, pred_y2
-
-        if self.test_mode == True:
-            x1 = input_x
-            x1 = self.graph_net(x1)
-            y_pred = self.clf_net(x1)
-            return y_pred
-
-
-# =========================================
-# Perform prediction
-# =========================================
-def predict(model_obj, input_x):
-    model_obj.train(mode=False)
-    model_obj.test_mode = True
-    result = NN(input_x)
-    model_obj.test_mode = False
-    model_obj.train(mode=True)
-    return result
-
-
-# ================================================= #
-
-
-# ===========================================
-# Iterative training
-# ===========================================
-
-
 def train_model(
-        df,
-        NN
+        NN, df, normal_data_samples_df, features_F, features_G
 ):
     global epochs_f
     global epochs_g
@@ -577,29 +294,30 @@ def train_model(
     num_epochs_f = epochs_f
 
     num_proc = multiprocessing.cpu_count()
-    lambda_LL = 0.1
-    lambda_UL = 0.01
-    lambda_UU = 0.005
+    lambda_LL = 0.3
+    lambda_UL = 0.6
+    lambda_UU = 0.1
 
-
-
-    df_L = extract_labelled_df(df)
-    df_U = extract_unlabelled_df(df)
+    df_L = train_utils.extract_labelled_df(df)
+    df_U = train_utils.extract_unlabelled_df(df)
     df_L = df_L.copy()
     df_L, df_L_validation = train_utils.obtain_train_validation(
         df_L
     )
     f_feature_cols = None
+
     # Add in normal data to validation data
     df_L_validation = df_L_validation.append(
-        get_normal_data_sample(len(df_L_validation)),
+        normal_data_samples_df.sample(len(df_L_validation)),
         ignore_index=True
     )
+
     df_U_original = df_U.copy()
-    print(' Data set lengths :', len(df_L), len(df_L_validation), len(df_U))
+    print('>> Data set lengths :', len(df_L), len(df_L_validation), len(df_U))
 
     current_iter_count = 0
     continue_training = True
+
     while continue_training:
         # GAM gets inputs as embeddings, which are obtained through the graph embeddings
         # that requires serialized feature ids
@@ -608,7 +326,7 @@ def train_model(
         NN.train_mode = 'g'
         data_source_L1 = type1_Dataset(
             df_L,
-            x_cols=g_feature_cols,
+            x_cols=features_G,
             y_col=label_col
         )
 
@@ -630,12 +348,13 @@ def train_model(
             sampler=RandomSampler(data_source_L1),
             drop_last=True
         )
+
         params_list_g = [_ for _ in NN.graph_net.parameters()]
-        params_list_g = params_list_g + ([_ for _ in NN.gam_net.parameters()])
+        params_list_g = params_list_g + ([_ for _ in NN.agreement_net.parameters()])
         print('# of parameters to be optimized for g ', len(params_list_g))
         optimizer_g = torch.optim.Adam(
             params_list_g,
-            lr=0.01
+            lr=0.015
         )
 
         params_list_f = [_ for _ in NN.graph_net.parameters()]
@@ -644,7 +363,7 @@ def train_model(
         print('# of parameters to be optimized for f ', len(params_list_f))
         optimizer_f = torch.optim.Adam(
             params_list_f,
-            lr = 0.01
+            lr=0.05
         )
 
         final_epoch_g = False  # To check convergence
@@ -658,7 +377,10 @@ def train_model(
             optimizer_g.zero_grad()
             prev_loss = 0
             iter_below_tol = 0
+            log_interval_g = 2
+
             for epoch in range(num_epochs_g):
+                break
                 print('Epoch [g]', epoch)
                 record_loss = []
                 batch_idx = 0
@@ -676,6 +398,7 @@ def train_model(
                             data_j = [_.to(DEVICE) for _ in data_j]
                         else:
                             data_j = data_j.to(DEVICE)
+
                         x2 = data_j[0]
                         y2 = data_j[1]
                         input_x = [x1, x2]
@@ -686,7 +409,7 @@ def train_model(
                         true_agreement = FT(true_agreement).to(DEVICE)
                         pred_agreement = NN(input_x)
 
-                        loss = gam_loss(pred_agreement, true_agreement)
+                        loss = F.binary_cross_entropy(pred_agreement, true_agreement)
                         loss.backward()
 
                         optimizer_g.step()
@@ -729,98 +452,127 @@ def train_model(
             y_col=label_col
         )
 
-        print(' Training Classifier ')
+        print('[[ --- Training Classifier ---- ]]')
         optimizer_f.zero_grad()
 
         for epoch in range(num_epochs_f):
             print('Epoch [f]', epoch)
 
-            from .torch_data_loader import singleDataGenerator
             data_L_generator = singleDataGenerator(
                 df_L,
-                x_cols=f_feature_cols,
-                y_col=label_col
+                x_cols=features_F,
+                y_col=label_col,
+                batch_size=batch_size_r
             )
 
-            data_LL_generator = pairDataGenerator(
+            data_LL_generator = pairDataGenerator_v2(
                 df_1=df_L,
                 df_2=df_L,
-                x_cols=g_feature_cols,
+                x1_F_col=features_F,
+                x2_F_col=features_F,
+                x1_G_col=features_G,
+                x2_G_col=features_G,
                 y1_col=None,
                 y2_col=label_col,
-                batch_size=batch_size_r)
-
-            data_UL_generator = pairDataGenerator(
-                df_1=df_U,
-                df_2=df_L,
-                x_cols=g_feature_cols,
-                y1_col=None,
-                y2_col=label_col,
-                batch_size=batch_size_r
+                batch_size=batch_size_r,
+                device=DEVICE,
+                allow_refresh=True
             )
 
-            data_UU_generator = pairDataGenerator(
+            data_UL_generator = pairDataGenerator_v2(
+                df_1=df_U,
+                df_2=df_L,
+                x1_F_col=features_F,
+                x2_F_col=features_F,
+                x1_G_col=features_G,
+                x2_G_col=features_G,
+                y1_col=None,
+                y2_col=label_col,
+                batch_size=batch_size_r,
+                device=DEVICE,
+                allow_refresh=True
+            )
+
+            data_UU_generator = pairDataGenerator_v2(
                 df_1=df_U,
                 df_2=df_U,
-                x_cols=g_feature_cols,
+                x1_F_col=features_F,
+                x2_F_col=features_F,
+                x1_G_col=features_G,
+                x2_G_col=features_G,
                 y1_col=None,
                 y2_col=None,
-                batch_size=batch_size_r
+                batch_size=batch_size_r,
+                device=DEVICE,
+                allow_refresh=True
             )
 
             batch_idx_f = 0
             data_L = data_L_generator.get_next()
+            log_interval_f = 3
+
             while data_L is not None:
                 NN.train_mode = 'f'
 
                 # ------  Supervised Loss ------ #
                 x1 = data_L[0].to(DEVICE)
-                y_true = data_L[1].to(DEVICE)
+                y_true = data_L[1].float().to(DEVICE)
                 pred_label = NN(x1)
-                loss_s = clf_loss(pred_label, y_true)
+                loss_s = F.binary_cross_entropy(pred_label, y_true)
 
                 # ====================
                 # LL :: lambda_LL * g(x_i,x_j) * d (f(x_i),y_j)
                 # ====================
 
                 NN.train_mode = 'f_ll'
+                x1_y1, x2_y2 = data_LL_generator.get_next()
 
-                data_LL_x, data_LL_y = data_LL_generator.get_next()
-                x1 = data_LL_x[0].to(DEVICE)
-                x2 = data_LL_x[1].to(DEVICE)
+                x1_F = x1_y1[0]
+                x1_G = x1_y1[1]
+                x2_F = x2_y2[0]
+                x2_G = x2_y2[1]
+                y1 = x1_y1[2]
+                y2 = x2_y2[2]
 
-                pred_agreement, pred_y1 = NN([x1, x2])
-                y2 = LT(data_LL_y[1]).to(DEVICE)
-
+                pred_agreement, pred_y1 = NN([x1_G, x2_G, x1_F])
                 loss_LL = regularization_loss(
                     pred_agreement, [pred_y1, y2]
                 )
 
+                # ==================
                 # UL
+                # ==================
                 NN.train_mode = 'f_ul'
-                data_UL_x, data_UL_y = data_UL_generator.get_next()
-                x1 = data_UL_x[0].to(DEVICE)
-                x2 = data_UL_x[1].to(DEVICE)
-                y2 = data_UL_y[1].to(DEVICE)
+                x1_y1, x2_y2 = data_UL_generator.get_next()
 
-                _x = [x1, x2]
+                x1_F = x1_y1[0]
+                x1_G = x1_y1[1]
+                x2_F = x2_y2[0]
+                x2_G = x2_y2[1]
+                y2 = x2_y2[2]
 
-                pred_agreement, pred_y1 = NN(_x)
+                pred_agreement, pred_y1 = NN([x1_G, x2_G, x1_F])
                 loss_UL = regularization_loss(
                     pred_agreement,
                     [pred_y1, y2]
                 )
 
-                # ====================
+                # ===================
                 # UU
-                # ====================
+                # ===================
                 # print('---- > UU ')
                 NN.train_mode = 'f_uu'
                 data_UU = data_UU_generator.get_next()
-                x1 = data_UU[0].to(DEVICE)
-                x2 = data_UU[1].to(DEVICE)
-                _x = [x1, x2]
-                pred_agreement, pred_y1, pred_y2 = NN(_x)
+                x1_y1, x2_y2 = data_UL_generator.get_next()
+
+                x1_F = x1_y1[0]
+                x1_G = x1_y1[1]
+                x2_F = x2_y2[0]
+                x2_G = x2_y2[1]
+                y1 = x1_y1[2]
+                y2 = x2_y2[2]
+
+                pred_agreement, pred_y1, pred_y2 = NN([x1_G, x2_G, x1_F, x2_F])
                 loss_UU = regularization_loss(pred_agreement, [pred_y1, pred_y2])
 
                 # ====================
@@ -831,6 +583,7 @@ def train_model(
                 optimizer_f.step()
                 try:
                     data_L = data_L_generator.get_next()
+                    print(data_L[0].shape)
                 except Exception:
                     data_L = None
 
@@ -878,10 +631,10 @@ def train_model(
         # Update the set of labelled and unlabelled samples
         # ----------------
 
-        k = int(len(df_U) * 0.05)
+        k = int(len(df_U) * 0.1)
         self_labelled_samples = train_utils.find_most_confident_samples(
             U_df=df_U.copy(),
-            y_prob = pred_y_probs,
+            y_prob=pred_y_probs,
             threshold=0.4,
             max_count=k
         )
@@ -902,44 +655,84 @@ def train_model(
             continue_training = False
         print('----- Validation set ')
         train_utils.evaluate_validation(
-            NN,
-            df_L_validation,
-            x_cols=g_feature_cols
+            model=NN,
+            DEVICE=DEVICE,
+            data_df=df_L_validation,
+            x_cols=features_F
         )
 
         print('----- Test set ')
         train_utils.evaluate_test(
-            NN,
-            df_U_original,
-            x_cols=g_feature_cols
+            model=NN,
+            DEVICE=DEVICE,
+            data_df=df_U_original,
+            x_cols=features_F
         )
     return
 
 
+# ------------------------------------------------------- #
 
-# ---------------------------------- #
+setup_config('us_import2')
+df_target, normal_data_samples_df, features_F, features_G = data_preprocess.get_data_plus_features(
+    DATA_SOURCE_DIR_1,
+    DATA_SOURCE_DIR_2,
+    model_use_data_DIR,
+    F_classifier_type,
+    domain_dims,
+    serial_mapping_df,
+    score_col,
+    is_labelled_col,
+    label_col,
+    true_label_col,
+    fraud_col,
+    anomaly_col
+)
 
-DIR = 'us_import2'
-setup_config(DIR)
-df = read_scored_data()
-df = convert_to_serial_IDs(df, True)
-df = train_utils.set_label_in_top_perc( df, 10, score_col, true_label_col )
+wide_inp_01_dim = len(features_F) - len(features_G)
 matrix_node_emb = read_matrix_node_emb(matrix_node_emb_path)
 node_emb_dim = matrix_node_emb.shape[-1]
 num_domains = len(domain_dims)
 
 # matrix_node_emb = FT(matrix_node_emb).to(DEVICE)
 matrix_node_emb = FT(matrix_node_emb)
-NN = net(
+if F_classifier_type == 'MLP':
+    dict_clf_initilize_inputs = {
+        'mlp_layer_dims': clf_mlp_layer_dimesnions,
+        'dropout': 0.05,
+        'activation': 'relu'
+    }
+
+
+elif F_classifier_type == 'wide_n_deep':
+    dict_clf_initilize_inputs = {}
+    dict_clf_initilize_inputs['wide_inp_01_dim'] = wide_inp_01_dim
+    dict_clf_initilize_inputs['deep_FC_layer_dims'] = WnD_dnn_layer_dimensions
+    dict_clf_initilize_inputs['tune_entity_emb'] = False
+elif F_classifier_type == 'deepFM':
+    dict_clf_initilize_inputs = {}
+    dict_clf_initilize_inputs['wide_inp_01_dim'] = wide_inp_01_dim
+    dict_clf_initilize_inputs['dnn_layer_dimensions'] = deepFM_dnn_layer_dimensions
+    dict_clf_initilize_inputs['tune_entity_emb'] = False
+
+    dict_clf_initilize_inputs = {
+        'mlp_layer_dims': clf_mlp_layer_dimesnions,
+        'dropout': 0.05,
+        'activation': 'relu'
+    }
+else:
+    dict_clf_initilize_inputs = None
+
+NN = SS_network(
+    DEVICE,
     node_emb_dimension=node_emb_dim,
     num_domains=num_domains,
-    gnet_output_dimensions=node_emb_dim * num_domains,
-    matrix_pretrained_node_embeddings=matrix_node_emb,
-    gam_record_input_dimension=node_emb_dim * num_domains,
-    gam_encoder_dimensions=gam_encoder_dimensions_mlp,
-    clf_inp_emb_dimension=node_emb_dim * num_domains,
-    clf_layer_dimensions=clf_mlp_layer_dimesnions
+    matrix_pretrained_node_embeddings=matrix_node_emb,  # [Number of entities, embedding dimension]
+    list_gam_encoder_dimensions=gam_encoder_dimensions_mlp,
+    clf_type=F_classifier_type,
+    dict_clf_initilize_inputs=dict_clf_initilize_inputs
 )
 
 NN.to(DEVICE)
-train_model(df, NN)
+df_target = train_utils.set_label_in_top_perc(df_target, 10, score_col, true_label_col)
+train_model(NN, df_target, normal_data_samples_df, features_F, features_G)
