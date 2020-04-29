@@ -75,11 +75,13 @@ try:
     from .torch_data_loader import type1_Dataset
     from .torch_data_loader import dataGeneratorWrapper
     from . import train_utils
+    from . import data_preprocess
     from .torch_data_loader import pairDataGenerator_v1
     from .torch_data_loader import singleDataGenerator
     from .torch_data_loader import pairDataGenerator_v2
     from .src.Classifiers import wide_n_deep_model as clf_WIDE_N_DEEP
     from .src.Classifiers import deepFM  as clf_DEEP_FM
+    from .GAM_SS_module import SS_network
 except:
     from gam_module import agreement_net_v2 as gam_net
     from gam_module import gam_loss
@@ -93,10 +95,9 @@ except:
     from src.Classifiers import wide_n_deep_model as clf_WIDE_N_DEEP
     from src.Classifiers import deepFM  as clf_DEEP_FM
     from torch_data_loader import singleDataGenerator
-
-import train_utils
-import data_preprocess
-from GAM_SS_module import SS_network
+    import data_preprocess
+    import train_utils
+    from GAM_SS_module import SS_network
 
 
 # ==================================== #
@@ -298,9 +299,9 @@ def train_model(
     num_epochs_f = epochs_f
 
     num_proc = multiprocessing.cpu_count()
-    lambda_LL = 0.1
-    lambda_UL = 0.01
-    lambda_UU = 0.005
+    lambda_LL = 0.3
+    lambda_UL = 0.6
+    lambda_UU = 0.1
 
     df_L = train_utils.extract_labelled_df(df)
     df_U = train_utils.extract_unlabelled_df(df)
@@ -693,6 +694,7 @@ df_target, normal_data_samples_df, features_F, features_G = data_preprocess.get_
     anomaly_col
 )
 
+wide_inp_01_dim =len(features_F) - len(features_G)
 matrix_node_emb = read_matrix_node_emb(matrix_node_emb_path)
 node_emb_dim = matrix_node_emb.shape[-1]
 num_domains = len(domain_dims)
@@ -709,13 +711,12 @@ if F_classifier_type == 'MLP':
 
 elif F_classifier_type == 'wide_n_deep':
     dict_clf_initilize_inputs = {}
-
-    dict_clf_initilize_inputs['wide_inp_01_dim'] = 0
+    dict_clf_initilize_inputs['wide_inp_01_dim'] = wide_inp_01_dim
     dict_clf_initilize_inputs['deep_FC_layer_dims'] = WnD_dnn_layer_dimensions
     dict_clf_initilize_inputs['tune_entity_emb'] = False
 elif F_classifier_type == 'deepFM':
     dict_clf_initilize_inputs ={}
-    dict_clf_initilize_inputs['wide_inp_01_dim'] = 0
+    dict_clf_initilize_inputs['wide_inp_01_dim'] = wide_inp_01_dim
     dict_clf_initilize_inputs['dnn_layer_dimensions'] = deepFM_dnn_layer_dimensions
     dict_clf_initilize_inputs['tune_entity_emb'] = False
 

@@ -141,7 +141,7 @@ def PreProcessData(
         )
 
         # The added domains are the ones to be fed to the linear layer
-        features_F = [_ for _ in list(converted_df.columns) if _ not in list(df_data.columns)]
+        features_F = [ _ for _ in list(converted_df.columns) if _ not in list(df_data.columns)]
 
         # ----
         converted_df, features_1 = convert_to_serial_IDs(

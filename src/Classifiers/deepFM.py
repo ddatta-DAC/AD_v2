@@ -35,6 +35,7 @@ def deepFM_data_preprocess(
     # -----------------
     # Convert the regular domains to one-hot
     # -----------------
+    old_cols = list(df.columns)
     for dom in domain_dims.keys():
         possible_categories = list(range(domain_dims[dom]))
         cat = pd.Series(list(df[dom]))
@@ -47,6 +48,9 @@ def deepFM_data_preprocess(
     if remove_orig_nonserial:
         for dom in domain_dims.keys():
             del df[dom]
+    added_cols = [ _ for _ in list(df.columns) if _ not in old_cols]
+    ordered_cols = added_cols + old_cols
+    df = df[ordered_cols]
     return df
 
 

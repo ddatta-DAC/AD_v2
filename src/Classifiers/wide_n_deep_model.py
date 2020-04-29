@@ -117,7 +117,7 @@ def wide_N_deep_data_preprocess(
     for item in result:
         _df = item[0]
         merge_cols = [id_col] + item[1]
-        df =  df.merge(_df, on =merge_cols ,how = 'inner')
+        df = df.merge(_df, on = merge_cols ,how = 'inner')
 
     # for pair in pairs:
     #     f1 = pair[0]
@@ -146,6 +146,7 @@ def wide_N_deep_data_preprocess(
     if remove_orig_nonserial:
         for dom in domain_dims.keys():
             del df[dom]
+
     return df
 
 
@@ -210,7 +211,7 @@ def test():
     # ---
     # loss : BCELoss
     # ---
-    model = wide_n_deep(
+    model = clf_wide_n_deep(
         wide_inp_01_dim=7,
         num_domains=3,
         entity_emb_dim=4,
