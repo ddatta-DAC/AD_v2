@@ -41,26 +41,28 @@ cleaned_csv_subdir = None
 
 # -------------------------- #
 
+# -------------------------- #
+
 def get_regex(_type):
     global DIR
 
-    if DIR == 'us_import1':
+    if DIR == 'us_import4':
         if _type == 'train':
-            return '.*0[1-3]_2015.csv'
+            return '.*0[1-4]_2015.csv'
         if _type == 'test':
-            return '.*((04)|(05))_2015.csv'
+            return '.*((05)|(06))_2015.csv'
 
-    if DIR == 'us_import2':
+    if DIR == 'us_import5':
         if _type == 'train':
             return '.*(09|10|11|12)_2015.csv'
         if _type == 'test':
-            return '.*0[1-4]_2016.csv'
+            return '.*0[1-2]_2016.csv'
 
-    if DIR == 'us_import3':
+    if DIR == 'us_import6':
         if _type == 'train':
-            return '.*(0[2-5]_2016).csv'
+            return '.*(0[3-6]_2016).csv'
         if _type == 'test':
-            return '.*0[6-9]_2016.csv'
+            return '.*0[7-6]_2016.csv'
 
     return '*.csv'
 
@@ -237,33 +239,38 @@ Input : file_path_list
 Remove the rows with entities that have very low frequency.
 '''
 
-
 def remove_low_frequency_values(df):
     global id_col
     global freq_bound
-
+    print(' DF length : ', len(df))
     freq_column_value_filters = {}
     feature_cols = list(df.columns)
     feature_cols.remove(id_col)
+
+    # calculate the number of entities per column
+    counter_df = pd.DataFrame(columns=['domain', 'count'])
+    for c in feature_cols:
+        count = len(set(df[c]))
+        counter_df = counter_df.append({
+            'domain': c, 'count': count
+        }, ignore_index=True)
+        z = np.percentile(list(Counter(df[c]).values()), 5)
+        print(c, count, z)
+    #     return df
+
+    counter_df = counter_df.sort_values(by=['count'], ascending=False)
+    print(counter_df)
     # ----
     # figure out which entities are to be removed
     # ----
-    for c in feature_cols:
-        values = list(df[c])
-        freq_column_value_filters[c] = []
+    for domain in list(counter_df['domain']):
+        values = list(df[domain])
+        freq_column_value_filters[domain] = []
         obj_counter = Counter(values)
 
         for _item, _count in obj_counter.items():
-            if _count < freq_bound:
-                freq_column_value_filters[c].append(_item)
-
-    print('Removing :: ')
-    for c, _items in freq_column_value_filters.items():
-        print('column : ', c, 'count', len(_items))
-
-    print(' DF length : ', len(df))
-    for col, val in freq_column_value_filters.items():
-        df = df.loc[~df[col].isin(val)]
+            if _count < freq_bound:  freq_column_value_filters[domain].append(_item)
+        df = df.loc[~df[domain].isin(freq_column_value_filters[domain])].copy()
 
     print(' DF length : ', len(df))
     return df

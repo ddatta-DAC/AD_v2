@@ -72,3 +72,66 @@
   'company_domain_columns':
     - 'ShipperPanjivaID'
     - 'ConsigneePanjivaID'
+
+'us_import4':
+  'use_cols':
+    - 'PanjivaRecordID'
+    - 'ConsigneePanjivaID'
+    - 'ShipperPanjivaID'
+    - 'ShipmentOrigin'
+    - 'ShipmentDestination'
+    - 'HSCode'
+    - 'PortOfUnlading'
+    - 'PortOfLading'
+    - 'Carrier'
+  'num_neg_samples': 4
+  'column_value_filters':
+    'Carrier':
+      - '(Usa))'
+  'num_neg_samples_ape': 3
+  'low_freq_bound': 5
+  'company_domain_columns':
+    - 'ShipperPanjivaID'
+    - 'ConsigneePanjivaID'
+
+'us_import5':
+  'use_cols':
+    - 'PanjivaRecordID'
+    - 'ConsigneePanjivaID'
+    - 'ShipperPanjivaID'
+    - 'ShipmentOrigin'
+    - 'ShipmentDestination'
+    - 'HSCode'
+    - 'PortOfUnlading'
+    - 'PortOfLading'
+    - 'Carrier'
+  'num_neg_samples': 4
+  'column_value_filters':
+    'Carrier':
+      - '(Usa))'
+  'num_neg_samples_ape': 3
+  'low_freq_bound': 5
+  'company_domain_columns':
+    - 'ShipperPanjivaID'
+    - 'ConsigneePanjivaID'
+
+'us_import6':
+  'use_cols':
+    - 'PanjivaRecordID'
+    - 'ConsigneePanjivaID'
+    - 'ShipperPanjivaID'
+    - 'ShipmentOrigin'
+    - 'ShipmentDestination'
+    - 'HSCode'
+    - 'PortOfUnlading'
+    - 'PortOfLading'
+    - 'Carrier'
+  'num_neg_samples': 4
+  'column_value_filters':
+    'Carrier':
+      - '(Usa))'
+  'num_neg_samples_ape': 3
+  'low_freq_bound': 5
+  'company_domain_columns':
+    - 'ShipperPanjivaID'
+    - 'ConsigneePanjivaID'
