@@ -48,7 +48,7 @@ def get_base_train_data(
         fraud_col='fraud',
         anomaly_col='anomaly',
         label_col='y',
-        is_labelled_col='is_labelled',
+        is_labelled_col='labelled',
         true_label_col='y_true',
 ):
     df = pd.read_csv(
