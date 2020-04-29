@@ -45,7 +45,6 @@ cleaned_csv_subdir = None
 
 def get_regex(_type):
     global DIR
-
     if DIR == 'us_import4':
         if _type == 'train':
             return '.*0[1-4]_2015.csv'
@@ -76,9 +75,7 @@ def get_files(DIR, _type='all'):
 
     def glob_re(pattern, strings):
         return filter(re.compile(pattern).match, strings)
-
     files = sorted([_ for _ in glob_re(regex, c)])
-
     print('DIR ::', DIR, ' Type ::', _type, 'Files count::', len(files))
     return files
 
@@ -437,39 +434,39 @@ def setup_testing_data(
             )
         )
     test_df = test_df.dropna()
-    test_df = test_df.drop_duplicates()
     test_df = lexical_sort_cols(test_df, id_col)
-
     print(' Length of testing data', len(test_df))
+    return  test_df
 
-    '''
-    Remove duplicates w.r.t to train set:
-    Paralleleize the process 
-    '''
-
-    def aux_validate(target_df, ref_df):
-        tmp_df = pd.DataFrame(
-            target_df,
-            copy=True
-        )
-
-        tmp_df['valid'] = tmp_df.parallel_apply(
-            ensure_NotDuplicate_against,
-            axis=1,
-            args=(ref_df,)
-        )
-        print(tmp_df)
-        tmp_df = tmp_df.loc[(tmp_df['valid'] == True)]
-        del tmp_df['valid']
-        return pd.DataFrame(tmp_df, copy=True)
-
-    ref_df = utils_preprocess.add_hash(
-        train_df.copy(), id_col
-    )
-    new_test_df = aux_validate(test_df, ref_df)
-
-    print(' After deduplication :: ', len(new_test_df))
-    return new_test_df
+    # '''
+    # For now deactiavate
+    # Remove duplicates w.r.t to train set:
+    # Paralleleize the process
+    # '''
+    #
+    # def aux_validate(target_df, ref_df):
+    #     tmp_df = pd.DataFrame(
+    #         target_df,
+    #         copy=True
+    #     )
+    #
+    #     tmp_df['valid'] = tmp_df.parallel_apply(
+    #         ensure_NotDuplicate_against,
+    #         axis=1,
+    #         args=(ref_df,)
+    #     )
+    #     print(tmp_df)
+    #     tmp_df = tmp_df.loc[(tmp_df['valid'] == True)]
+    #     del tmp_df['valid']
+    #     return pd.DataFrame(tmp_df, copy=True)
+    #
+    # ref_df = utils_preprocess.add_hash(
+    #     train_df.copy(), id_col
+    # )
+    # new_test_df = aux_validate(test_df, ref_df)
+    #
+    # print(' After deduplication :: ', len(new_test_df))
+    # return new_test_df
 
 
 def create_train_test_sets():
@@ -511,14 +508,18 @@ def create_train_test_sets():
         pd.read_csv(_file, low_memory=False, usecols=use_cols)
         for _file in test_files
     ]
-    list_test_df = HSCode_cleanup(list_test_df, DIR_LOC, CONFIG)
+    list_test_df = HSCode_cleanup(
+        list_test_df,
+        DIR_LOC,
+        CONFIG
+    )
 
     test_df = None
     for _df in list_test_df:
         if test_df is None:
             test_df = _df
         else:
-            test_df = test_df.append(_df)
+            test_df = test_df.append(_df, ignore_index=True)
 
     print('size of  Test set ', len(test_df))
     test_df = setup_testing_data(
