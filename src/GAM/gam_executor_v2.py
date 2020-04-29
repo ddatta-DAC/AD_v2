@@ -133,6 +133,8 @@ batch_size_g = 128
 batch_size_f = 128
 batch_size_r = 128
 F_classifier_type = None
+WnD_dnn_layer_dimensions = None
+deepFM_dnn_layer_dimensions = None
 
 
 
@@ -161,6 +163,8 @@ def setup_config(_DIR):
     global batch_size_f
     global batch_size_r
     global F_classifier_type
+    global WnD_dnn_layer_dimensions
+    global deepFM_dnn_layer_dimensions
 
     if _DIR is not None:
         DIR = _DIR
@@ -205,6 +209,14 @@ def setup_config(_DIR):
     clf_mlp_layer_dimesnions = [
         int(_)
         for _ in CONFIG['classifier_mlp_layers_1'].split(',')
+    ]
+    WnD_dnn_layer_dimensions = [
+        int(_)
+        for _ in CONFIG['WnD_dnn_layer_dimensions'].split(',')
+    ]
+    deepFM_dnn_layer_dimensions = [
+        int(_)
+        for _ in CONFIG['deepFM_dnn_layer_dimensions'].split(',')
     ]
     gam_encoder_dimensions_mlp = [
         int(_)
@@ -693,13 +705,22 @@ if F_classifier_type == 'MLP':
         'dropout': 0.05,
         'activation': 'relu'
     }
+
+
 elif F_classifier_type == 'wide_n_deep':
-    dict_clf_initilize_inputs = {
-        'mlp_layer_dims': clf_mlp_layer_dimesnions,
-        'dropout': 0.05,
-        'activation': 'relu'
-    }
+    dict_clf_initilize_inputs = {}
+
+    dict_clf_initilize_inputs['wide_inp_01_dim'] = 0
+    dict_clf_initilize_inputs['deep_FC_layer_dims'] = WnD_dnn_layer_dimensions
+    dict_clf_initilize_inputs['tune_entity_emb'] = False
 elif F_classifier_type == 'deepFM':
+    dict_clf_initilize_inputs ={}
+    dict_clf_initilize_inputs['wide_inp_01_dim'] = 0
+    dict_clf_initilize_inputs['dnn_layer_dimensions'] = deepFM_dnn_layer_dimensions
+    dict_clf_initilize_inputs['tune_entity_emb'] = False
+
+
+
     dict_clf_initilize_inputs = {
         'mlp_layer_dims': clf_mlp_layer_dimesnions,
         'dropout': 0.05,

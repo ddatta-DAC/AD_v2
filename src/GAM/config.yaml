@@ -6,7 +6,7 @@ serial_mapping_df_loc : './../GraphEmb_2/model_use_data'
 matrix_node_emb_loc: './../GraphEmb_2/model_weights_data/metapath2vec_gensim'
 matrix_node_emb_file : 'mp2v_gensim_weights.npy'
 node_embedding_size : 128
-confidence_bound : 0.20
+confidence_bound : 0.25
 epochs_f : 1
 epochs_g : 1
 clf_type : 'MLP' # [ MLP, wide_n_deep, deepFM ]
@@ -19,3 +19,5 @@ max_IC_iter : 10
 batch_size_g : 64
 batch_size_f : 64
 batch_size_r : 64
+WnD_dnn_layer_dimensions : '512,256'
+deepFM_dnn_layer_dimensions : '512,128'
