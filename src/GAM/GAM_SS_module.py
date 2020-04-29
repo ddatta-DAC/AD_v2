@@ -4,14 +4,12 @@ import logging
 from torch import FloatTensor as FT
 from torch import LongTensor as LT
 
-
-
 try:
     from src.Classifiers.wide_n_deep_model import clf_wide_n_deep as clf_WIDE_N_DEEP
     from src.Classifiers.deepFM import clf_deepFM  as clf_DEEP_FM
     from clf_net import clf_net_v2 as clf_MLP
     from record_node import graph_net_v2 as graph_net
-    from  gam_module import agreement_net_v2 as gam_net
+    from gam_module import agreement_net_v2 as gam_net
 
 except:
     from .src.Classifiers.wide_n_deep_model import clf_wide_n_deep as clf_WIDE_N_DEEP
@@ -19,6 +17,7 @@ except:
     from .clf_net import clf_net_v2 as clf_MLP
     from .record_node import graph_net_v2 as graph_net
     from .gam_module import agreement_net_v2 as gam_net
+
 
 # =========================================
 # Main module that encapsulates everything.
@@ -38,6 +37,7 @@ class SS_network(nn.Module):
         # valid values for train_mode are 'f', 'g', False
         self.train_mode = False
         self.test_mode = False
+        self.clf_type = clf_type
 
         self.agreement_net = None
         self.clf_net = None
@@ -51,7 +51,7 @@ class SS_network(nn.Module):
         self.agreement_net = gam_net(
             gam_record_input_dimension,
             list_gam_encoder_dimensions,
-            activation = 'selu'
+            activation='selu'
         )
 
         if clf_type == 'wide_n_deep':
@@ -120,18 +120,19 @@ class SS_network(nn.Module):
             x1 = self.graph_net(x1)
             y_pred = self.clf_net(x1)
             return y_pred
+
         elif self.train_mode == 'f_ll':
-            x1 = input_x[0]
-            x2 = input_x[1]
-            x1 = self.graph_net(x1)
-            x2 = self.graph_net(x2)
+            x1_G = input_x[0]
+            x2_G = input_x[1]
+            x1_F = input_x[2]
 
-            pred_y1 = torch.argmax(
-                self.clf_net(x1),
-                dim=1
-            )
-
+            x1 = self.graph_net(x1_G)
+            x2 = self.graph_net(x2_G)
             pred_agreement = self.agreement_net(x1, x2)
+            if self.clf_type == 'MLP':
+                x1 = self.graph_net(x1_F)
+                pred_y1 = self.clf_net(x1)
+
             return pred_agreement, pred_y1
 
         elif self.train_mode == 'f_ul':

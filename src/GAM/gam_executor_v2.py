@@ -1,15 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
-
-get_ipython().run_line_magic('load_ext', 'autoreload')
-get_ipython().run_line_magic('reload_ext', 'autoreload')
-
-# In[2]:
-
-
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -52,9 +43,6 @@ from torch.nn import functional as F
 
 DEVICE = None
 
-# In[3]:
-
-
 try:
     if torch.cuda.is_available():
         dev = "cuda:0"
@@ -87,8 +75,9 @@ try:
     from .torch_data_loader import type1_Dataset
     from .torch_data_loader import dataGeneratorWrapper
     from . import train_utils
-    from .torch_data_loader import pairDataGenerator
+    from .torch_data_loader import pairDataGenerator_v1
     from .torch_data_loader import singleDataGenerator
+    from .torch_data_loader import pairDataGenerator_v2
     from .src.Classifiers import wide_n_deep_model as clf_WIDE_N_DEEP
     from .src.Classifiers import deepFM  as clf_DEEP_FM
 except:
@@ -98,7 +87,8 @@ except:
     from clf_net import clf_loss as clf_loss
     from record_node import graph_net_v2 as graph_net
     from torch_data_loader import type1_Dataset
-    from torch_data_loader import pairDataGenerator
+    from torch_data_loader import pairDataGenerator_v1
+    from torch_data_loader import pairDataGenerator_v2
     from torch_data_loader import singleDataGenerator
     from src.Classifiers import wide_n_deep_model as clf_WIDE_N_DEEP
     from src.Classifiers import deepFM  as clf_DEEP_FM
@@ -107,8 +97,6 @@ except:
 import train_utils
 import data_preprocess
 from GAM_SS_module import SS_network
-
-# In[4]:
 
 
 # ==================================== #
@@ -146,8 +134,6 @@ batch_size_f = 128
 batch_size_r = 128
 F_classifier_type = None
 
-
-# In[5]:
 
 
 def setup_config(_DIR):
@@ -262,62 +248,12 @@ def close_logger(logger):
     return
 
 
-# In[6]:
-
-
-setup_config('us_import2')
-
-# In[7]:
-
-
-df_target, normal_data_samples_df, features_F, features_G = data_preprocess.get_data_plus_features(
-    DATA_SOURCE_DIR_1,
-    DATA_SOURCE_DIR_2,
-    model_use_data_DIR,
-    F_classifier_type,
-    domain_dims,
-    serial_mapping_df,
-    score_col,
-    is_labelled_col,
-    label_col,
-    true_label_col,
-    fraud_col,
-    anomaly_col
-)
-
-
-# In[ ]:
-
-
-# In[8]:
 
 
 def read_matrix_node_emb(matrix_node_emb_path):
     emb = np.load(matrix_node_emb_path)
     return emb
 
-
-matrix_node_emb = read_matrix_node_emb(matrix_node_emb_path)
-node_emb_dim = matrix_node_emb.shape[-1]
-num_domains = len(domain_dims)
-
-# matrix_node_emb = FT(matrix_node_emb).to(DEVICE)
-matrix_node_emb = FT(matrix_node_emb)
-
-# In[9]:
-
-
-dict_clf_initilize_inputs = {
-    'mlp_layer_dims': clf_mlp_layer_dimesnions,
-    'dropout': 0.05,
-    'activation': 'relu'
-}
-
-
-# In[ ]:
-
-
-# In[10]:
 
 
 def regularization_loss(
@@ -329,9 +265,6 @@ def regularization_loss(
     val2 = val1.float() * g_ij
     val3 = (val2).mean()
     return val3
-
-
-# In[11]:
 
 
 def train_model(
@@ -520,7 +453,8 @@ def train_model(
             data_L_generator = singleDataGenerator(
                 df_L,
                 x_cols=features_F,
-                y_col=label_col
+                y_col=label_col,
+                batch_size=batch_size_r
             )
 
             data_LL_generator = pairDataGenerator_v2(
@@ -534,7 +468,7 @@ def train_model(
                 y2_col=label_col,
                 batch_size=batch_size_r,
                 device=DEVICE,
-                allow_refresh=False
+                allow_refresh=True
             )
 
             data_UL_generator = pairDataGenerator_v2(
@@ -548,7 +482,7 @@ def train_model(
                 y2_col=label_col,
                 batch_size=batch_size_r,
                 device=DEVICE,
-                allow_refresh=False
+                allow_refresh=True
             )
 
             data_UU_generator = pairDataGenerator_v2(
@@ -562,7 +496,7 @@ def train_model(
                 y2_col=None,
                 batch_size=batch_size_r,
                 device=DEVICE,
-                allow_refresh=False
+                allow_refresh=True
             )
 
             batch_idx_f = 0
@@ -570,7 +504,6 @@ def train_model(
             log_interval_f = 3
 
             while data_L is not None:
-
                 NN.train_mode = 'f'
 
                 # ------  Supervised Loss ------ #
@@ -586,43 +519,52 @@ def train_model(
                 NN.train_mode = 'f_ll'
                 x1_y1, x2_y2 = data_LL_generator.get_next()
 
-                print(x1_y1, x2_y2)
-                return
-                #                 x1 = data_LL_x[0].to(DEVICE)
-                #                 x2 = data_LL_x[1].to(DEVICE)
+                x1_F = x1_y1[0]
+                x1_G = x1_y1[1]
+                x2_F = x2_y2[0]
+                x2_G = x2_y2[1]
+                y1 = x1_y1[2]
+                y2 = x2_y2[2]
 
-                pred_agreement, pred_y1 = NN([x1, x2])
-                y2 = LT(data_LL_y[1]).to(DEVICE)
-
+                pred_agreement, pred_y1 = NN([x1_G, x2_G, x1_F])
                 loss_LL = regularization_loss(
                     pred_agreement, [pred_y1, y2]
                 )
 
+                # ==================
                 # UL
+                # ==================
                 NN.train_mode = 'f_ul'
-                data_UL_x, data_UL_y = data_UL_generator.get_next()
-                x1 = data_UL_x[0].to(DEVICE)
-                x2 = data_UL_x[1].to(DEVICE)
-                y2 = data_UL_y[1].to(DEVICE)
+                x1_y1, x2_y2 = data_UL_generator.get_next()
 
-                _x = [x1, x2]
+                x1_F = x1_y1[0]
+                x1_G = x1_y1[1]
+                x2_F = x2_y2[0]
+                x2_G = x2_y2[1]
+                y2 = x2_y2[2]
 
-                pred_agreement, pred_y1 = NN(_x)
+                pred_agreement, pred_y1 = NN([x1_G, x2_G, x1_F])
                 loss_UL = regularization_loss(
                     pred_agreement,
                     [pred_y1, y2]
                 )
 
-                # ====================
+                # ===================
                 # UU
-                # ====================
+                # ===================
                 # print('---- > UU ')
                 NN.train_mode = 'f_uu'
                 data_UU = data_UU_generator.get_next()
-                x1 = data_UU[0].to(DEVICE)
-                x2 = data_UU[1].to(DEVICE)
-                _x = [x1, x2]
-                pred_agreement, pred_y1, pred_y2 = NN(_x)
+                x1_y1, x2_y2 = data_UL_generator.get_next()
+
+                x1_F = x1_y1[0]
+                x1_G = x1_y1[1]
+                x2_F = x2_y2[0]
+                x2_G = x2_y2[1]
+                y1 = x1_y1[2]
+                y2 = x2_y2[2]
+
+                pred_agreement, pred_y1, pred_y2 = NN([x1_G, x2_G, x1_F, x2_F])
                 loss_UU = regularization_loss(pred_agreement, [pred_y1, pred_y2])
 
                 # ====================
@@ -633,6 +575,7 @@ def train_model(
                 optimizer_f.step()
                 try:
                     data_L = data_L_generator.get_next()
+                    print(data_L[0].shape)
                 except Exception:
                     data_L = None
 
@@ -680,7 +623,7 @@ def train_model(
         # Update the set of labelled and unlabelled samples
         # ----------------
 
-        k = int(len(df_U) * 0.05)
+        k = int(len(df_U) * 0.1)
         self_labelled_samples = train_utils.find_most_confident_samples(
             U_df=df_U.copy(),
             y_prob=pred_y_probs,
@@ -704,18 +647,66 @@ def train_model(
             continue_training = False
         print('----- Validation set ')
         train_utils.evaluate_validation(
-            NN,
-            df_L_validation,
-            x_cols=g_feature_cols
+            model=NN,
+            DEVICE=DEVICE,
+            data_df=df_L_validation,
+            x_cols=features_F
         )
 
         print('----- Test set ')
         train_utils.evaluate_test(
-            NN,
-            df_U_original,
-            x_cols=features_G
+            model=NN,
+            DEVICE=DEVICE,
+            data_df=df_U_original,
+            x_cols=features_F
         )
     return
+
+
+# ------------------------------------------------------- #
+
+setup_config('us_import2')
+df_target, normal_data_samples_df, features_F, features_G = data_preprocess.get_data_plus_features(
+    DATA_SOURCE_DIR_1,
+    DATA_SOURCE_DIR_2,
+    model_use_data_DIR,
+    F_classifier_type,
+    domain_dims,
+    serial_mapping_df,
+    score_col,
+    is_labelled_col,
+    label_col,
+    true_label_col,
+    fraud_col,
+    anomaly_col
+)
+
+matrix_node_emb = read_matrix_node_emb(matrix_node_emb_path)
+node_emb_dim = matrix_node_emb.shape[-1]
+num_domains = len(domain_dims)
+
+# matrix_node_emb = FT(matrix_node_emb).to(DEVICE)
+matrix_node_emb = FT(matrix_node_emb)
+if F_classifier_type == 'MLP':
+    dict_clf_initilize_inputs = {
+        'mlp_layer_dims': clf_mlp_layer_dimesnions,
+        'dropout': 0.05,
+        'activation': 'relu'
+    }
+elif F_classifier_type == 'wide_n_deep':
+    dict_clf_initilize_inputs = {
+        'mlp_layer_dims': clf_mlp_layer_dimesnions,
+        'dropout': 0.05,
+        'activation': 'relu'
+    }
+elif F_classifier_type == 'deepFM':
+    dict_clf_initilize_inputs = {
+        'mlp_layer_dims': clf_mlp_layer_dimesnions,
+        'dropout': 0.05,
+        'activation': 'relu'
+    }
+else:
+    dict_clf_initilize_inputs = None
 
 
 NN = SS_network(

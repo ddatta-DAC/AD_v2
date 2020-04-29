@@ -12,7 +12,17 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.metrics import f1_score
 from sklearn.metrics import recall_score
+import torch
+from torch.nn import functional as F
+import torch.nn
+from torch.utils.data import DataLoader
+from torch.utils.data import Dataset
+from torch.utils.data import RandomSampler, SequentialSampler
 
+try:
+    from torch_data_loader import type1_Dataset
+except:
+    from .torch_data_loader import type1_Dataset
 
 pandarallel.initialize()
 import pandas as pd
@@ -26,8 +36,8 @@ import numpy as np
 # Return part of dataframe , where instances are labelled
 # -----
 def extract_labelled_df(
-    df,
-    is_labelled_col='labelled'
+        df,
+        is_labelled_col='labelled'
 ):
     res = pd.DataFrame(
         df.loc[df[is_labelled_col] == True],
@@ -37,15 +47,14 @@ def extract_labelled_df(
 
 
 def extract_unlabelled_df(
-    df,
-    is_labelled_col='labelled'
+        df,
+        is_labelled_col='labelled'
 ):
     res = pd.DataFrame(
         df.loc[df[is_labelled_col] == False],
         copy=True
     )
     return res
-
 
 
 # ---------------------------------------------------
@@ -104,10 +113,9 @@ def find_most_confident_samples(
         max_count=None,
         label_col='y',
         is_labelled_col='labelled',
-        threshold = 0.4,
+        threshold=0.4,
         id_col='PanjivaRecordID'
 ):
-
     if max_count is None:
         max_count = 0.10 * len(U_df)
 
@@ -117,34 +125,36 @@ def find_most_confident_samples(
     # Calculate p_0 and p_1 : p_0 = 1 - p_1
     col_p_1 = 'y_p_1'
     col_p_0 = 'y_p_0'
-    var_col =  '_variance_'
+    var_col = '_variance_'
     diff_val = ' _p_diff_'
     valid_flag = '__valid__'
 
-    U_df[diff_val] = np.abs( y_prob - (1 - y_prob) )
+    U_df[diff_val] = np.abs(y_prob - (1 - y_prob))
     U_df[col_p_1] = y_prob
     U_df[col_p_0] = 1 - y_prob
-    U_df[var_col] = y_prob * (1-y_prob)
+    U_df[var_col] = y_prob * (1 - y_prob)
 
     # binary classification : labels are 0 and 1
     def _calc_prediction(row):
-        if row[col_p_1] > row[col_p_0] : return 1
-        else : return 0
+        if row[col_p_1] > row[col_p_0]:
+            return 1
+        else:
+            return 0
 
-    U_df[label_col] = U_df.parallel_apply(_calc_prediction,axis=1)
+    U_df[label_col] = U_df.parallel_apply(_calc_prediction, axis=1)
 
     U_df[valid_flag] = False
-    U_df_0 = pd.DataFrame(U_df.loc[U_df[y_pred] == 0],copy=True)
-    U_df_1 = pd.DataFrame(U_df.loc[U_df[y_pred] == 1],copy=True)
+    U_df_0 = pd.DataFrame(U_df.loc[U_df[y_pred] == 0], copy=True)
+    U_df_1 = pd.DataFrame(U_df.loc[U_df[y_pred] == 1], copy=True)
 
     U_df_0 = U_df_0.sort_values(by=[var_col], ascending=False)
     U_df_1 = U_df_1.sort_values(by=[var_col], ascending=False)
 
     def _set_valid_flag(row):
-        return row[diff_val] > threshold
+        return row[diff_val] >= threshold
 
-    U_df_0[valid_flag] = U_df_0[diff_val].apply(_set_valid_flag)
-    U_df_1[valid_flag] = U_df_1[diff_val].apply(_set_valid_flag)
+    U_df_0[valid_flag] = U_df_0.apply(_set_valid_flag, axis=1)
+    U_df_1[valid_flag] = U_df_1.apply(_set_valid_flag, axis=1)
 
     # Select Equal number of samples with labels 0 and 1
 
@@ -169,17 +179,15 @@ def find_most_confident_samples(
     return res_df
 
 
-
 def set_label_in_top_perc(
         df,
         perc,
         score_col,
         true_label_col,
-        id_col = 'PanjivaRecordID',
-        is_labelled_col = 'labelled',
-        label_col = 'y'
+        id_col='PanjivaRecordID',
+        is_labelled_col='labelled',
+        label_col='y'
 ):
-
     df = df.sort_values(by=[score_col])
     if perc > 1:
         perc = perc / 100
@@ -198,13 +206,11 @@ def evaluate_test(
         DEVICE,
         data_df,
         x_cols,
-        label_col = 'y',
-        true_label_col = 'y_true',
-        id_col = 'PanjivaRecordID',
-        batch_size=3096,
-
+        label_col='y',
+        true_label_col='y_true',
+        id_col='PanjivaRecordID',
+        batch_size=3096
 ):
-    
     df = data_df.copy()
     model.train(mode=False)
     model.test_mode = True
@@ -271,12 +277,11 @@ def evaluate_validation(
         DEVICE,
         data_df,
         x_cols,
-        label_col = 'y',
-        true_label_col = 'y_true',
-        id_col = 'PanjivaRecordID',
+        label_col='y',
+        true_label_col='y_true',
+        id_col='PanjivaRecordID',
         batch_size=3096
 ):
-
     df = data_df.copy()
     model.train(mode=False)
     model.test_mode = True
@@ -320,7 +325,7 @@ def evaluate_validation(
     del df[label_col]
     # merge
     df = df.merge(res_df, on=[id_col], how='left')
-    
+
     # Now lets ee result at various points
     df = df.sort_values(by=['score'])
     y_true = df[true_label_col]
