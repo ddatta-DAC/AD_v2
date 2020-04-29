@@ -18,6 +18,7 @@ try:
 except:
     from src.Classifiers.MLP import MLP
 
+
 # -------------------------------- #
 
 
@@ -33,7 +34,7 @@ class gam_net_v1(nn.Module):
             self,
             input_dimension,
             encoder_dimensions,
-            activation = 'relu'
+            activation='relu'
     ):
         super(gam_net_v1, self).__init__()
         self.setup_Net(
@@ -48,15 +49,15 @@ class gam_net_v1(nn.Module):
             input_dimension,
             encoder_dimensions,
             activation
-           
+
     ):
         print(' Graph Agreement Module ')
         self.encoder = MLP(
             input_dimension,
             encoder_dimensions,
             activation=activation,
-            output_layer = False,
-            output_activation = False
+            output_layer=False,
+            output_activation=False
         )
 
         print('Encoder Layer :: \n', self.encoder)
@@ -83,25 +84,23 @@ class gam_net_v1(nn.Module):
 
         # Aggregator
         # d = (ei -ej)^2
-        d = (e_1 - e_2)**2
+        d = (e_1 - e_2) ** 2
 
         # Predictor
         res_pred = self.predictor_layer(d)
-        res_pred  = F.sigmoid(res_pred)
+        res_pred = F.sigmoid(res_pred)
         # This should be fed to a loss function
         # that should have inputs ( predicted agreement, agreement_indicator )
         return res_pred
 
-    
-    
-    
+
 class agreement_net_v2(nn.Module):
 
     def __init__(
             self,
             input_dimension,
             encoder_dimensions,
-            activation = 'relu'
+            activation='relu'
     ):
         super(agreement_net_v2, self).__init__()
         self.setup_Net(
@@ -116,15 +115,15 @@ class agreement_net_v2(nn.Module):
             input_dimension,
             encoder_dimensions,
             activation
-           
+
     ):
         print(' Graph Agreement Module ')
         self.encoder = MLP(
             input_dimension,
             encoder_dimensions,
             activation=activation,
-            output_layer = False,
-            output_activation = False
+            output_layer=False,
+            output_activation=False
         )
 
         print('Encoder Layer :: \n', self.encoder)
@@ -151,38 +150,36 @@ class agreement_net_v2(nn.Module):
 
         # Aggregator
         # d = (ei -ej)^2
-   
+
         # Predictor
-        res_pred  = F.sigmoid(F.cosine_similarity(e_1, e_2, dim=1))
+        res_pred = F.sigmoid(F.cosine_similarity(e_1, e_2, dim=1))
         # This should be fed to a loss function
         # that should have inputs ( predicted agreement, agreement_indicator )
         return res_pred
 
-    
-    
 
-def gam_loss( y_pred, y_true ):
-    return  F.binary_cross_entropy(y_pred, y_true)
+def gam_loss(y_pred, y_true):
+    return F.binary_cross_entropy(y_pred, y_true)
+
+
 # -------------------------------------------------- #
 
 def test():
-    x1 = np.random.random([10,6])
-    x2 = np.random.random([10,6])
+    x1 = np.random.random([10, 6])
+    x2 = np.random.random([10, 6])
     x1 = FT(x1)
     x2 = FT(x2)
     net = gam_net_v1(
-        6, [6,5,4]
+        6, [6, 5, 4]
     )
     print(net.encoder.mlp[0].weight)
-    y = torch.FloatTensor(np.random.randint(0,1,size=[10,1]))
+    y = torch.FloatTensor(np.random.randint(0, 1, size=[10, 1]))
     optimizer = torch.optim.Adam(net.parameters(), lr=0.005)
     optimizer.zero_grad()
-    res = net.forward(x1,x2)
+    res = net.forward(x1, x2)
     loss = gam_loss(res, y)
     loss.backward()
     optimizer.step()
     print(net.encoder.mlp[0].weight)
-
-
 
 # ------------------------------------------ #

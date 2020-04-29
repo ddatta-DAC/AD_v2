@@ -137,7 +137,7 @@ class pairDataGenerator_v1():
             df_1,
             df_2,
             x_cols,
-            batch_size=256,
+            batch_size=128,
             y1_col=None,
             y2_col=None,
             num_workers=0

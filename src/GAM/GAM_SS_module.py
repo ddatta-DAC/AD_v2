@@ -136,25 +136,37 @@ class SS_network(nn.Module):
             return pred_agreement, pred_y1
 
         elif self.train_mode == 'f_ul':
-            x1 = input_x[0]
-            x2 = input_x[1]
-            x1 = self.graph_net(x1)
-            y1 = self.clf_net(x1)
-            x2 = self.graph_net(x2)
 
-            pred_y1 = torch.argmax(y1, dim=1)
+            x1_G = input_x[0]
+            x2_G = input_x[1]
+            x1_F = input_x[2]
+
+            if self.clf_type == 'MLP':
+                x1 = self.graph_net(x1_F)
+                pred_y1 = self.clf_net(x1)
+
+            x1 = self.graph_net(x1_G)
+            x2 = self.graph_net(x2_G)
             pred_agreement = self.agreement_net(x1, x2)
             return pred_agreement, pred_y1
 
         elif self.train_mode == 'f_uu':
-            x1 = input_x[0]
-            x2 = input_x[1]
-            x1 = self.graph_net(x1)
-            x2 = self.graph_net(x2)
 
-            pred_y1 = torch.argmax(self.clf_net(x1), dim=1)
-            pred_y2 = torch.argmax(self.clf_net(x2), dim=1)
+            x1_G = input_x[0]
+            x2_G = input_x[1]
+            x1_F = input_x[2]
+            x2_F = input_x[3]
+
+            x1 = self.graph_net(x1_G)
+            x2 = self.graph_net(x2_G)
             pred_agreement = self.agreement_net(x1, x2)
+
+            if self.clf_type == 'MLP':
+                x1_F = self.graph_net(x1_F)
+                x1_F = self.graph_net(x2_F)
+
+            pred_y1 = self.clf_net(x1_F)
+            pred_y2 = self.clf_net(x1_F)
             return pred_agreement, pred_y1, pred_y2
 
         if self.test_mode == True:
