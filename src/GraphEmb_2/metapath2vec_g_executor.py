@@ -78,14 +78,14 @@ def set_up_config(_DIR = None):
 
     model_use_data_DIR = CONFIG['model_use_data_DIR']
     model_use_data_DIR = os.path.join(model_use_data_DIR, DIR)
+
     model_weights_data = CONFIG['model_weights_data']
     if not os.path.exists(model_weights_data):
         os.mkdir(model_weights_data)
-    if not os.path.exists(os.path.join(model_weights_data, DIR)):
-        os.mkdir(os.path.join(model_weights_data, DIR))
-    model_weights_data = os.path.join(
-        model_weights_data ,DIR , model_name
-    )
+    model_weights_data = os.path.join( model_weights_data , model_name)
+    if not os.path.exists(model_weights_data):
+        os.mkdir(model_weights_data)
+    model_weights_data = os.path.join( model_weights_data , DIR )
     if not os.path.exists(model_weights_data):
         os.mkdir(model_weights_data)
 
@@ -110,7 +110,7 @@ def set_up_config(_DIR = None):
         os.mkdir(model_save_path)
 
     model_save_file = 'mp2v_gensim.data'
-
+    print(weights_np_save_path, os.path.exists(model_save_path))
     weights_np_save_path = os.path.join(model_save_loc,'mp2v_gensim_weights.npy')
 
     return
