@@ -110,8 +110,9 @@ def set_up_config(_DIR = None):
         os.mkdir(model_save_path)
 
     model_save_file = 'mp2v_gensim.data'
-    print(weights_np_save_path, os.path.exists(model_save_path))
-    weights_np_save_path = os.path.join(model_save_loc,'mp2v_gensim_weights.npy')
+    weights_np_save_path = os.path.join(model_save_loc, 'mp2v_gensim_weights.npy')
+    print(weights_np_save_path, model_save_path, os.path.exists(model_save_path))
+
 
     return
 
