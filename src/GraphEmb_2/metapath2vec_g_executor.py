@@ -81,9 +81,14 @@ def set_up_config(_DIR = None):
     model_weights_data = CONFIG['model_weights_data']
     if not os.path.exists(model_weights_data):
         os.mkdir(model_weights_data)
+    if not os.path.exists(os.path.join(model_weights_data, DIR)):
+        os.mkdir(os.path.join(model_weights_data, DIR))
     model_weights_data = os.path.join(
         model_weights_data ,DIR , model_name
     )
+    if not os.path.exists(model_weights_data):
+        os.mkdir(model_weights_data)
+
     RW_dir = CONFIG['RW_Samples_DIR']
     RW_dir = os.path.join(model_use_data_DIR, RW_dir)
 

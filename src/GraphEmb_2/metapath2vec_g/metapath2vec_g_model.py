@@ -61,7 +61,7 @@ def get_model_obj(
             min_alpha=0.0001,
             negative=num_neg_samples,
             ns_exponent=0.75,
-            iter=100,
+            iter=250,
             null_word=-1
         )
         print(model)
