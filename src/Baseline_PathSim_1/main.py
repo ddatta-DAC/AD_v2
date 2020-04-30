@@ -76,7 +76,7 @@ Logging_Dir = 'Log'
 # Call this to set up global variables
 # ------------------------------------------------------------
 
-SOURCE_DATA_DIR_1 = './../../generated_data_v2'
+SOURCE_DATA_DIR_1 = './../../generated_data_v3'
 
 def setup():
     global DIR
@@ -88,10 +88,12 @@ def setup():
     global data_max_size
     global KNN_dir
     global CONFIG
-
+    global SOURCE_DATA_DIR_1
     with open(config_file) as f:
         CONFIG = yaml.safe_load(f)
 
+    SOURCE_DATA_DIR_1 = CONFIG['SOURCE_DATA_DIR_1']
+    TARGET_DATA_SOURCE = CONFIG['TARGET_DATA_SOURCE']
     data_max_size = CONFIG['data_max_size']
     KNN_k = CONFIG['KNN_k']
     model_use_data_DIR = CONFIG['model_use_data_DIR']
