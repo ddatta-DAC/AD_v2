@@ -939,8 +939,12 @@ setup()
 LOGGER = get_logger()
 train_df = get_training_data(DIR)
 FLAG_network_setup_needed =  not os.path.exists(KNN_dir)
-target_df = read_target_data()
-record_2_serial_ID_df = get_record_2_serial_ID_df(target_df)
+try:
+    target_df = read_target_data()
+    record_2_serial_ID_df = get_record_2_serial_ID_df(target_df)
+except:
+    target_df = None
+    record_2_serial_ID_df = None
 max_K = 100
 
 if FLAG_network_setup_needed:
