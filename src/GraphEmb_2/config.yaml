@@ -1,5 +1,5 @@
-'SOURCE_DATA_DIR_1' : './../../generated_data_v2'
-'SOURCE_DATA_DIR_2' : './../../AD_system_output_v2'
+'SOURCE_DATA_DIR_1' : './../../generated_data_v3'
+'SOURCE_DATA_DIR_2' : './../../AD_system_output_v3'
 'DIR': 'us_import1'
 'SAVE_DATA_DIR': './saved_data/'
 'id_col': 'PanjivaRecordID'
@@ -8,7 +8,7 @@
 'num_jobs': 8
 'random_walk_save_subdir' : 'RW_Samples'
 'mp2v_data' : 'mp2v_data'
-'mp2v_context_size' : 8
+'mp2v_context_size' : 4
 'RW_Samples_DIR' : 'RW_Samples'
 'model_weights_data' : 'model_weights_data'
 'mp2v_g_data_dir' : 'mp2v_g_data'

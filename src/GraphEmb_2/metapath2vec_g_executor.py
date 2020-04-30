@@ -164,6 +164,7 @@ set_up_config(DIR)
 model_obj = metapath2vec_g_model.get_model_obj(
     corpus_txt_file_path = text_data_file,
     emb_size=128,
+    window_size = 2,
     model_save_path = os.path.join(model_save_loc,model_save_file),
     load_saved = False
 )

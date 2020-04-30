@@ -179,8 +179,8 @@ def get_MP_list():
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
-    default='us_import2'
+    '--DIR', choices=['us_import4', 'us_import5', 'us_import6'],
+    default='us_import4'
 )
 
 args = parser.parse_args()
@@ -191,7 +191,6 @@ domain_dims = data_fetcher.get_domain_dims(SOURCE_DATA_DIR_1, DIR)
 source_1_data = get_data()
 rw_obj = Random_Walk.RandomWalkGraph_v1()
 coOccMatrixDict = get_coOccMatrixDict(source_1_data)
-
 
 rw_obj.initialize(
     coOccMatrixDict = coOccMatrixDict,
@@ -204,8 +203,8 @@ rw_obj.initialize(
 )
 
 rw_obj.generate_RandomWalks_w_neg_samples(
-    rw_count=20,
-    rw_length=128,
+    rw_count=10,
+    rw_length=64,
     num_neg_samples=10
 )
 
