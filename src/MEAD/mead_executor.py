@@ -294,13 +294,4 @@ setup_general_config(
     _RESULT_OP_DIR=_RESULT_OP_DIR
 )
 
-# main()
-test_data_df = data_fetcher.get_Stage2_data_as_DF(
-        CONFIG['DATA_DIR'],
-        DIR,
-        fraud_ratio = CONFIG['fraud_ratio'],
-        anomaly_ratio = CONFIG['anomaly_ratio'],
-        total_size = CONFIG[DIR]['test_data_size']
-    )
-print(test_data_df.head(10))
-print(list(test_data_df.columns))
+main()

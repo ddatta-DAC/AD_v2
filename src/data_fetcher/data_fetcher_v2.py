@@ -332,6 +332,10 @@ def get_Stage2_data_as_DF(
     res_df = res_df.append(anomalies_NF_df, ignore_index=True)
     res_df = res_df.append(anomalies_F_df, ignore_index=True)
     res_df = res_df.reset_index(drop=True)
+    try:
+        del res_df['Unnamed: 0']
+    except:
+        pass
     return res_df
 
 
