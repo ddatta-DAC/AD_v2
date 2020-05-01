@@ -305,8 +305,9 @@ def get_Stage2_data_as_DF(
     anomalies_F_df = pd.read_csv(
         os.path.join(
             DATA_DIR, DIR, anomalies_Fraud_file_name
-        )
+        ),index_col=0
     )
+
     anomalies_F_df['anomaly'] = True
     anomalies_F_df['fraud'] = True
 
@@ -330,6 +331,7 @@ def get_Stage2_data_as_DF(
     res_df = normal_df.copy()
     res_df = res_df.append(anomalies_NF_df, ignore_index=True)
     res_df = res_df.append(anomalies_F_df, ignore_index=True)
+    res_df = res_df.reset_index(drop=True)
     return res_df
 
 
