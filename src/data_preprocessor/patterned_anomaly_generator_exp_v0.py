@@ -278,7 +278,7 @@ _perturb_set = [_ for _ in domain_dims.keys() if _ not in _fixed_set]
 pandarallel.initialize()
 
 non_fraud_samples = non_fraud_samples.sample(50000)
-fraud_samples = fraud_samples.sample(5000)
+fraud_samples = fraud_samples.sample(min(len(fraud_samples), 5000))
 
 result_1 = fraud_samples.parallel_apply(
     generate_by_criteria,
