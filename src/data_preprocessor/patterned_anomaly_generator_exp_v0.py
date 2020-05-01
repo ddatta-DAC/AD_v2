@@ -87,9 +87,8 @@ def set_up_config(_DIR):
 
 
     DIR = _DIR
-    SOURCE_DATA_DIR_1 = './../generated_data_v3'
+    SOURCE_DATA_DIR_1 = './../../generated_data_v3'
     DATA_DIR = SOURCE_DATA_DIR_1
-    SOURCE_DATA_DIR_2 = './anomalies_exp'
 
     model_use_data_DIR = 'model_use_data_DIR'
     if not os.path.exists(model_use_data_DIR):
