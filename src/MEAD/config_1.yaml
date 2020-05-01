@@ -1,5 +1,5 @@
-'DATA_DIR': '../../generated_data_v2'
-'DATA_SOURCE_DIR' : '../../generated_data_v2'
+'DATA_DIR': '../../generated_data_v3'
+'DATA_SOURCE_DIR' : '../../generated_data_v3'
 'DIR' : 'us_import1'
 'OP_DIR' : 'output'
 'SAVE_DIR' : 'save_dir'
@@ -45,6 +45,46 @@
   'use_bias' : False
   'saved_model_file' : 'frozen_model_mead16_1586114200.pb'
   'num_epochs' : 25
+  'op_dims' : 16
+  'batchsize': 128
+  'num_neg_samples' : 15
+  'test_data_size' : 60000
+
+
+'us_import4':
+  'learning_rate' : 0.0005
+  'use_pretrained' : False
+  'show_loss_figure' : False
+  'save_loss_figure' : True
+  'use_bias' : False
+  'saved_model_file' : 'frozen_model_mead16_1586100258.pb'
+  'num_epochs' : 10
+  'op_dims' : 16
+  'batchsize': 128
+  'num_neg_samples' : 15
+  'test_data_size' : 40000
+
+'us_import5':
+  'learning_rate' : 0.0005
+  'use_pretrained' : False
+  'show_loss_figure' : False
+  'save_loss_figure' : False
+  'use_bias' : False
+  'saved_model_file' : 'frozen_model_mead16_1586106671.pb'
+  'num_epochs' : 10
+  'op_dims' : 16
+  'batchsize': 128
+  'num_neg_samples' : 15
+  'test_data_size' : 50000
+
+'us_import6':
+  'learning_rate' : 0.0005
+  'use_pretrained' : False
+  'show_loss_figure' : False
+  'save_loss_figure' : False
+  'use_bias' : False
+  'saved_model_file' : 'frozen_model_mead16_1586114200.pb'
+  'num_epochs' : 10
   'op_dims' : 16
   'batchsize': 128
   'num_neg_samples' : 15

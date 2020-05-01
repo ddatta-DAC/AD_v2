@@ -278,12 +278,12 @@ def  get_scored_data(
 # ----------------------------------------------------------------- #
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
+    '--DIR', choices=['us_import4', 'us_import5', 'us_import6'],
     default=None
 )
 
 parser.add_argument(
-    '--RESULT_OP_DIR', default='./../../AD_system_output'
+    '--RESULT_OP_DIR', default='./../../AD_system_output_v3'
 )
 
 args = parser.parse_args()
