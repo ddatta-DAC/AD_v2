@@ -530,7 +530,7 @@ def train_model(
                 x1_G = x1_y1[1]
                 x2_F = x2_y2[0]
                 x2_G = x2_y2[1]
-                y1 = x1_y1[2]
+                # y1 = x1_y1[2]
                 y2 = x2_y2[2]
 
                 pred_agreement, pred_y1 = NN([x1_G, x2_G, x1_F])
@@ -667,8 +667,16 @@ def train_model(
 
 
 # ------------------------------------------------------- #
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '--DIR', choices=['us_import4', 'us_import5', 'us_import6'],
+    default='us_import4'
+)
 
-setup_config('us_import2')
+args = parser.parse_args()
+DIR = args.DIR
+setup_config(DIR)
+
 df_target, normal_data_samples_df, features_F, features_G = data_preprocess.get_data_plus_features(
     DATA_SOURCE_DIR_1,
     DATA_SOURCE_DIR_2,
