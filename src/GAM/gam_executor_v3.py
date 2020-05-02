@@ -652,11 +652,11 @@ def train_model(
         # Update the set of labelled and unlabelled samples
         # ----------------
         df_U_copy = df_U.sort_values(by=['score']).copy()
-        k = int(len(df_U) * 0.2)
+        k = int(len(df_U) * 0.1)
         self_labelled_samples = train_utils.find_most_confident_samples(
             U_df=df_U_copy,
             y_prob=pred_y_probs,
-            threshold=0.1,
+            threshold=0.4,
             max_count=k
         )
         print(' number of self labelled samples ::', len(self_labelled_samples))
