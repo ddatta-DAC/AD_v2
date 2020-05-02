@@ -721,7 +721,7 @@ def train_model(
         NN.test_mode = False
         y_pred = list(pred_y_label)
         y_true = list(np.array(true_labels).astype(int))
-        print(y_pred)
+
         points = [10, 20, 30]
         results_print = pd.DataFrame(
             columns=['next %', 'precision', 'recall', 'f1', 'balanced_accuracy']
