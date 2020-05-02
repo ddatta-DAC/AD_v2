@@ -433,12 +433,11 @@ class balanced_pair_Generator_v2:
             x_col=None,
             y_col=None,
             batch_size=256,
-            device=None,
+            device='cpu',
             allow_refresh=False,
             id_col = 'PanjivaRecordID'
     ):
         self.device = device
-
         self.x_col = x_col
         self.y_col = y_col
         self.df = df
@@ -457,11 +456,6 @@ class balanced_pair_Generator_v2:
         for pr in combinations(ones,2):
             one_one.append(pr)
 
-        # one_one = one_one [ np.random.choice(
-        #     list(range(len(one_one))),
-        #     size = max(25000,  len(one_one)*10//100),
-        #     replace=False
-        # )]
         one_one = np.array(one_one)
         _samples =  min(len(df)*10,  (one_one.shape[0]*20)//100)
         idx = list(np.random.randint(len(one_one), size=_samples))

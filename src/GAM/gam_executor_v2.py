@@ -391,7 +391,8 @@ def train_model(
                     df=df_L,
                     x_col=features_G,
                     y_col=label_col,
-                    allow_refresh=False
+                    allow_refresh=False,
+                    device=DEVICE
                 )
                 print('Epoch [g]', epoch)
                 record_loss = []
