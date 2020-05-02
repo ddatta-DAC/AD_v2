@@ -380,7 +380,6 @@ def train_model(
             log_interval_g = 2
 
             for epoch in range(num_epochs_g):
-                break
                 print('Epoch [g]', epoch)
                 record_loss = []
                 batch_idx = 0
@@ -562,16 +561,12 @@ def train_model(
                 # ===================
                 # print('---- > UU ')
                 NN.train_mode = 'f_uu'
-                data_UU = data_UU_generator.get_next()
-                x1_y1, x2_y2 = data_UL_generator.get_next()
+                x1_y1, x2_y2 = data_UU_generator.get_next()
 
                 x1_F = x1_y1[0]
                 x1_G = x1_y1[1]
                 x2_F = x2_y2[0]
                 x2_G = x2_y2[1]
-                y1 = x1_y1[2]
-                y2 = x2_y2[2]
-
                 pred_agreement, pred_y1, pred_y2 = NN([x1_G, x2_G, x1_F, x2_F])
                 loss_UU = regularization_loss(pred_agreement, [pred_y1, pred_y2])
 
