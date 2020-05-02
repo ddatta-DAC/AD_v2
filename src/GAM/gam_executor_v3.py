@@ -356,7 +356,7 @@ def train_model(
             iter_below_tol = 0
 
             for epoch in range(num_epochs_g):
-                break
+
                 data_G = balanced_pair_Generator_v2(
                     df=df_L,
                     x_col=features_G,
