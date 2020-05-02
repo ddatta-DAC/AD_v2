@@ -1,5 +1,5 @@
-DATA_SOURCE_DIR_1 : './../../generated_data_v3'
-DATA_SOURCE_DIR_2 : './../../AD_system_output_v3'
+DATA_SOURCE_DIR_1 : './../../generated_data_v2'
+DATA_SOURCE_DIR_2 : './../../AD_system_output_v2'
 model_use_data_DIR : 'model_use_data'
 serial_mapping_df_name : 'Serialized_Mapping.csv'
 serial_mapping_df_loc : './../GraphEmb_2/model_use_data'
