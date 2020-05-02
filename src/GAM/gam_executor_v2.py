@@ -78,6 +78,7 @@ try:
     from . import data_preprocess
     from .torch_data_loader import pairDataGenerator_v1
     from .torch_data_loader import singleDataGenerator
+    from .torch_data_loader import  balanced_pair_Generator_v2
     from .torch_data_loader import pairDataGenerator_v2
     from .src.Classifiers import wide_n_deep_model as clf_WIDE_N_DEEP
     from .src.Classifiers import deepFM  as clf_DEEP_FM
@@ -97,6 +98,7 @@ except:
     from torch_data_loader import singleDataGenerator
     import data_preprocess
     import train_utils
+    from torch_data_loader import balanced_pair_Generator_v2
     from GAM_SS_module import SS_network
 
 # ==================================== #
@@ -304,7 +306,7 @@ def train_model(
     df_L, df_L_validation = train_utils.obtain_train_validation(
         df_L
     )
-    f_feature_cols = None
+
 
     # Add in normal data to validation data
     df_L_validation = df_L_validation.append(
@@ -329,6 +331,8 @@ def train_model(
             x_cols=features_G,
             y_col=label_col
         )
+
+
 
         dataLoader_obj_L1a = DataLoader(
             data_source_L1,
@@ -368,6 +372,9 @@ def train_model(
 
         final_epoch_g = False  # To check convergence
         if NN.train_mode == 'g':
+
+
+
             # ----
             # input_x1,y2 : from Dataloader ( L )
             # input x2,y2 : from Dataloader ( L )
@@ -380,63 +387,117 @@ def train_model(
 
 
             for epoch in range(num_epochs_g):
+                data_G = balanced_pair_Generator_v2(
+                    df=df_L,
+                    x_col=features_G,
+                    y_col=label_col,
+                    allow_refresh=False
+                )
                 print('Epoch [g]', epoch)
                 record_loss = []
                 batch_idx = 0
-                for i, data_i in enumerate(dataLoader_obj_L1a):
-                    if type(data_i) == list:
-                        data_i = [_.to(DEVICE) for _ in data_i]
-                    else:
-                        data_i = data_i.to(DEVICE)
 
-                    x1 = data_i[0]
-                    y1 = data_i[1]
+                batch_count = data_G.batch_count
+                for b_g in range(batch_count):
+                    x1_y1, x2_y2 = data_G.get_next()
 
-                    for j, data_j in enumerate(dataLoader_obj_L1b):
-                        if type(data_i) == list:
-                            data_j = [_.to(DEVICE) for _ in data_j]
-                        else:
-                            data_j = data_j.to(DEVICE)
+                    x1 = x1_y1[0]
+                    y1 = x1_y1[1]
+                    x2 = x2_y2[0]
+                    y2 = x2_y2[1]
 
-                        x2 = data_j[0]
-                        y2 = data_j[1]
-                        input_x = [x1, x2]
 
-                        true_agreement = np.array(y1 == y2).astype(float)
-                        true_agreement = np.reshape(true_agreement, [-1, 1])
+                    true_agreement = np.array(y1 == y2).astype(float)
+                    true_agreement = np.reshape(true_agreement, [-1])
+                    true_agreement = FT(true_agreement).to(DEVICE)
+                    input_x = [x1, x2]
+                    pred_agreement = NN(input_x)
+                    loss = F.binary_cross_entropy(pred_agreement, true_agreement)
+                    loss.backward()
 
-                        true_agreement = FT(true_agreement).to(DEVICE)
-                        pred_agreement = NN(input_x)
-
-                        loss = F.binary_cross_entropy(pred_agreement, true_agreement)
-                        loss.backward()
-
-                        optimizer_g.step()
-                        record_loss.append(float(loss))
-                        batch_idx += 1
-                        if batch_idx % log_interval_g == 0:
-                            print(
-                                'Epoch {}, Batch [g] {} :: Loss {}'.format(
-                                    epoch, batch_idx, loss)
-                            )
-                        cur_loss = loss
-                        # ------------------------
-                        # If training performance is not improving, stop training
-                        # ------------------------
-                        is_converged, iter_below_tol, = train_utils.check_convergence(
-                            prev_loss=prev_loss,
-                            cur_loss=loss,
-                            cur_step=batch_idx,
-                            iter_below_tol=iter_below_tol,
-                            abs_loss_chg_tol=0.01,
-                            min_num_iter=50,
-                            max_iter_below_tol=10
+                    optimizer_g.step()
+                    record_loss.append(float(loss))
+                    batch_idx += 1
+                    if batch_idx % log_interval_g == 0:
+                        print(
+                            'Epoch {}, Batch [g] {} :: Loss {}'.format(
+                                epoch, batch_idx, loss)
                         )
-                        prev_loss = cur_loss
-                        if is_converged:
-                            final_epoch_g = True
+                    cur_loss = loss
+                    # ------------------------
+                    # If training performance is not improving, stop training
+                    # ------------------------
+                    is_converged, iter_below_tol, = train_utils.check_convergence(
+                        prev_loss=prev_loss,
+                        cur_loss=loss,
+                        cur_step=batch_idx,
+                        iter_below_tol=iter_below_tol,
+                        abs_loss_chg_tol=0.01,
+                        min_num_iter=50,
+                        max_iter_below_tol=10
+                    )
+                    prev_loss = cur_loss
+                    if is_converged:
+                        final_epoch_g = True
                 if final_epoch_g:
                     break
+
+
+                #
+                # for i, data_i in enumerate(dataLoader_obj_L1a):
+                #     if type(data_i) == list:
+                #         data_i = [_.to(DEVICE) for _ in data_i]
+                #     else:
+                #         data_i = data_i.to(DEVICE)
+                #
+                #     x1 = data_i[0]
+                #     y1 = data_i[1]
+                #
+                #     for j, data_j in enumerate(dataLoader_obj_L1b):
+                #         if type(data_i) == list:
+                #             data_j = [_.to(DEVICE) for _ in data_j]
+                #         else:
+                #             data_j = data_j.to(DEVICE)
+                #
+                #         x2 = data_j[0]
+                #         y2 = data_j[1]
+                #         input_x = [x1, x2]
+                #
+                #         true_agreement = np.array(y1 == y2).astype(float)
+                #         true_agreement = np.reshape(true_agreement, [-1, 1])
+                #
+                #         true_agreement = FT(true_agreement).to(DEVICE)
+                #         pred_agreement = NN(input_x)
+                #
+                #         loss = F.binary_cross_entropy(pred_agreement, true_agreement)
+                #         loss.backward()
+                #
+                #         optimizer_g.step()
+                #         record_loss.append(float(loss))
+                #         batch_idx += 1
+                #         if batch_idx % log_interval_g == 0:
+                #             print(
+                #                 'Epoch {}, Batch [g] {} :: Loss {}'.format(
+                #                     epoch, batch_idx, loss)
+                #             )
+                #         cur_loss = loss
+                #         # ------------------------
+                #         # If training performance is not improving, stop training
+                #         # ------------------------
+                #         is_converged, iter_below_tol, = train_utils.check_convergence(
+                #             prev_loss=prev_loss,
+                #             cur_loss=loss,
+                #             cur_step=batch_idx,
+                #             iter_below_tol=iter_below_tol,
+                #             abs_loss_chg_tol=0.01,
+                #             min_num_iter=50,
+                #             max_iter_below_tol=10
+                #         )
+                #         prev_loss = cur_loss
+                #         if is_converged:
+                #             final_epoch_g = True
+                # if final_epoch_g:
+                #     break
 
         # -----------------------
         # Train the classifier
@@ -546,7 +607,6 @@ def train_model(
 
                 x1_F = x1_y1[0]
                 x1_G = x1_y1[1]
-                x2_F = x2_y2[0]
                 x2_G = x2_y2[1]
                 y2 = x2_y2[2]
 
@@ -578,7 +638,6 @@ def train_model(
                 optimizer_f.step()
                 try:
                     data_L = data_L_generator.get_next()
-                    print(data_L[0].shape)
                 except Exception:
                     data_L = None
 

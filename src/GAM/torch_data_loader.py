@@ -421,3 +421,133 @@ class pairDataGenerator_v2:
             y2 = FT(self.df_2.loc[next_2_idx, self.y2_col].values).to(self.device)
 
         return (x1_F, x1_G, y1), (x2_F, x2_G, y2)
+
+
+
+
+class balanced_pair_Generator_v2:
+
+    def __init__(
+            self,
+            df,
+            x_col=None,
+            y_col=None,
+            batch_size=256,
+            device=None,
+            allow_refresh=False,
+            id_col = 'PanjivaRecordID'
+    ):
+        self.device = device
+
+        self.x_col = x_col
+        self.y_col = y_col
+        self.df = df
+        self.batch_size = batch_size
+        # Shuffle
+
+        concordant_pairs = [] # 00, 11
+        discordant_pairs = [] # 01
+
+        ones = list(df.loc[df[y_col] ==1 ].index)
+        print(len(ones))
+
+        zeros =  list(df.loc[df[y_col] == 0 ].index)
+        from itertools import combinations
+        one_one = []
+        for pr in combinations(ones,2):
+            one_one.append(pr)
+
+        # one_one = one_one [ np.random.choice(
+        #     list(range(len(one_one))),
+        #     size = max(25000,  len(one_one)*10//100),
+        #     replace=False
+        # )]
+        one_one = np.array(one_one)
+        _samples =  min(len(df)*10,  (one_one.shape[0]*20)//100)
+        idx = list(np.random.randint(len(one_one), size=_samples))
+
+        one_one = one_one[idx,:]
+        zero_zero = []
+        np.random.shuffle(zeros)
+        count = 0
+        for pr in combinations(zeros,2):
+            zero_zero.append(pr)
+            count += 1
+            if count > one_one.shape[0] : break
+
+
+        np.random.shuffle(zero_zero)
+        zero_zero = np.array(zero_zero, dtype=int)
+        zero_zero = zero_zero[:one_one.shape[0],:]
+
+        concordant_pairs = np.vstack([one_one, zero_zero])
+        max_len = concordant_pairs.shape[0]
+
+        one_i = np.random.choice(ones, max_len, replace=True)
+        np.random.shuffle(one_i)
+        zeros_j = np.random.choice(zeros, max_len, replace=True)
+        np.random.shuffle(zeros_j)
+
+        for i,j in zip(one_i, zeros_j):
+             discordant_pairs.append([i,j])
+
+        all_pairs = np.vstack([concordant_pairs, discordant_pairs])
+        all_pairs = np.array(all_pairs, dtype=int)
+        np.random.shuffle(all_pairs)
+        self.batch_count = all_pairs.shape[0]//batch_size
+        self.iter_obj1 = self._get_indices_iter(all_pairs, batch_size, allow_refresh)
+        return
+
+    def get_num_batches(self):
+        return  self.batch_count
+
+
+    def _get_indices_iter(self, index_i, batch_size, allow_refresh=False):
+        def next_indices(
+                index_i,
+                batch_size,
+                allow_refresh=allow_refresh
+        ):
+            cur_idx = 0
+            while True:
+                if cur_idx + batch_size > len(index_i):
+                    if allow_refresh:
+                        cur_idx = 0
+                        np.random.shuffle(index_i)
+                    else:
+                        break
+
+                yield np.array(index_i[cur_idx:cur_idx + batch_size])
+                cur_idx += batch_size
+
+        obj = iter(next_indices(index_i, batch_size, allow_refresh))
+        return obj
+
+    def get_next(self):
+        next_idx_1 = None
+        next_idx_2 = None
+        try:
+            next_idx = next(self.iter_obj1)
+        except StopIteration:
+            next_idx = None
+
+        next_idx_1 = next_idx[:,0]
+        next_idx_2 = next_idx[:,1]
+
+
+        if next_idx_1 is None or next_idx_2 is None:
+            return None
+
+        x1 = None
+        x2 = None
+        y1 = None
+        y2 = None
+
+        x1 = LT(self.df.loc[next_idx_1, self.x_col].values).to(self.device)
+        y1 = LT(self.df.loc[next_idx_1, self.y_col].values).to(self.device)
+
+        x2 = LT(self.df.loc[next_idx_2, self.x_col].values).to(self.device)
+        y2 = LT(self.df.loc[next_idx_2, self.y_col].values).to(self.device)
+
+        return (x1, y1), (x2, y2)
+
