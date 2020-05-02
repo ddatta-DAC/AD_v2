@@ -15,7 +15,10 @@ import os
 import sys
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
-
+from sklearn.metrics import precision_score
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import f1_score
 sys.path.append('./../..')
 sys.path.append('./..')
 from time import time
@@ -550,8 +553,8 @@ def train_model(
 
         clf_en1_df_U  = None
         clf_en1_features = None
+        clf_en1_df_eval = None
         if F_classifier_type == 'MLP':
-
             cols = [id_col] + features_F + [label_col]
             tmp_df_copy = pd.DataFrame(df[cols],copy=True)
             L_ids = list(df_L[id_col])
@@ -575,6 +578,10 @@ def train_model(
             clf_en1_df_U = tmp_df_copy.loc[
                 tmp_df_copy[id_col].isin(U_ids)
             ]
+            # Evaluation use
+            clf_en1_df_eval = tmp_df_copy.loc[
+                tmp_df_copy[id_col].isin(list(df_U_original[id_col]))
+            ]
 
             clf_en1_features = [
                 _ for _ in list(clf_en1_df_U) if _ not in list(df_U.columns)
@@ -591,70 +598,58 @@ def train_model(
         # Self -labelling
         # ---------------------------
 
-        # data_source_EU = type1_Dataset(
-        #     df_U,
-        #     x_cols=features_G,
-        #     y_col=None
-        # )
-        # dataLoader_obj_EU = DataLoader(
-        #     data_source_EU,
-        #     batch_size=512,
-        #     shuffle=False,
-        #     num_workers=num_proc,
-        #     sampler=SequentialSampler(data_source_EU)
-        # )
-
         pred_y_label = []
         pred_y_probs = []
+
+
+
+        # Prediction uses multiple classifiers
+
+        self_label_df = clf_en1_df_U.merge(df_U, on = id_col, how = 'inner' )
+        self_label_df = self_label_df.sort_values(['score'])
+
+        id_list = list(self_label_df[id_col])
+
 
         NN.train(mode=False)
         NN.test_mode = True
         NN.train_mode = False
-
-        # Prediction uses multiple classifiers
-
-        _test_df = clf_en1_df_U.merge(df_U, on = id_col, how = 'inner' )
-        test_id_list = list(_test_df[id_col])
         idx = 0
-        while idx < len(test_id_list):
-            cur_ids =   test_id_list[idx:idx+512]
-            idx += 512
-            _tmp = _test_df.loc[_test_df[id_col].isin(cur_ids)]
+        while idx < len(id_list):
+            cur_ids =  id_list[idx:idx+512]
+            _tmp = self_label_df.loc[self_label_df[id_col].isin(cur_ids)]
+
             d1 = LT(_tmp[features_F].values).to(DEVICE)
             d2 = _tmp[clf_en1_features].values
+
             pred_y_probs_1 = NN(d1).cpu().data.numpy()
-            pred_y_probs_2 = clf_en1.predict(d2)
+            pred_y_probs_2 = clf_en1.predict_proba(d2)
             pred_y_probs_1 = np.reshape(pred_y_probs_1, -1)
-            pred_y_probs_2 = np.reshape(pred_y_probs_2, -1)
-            _pred_y_probs = np.maximum(pred_y_probs_1, pred_y_probs_2)
-            _pred_y_label = np.array(_pred_y_probs >= 0.5).astype(int)
+            pred_y_probs_2 = np.reshape(pred_y_probs_2[:,1], -1)
+
+            _pred_y_probs = np.maximum(
+                pred_y_probs_1,
+                pred_y_probs_2
+            )
+            _pred_y_label = np.array(pred_y_probs_2 >= 0.5).astype(int)
             pred_y_label.extend(_pred_y_label)
             pred_y_probs.extend(_pred_y_probs)
-
-        # for batch_idx, data_x in enumerate(dataLoader_obj_EU):
-        #     data_x = data_x.to(DEVICE)
-        #     _pred_y_probs = NN(data_x)
-        #     _pred_y_probs = _pred_y_probs.cpu().data.numpy()
-        #     _pred_y_probs = np.reshape(_pred_y_probs, -1)
-        #     _pred_y_label = np.array(_pred_y_probs >= 0.5).astype(int)
-        #     pred_y_label.extend(_pred_y_label)
-        #     pred_y_probs.extend(_pred_y_probs)
-
+            idx += 512
         NN.train(mode=True)
         NN.test_mode = False
         pred_y_probs = np.array(pred_y_probs)
-        print(pred_y_probs)
-        exit(1)
+
+
         # ----------------
         # Find the top-k most confident label
         # Update the set of labelled and unlabelled samples
         # ----------------
-
-        k = int(len(df_U) * 0.1)
+        df_U_copy = df_U.sort_values(by=['score']).copy()
+        k = int(len(df_U) * 0.2)
         self_labelled_samples = train_utils.find_most_confident_samples(
-            U_df=df_U.copy(),
+            U_df=df_U_copy,
             y_prob=pred_y_probs,
-            threshold=0.2,
+            threshold=0.1,
             max_count=k
         )
         print(' number of self labelled samples ::', len(self_labelled_samples))
@@ -670,23 +665,78 @@ def train_model(
 
         # Also check for convergence
         current_iter_count += 1
+
         if current_iter_count > max_IC_iter:
             continue_training = False
         print('----- Validation set ')
-        train_utils.evaluate_validation(
-            model=NN,
-            DEVICE=DEVICE,
-            data_df=df_L_validation,
-            x_cols=features_F
-        )
+
+        #
+        # train_utils.evaluate_validation(
+        #     model=NN,
+        #     DEVICE=DEVICE,
+        #     data_df=df_L_validation,
+        #     x_cols=features_F
+        # )
 
         print('----- Test set ')
-        train_utils.evaluate_test(
-            model=NN,
-            DEVICE=DEVICE,
-            data_df=df_U_original,
-            x_cols=features_F
-        )
+        pred_y_label = []
+        NN.train(mode=False)
+        NN.test_mode = True
+        NN.train_mode = False
+
+        test_id_list = list(df_U_original[id_col])
+        test_df = clf_en1_df_eval.merge(df_U_original, on=id_col, how='inner')
+        test_df = test_df.sort_values(['score'])
+
+        true_labels = list(test_df[true_label_col])
+        print( true_labels )
+        idx = 0
+        while idx < len(test_id_list):
+            cur_ids = test_id_list[idx:idx + 512]
+            idx += 512
+
+            _tmp = test_df.loc[test_df[id_col].isin(cur_ids)]
+
+            d1 = LT(_tmp[features_F].values).to(DEVICE)
+            d2 = _tmp[clf_en1_features].values
+
+            pred_y_probs_1 = NN(d1).cpu().data.numpy()
+            pred_y_probs_2 = clf_en1.predict_proba(d2)
+            pred_y_probs_1 = np.reshape(pred_y_probs_1, -1)
+            pred_y_probs_2 = np.reshape(pred_y_probs_2[:,1], -1)
+
+
+
+            _pred_y_probs = np.maximum(pred_y_probs_1, pred_y_probs_2)
+            _pred_y_label = np.array(_pred_y_probs >= 0.5).astype(int)
+            pred_y_label.extend(_pred_y_label)
+
+        NN.train(mode=True)
+        NN.test_mode = False
+        y_pred = list(pred_y_label)
+        y_true = list(np.array(true_labels).astype(int))
+        print(y_pred)
+        points = [10, 20, 30, 40, 50]
+
+
+        for point in points:
+            c = (len(df) * 10 )//100
+            _y_pred = y_pred[:c]
+            _y_true = y_true[:c]
+            print('Next {} % of data ::'.format(point))
+            print('Precision ', precision_score(_y_true, _y_pred))
+            print('Recall ', recall_score(_y_true, _y_pred))
+            print('Accuracy ', accuracy_score(_y_true, _y_true))
+            print('Balanced Accuracy ', balanced_accuracy_score(_y_true, _y_true))
+
+
+        #
+        # train_utils.evaluate_test(
+        #     model=NN,
+        #     DEVICE=DEVICE,
+        #     data_df=df_U_original,
+        #     x_cols=features_F
+        # )
 
 
     return
@@ -701,6 +751,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 DIR = args.DIR
+
 setup_config(DIR)
 
 df_target, normal_data_samples_df, features_F, features_G = data_preprocess.get_data_plus_features(

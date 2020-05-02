@@ -7,8 +7,8 @@ matrix_node_emb_loc: './../GraphEmb_2/model_weights_data/metapath2vec_gensim'
 matrix_node_emb_file : 'mp2v_gensim_weights.npy'
 node_embedding_size : 128
 confidence_bound : 0.25
-epochs_f : 5
-epochs_g : 10
+epochs_f : 1
+epochs_g : 1
 clf_type : 'MLP' # [ MLP, wide_n_deep, deepFM ]
 Logging_Dir : 'Logs'
 classifier_mlp_layers_1 : '256,128,64'

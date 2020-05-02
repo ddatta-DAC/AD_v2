@@ -324,8 +324,8 @@ def train_model(
         # GAM gets inputs as embeddings, which are obtained through the graph embeddings
         # that requires serialized feature ids
         g_feature_cols = serialized_feature_col_list
-
         NN.train_mode = 'g'
+
         # data_source_L1 = type1_Dataset(
         #     df_L,
         #     x_cols=features_G,
@@ -615,7 +615,6 @@ def train_model(
                 # print('---- > UU ')
                 NN.train_mode = 'f_uu'
                 x1_y1, x2_y2 = data_UU_generator.get_next()
-
                 x1_F = x1_y1[0]
                 x1_G = x1_y1[1]
                 x2_F = x2_y2[0]
@@ -682,7 +681,7 @@ def train_model(
         self_labelled_samples = train_utils.find_most_confident_samples(
             U_df=df_U.copy(),
             y_prob=pred_y_probs,
-            threshold=0.4,
+            threshold=0.2,
             max_count=k
         )
         print(' number of self labelled samples ::', len(self_labelled_samples))
@@ -715,6 +714,8 @@ def train_model(
             data_df=df_U_original,
             x_cols=features_F
         )
+
+
     return
 
 
