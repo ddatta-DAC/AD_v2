@@ -273,8 +273,7 @@ def get_data_plus_features(
         true_label_col,
         is_labelled_col
     )
-    df_target = df_target.sample(5000)
-
+    df_target = df_target
     df_target, normal_data_samples_df, features_F, features_G = PreProcessData(
         [df_target, base_train_df],
         clf_type=clf_type,
