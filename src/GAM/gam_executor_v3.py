@@ -142,7 +142,7 @@ batch_size_r = 128
 F_classifier_type = None
 WnD_dnn_layer_dimensions = None
 deepFM_dnn_layer_dimensions = None
-
+LOGGER = None
 
 def setup_config(_DIR):
     global CONFIG
@@ -171,6 +171,7 @@ def setup_config(_DIR):
     global F_classifier_type
     global WnD_dnn_layer_dimensions
     global deepFM_dnn_layer_dimensions
+    global LOGGER
 
     if _DIR is not None:
         DIR = _DIR
@@ -234,8 +235,8 @@ def setup_config(_DIR):
     batch_size_f = CONFIG['batch_size_f']
     batch_size_r = CONFIG['batch_size_r']
     Logging_Dir = CONFIG['Logging_Dir']
-    logger = get_logger()
-    logger.info(str(datetime.utcnow()))
+    LOGGER = get_logger()
+    LOGGER.info(str(datetime.utcnow()))
     return
 
 
@@ -284,7 +285,11 @@ def regularization_loss(
 
 
 def train_model(
-        NN, df, normal_data_samples_df, features_F, features_G
+        NN,
+        df,
+        normal_data_samples_df,
+        features_F,
+        features_G
 ):
     global epochs_f
     global epochs_g
@@ -297,10 +302,11 @@ def train_model(
     global batch_size_g
     global batch_size_f
     global batch_size_r
+    global LOGGER
 
     num_epochs_g = epochs_g
     num_epochs_f = epochs_f
-
+    results_print = None
     num_proc = multiprocessing.cpu_count()
     lambda_LL = 0.05
     lambda_UL = 0.1
@@ -338,7 +344,7 @@ def train_model(
         print('# of parameters to be optimized for g ', len(params_list_g))
         optimizer_g = torch.optim.Adam(
             params_list_g,
-            lr=0.015
+            lr=0.025
         )
 
         params_list_f = [_ for _ in NN.graph_net.parameters()]
@@ -716,19 +722,32 @@ def train_model(
         y_pred = list(pred_y_label)
         y_true = list(np.array(true_labels).astype(int))
         print(y_pred)
-        points = [10, 20, 30, 40, 50]
-
-
+        points = [10, 20, 30]
+        results_print = pd.DataFrame(
+            columns=['next %', 'precision', 'recall', 'f1', 'balanced_accuracy']
+        )
         for point in points:
             c = (len(df) * 10 )//100
             _y_pred = y_pred[:c]
             _y_true = y_true[:c]
+            b_acc = balanced_accuracy_score(_y_true, _y_true)
+            precision = precision_score(_y_true, _y_pred)
+            recall = recall_score(_y_true, _y_pred)
+            f1 = 2 * precision * recall / (precision + recall)
             print('Next {} % of data ::'.format(point))
-            print('Precision ', precision_score(_y_true, _y_pred))
-            print('Recall ', recall_score(_y_true, _y_pred))
-            print('Accuracy ', accuracy_score(_y_true, _y_true))
-            print('Balanced Accuracy ', balanced_accuracy_score(_y_true, _y_true))
+            print('Precision ', precision)
+            print('Recall ', recall)
 
+            print('f1 ', f1 )
+            print('Balanced Accuracy ', b_acc)
+            entry_dict = {
+                'next %': point,
+                'precision': round(precision, 3),
+                'recall': round(recall, 3),
+                'f1': round(f1, 3),
+                'balanced_accuracy': round(b_acc, 3)
+            }
+            results_print = results_print.append(entry_dict, ignore_index=True)
 
         #
         # train_utils.evaluate_test(
@@ -738,14 +757,14 @@ def train_model(
         #     x_cols=features_F
         # )
 
-
+    LOGGER.info(results_print.to_string())
     return
 
 
 # ------------------------------------------------------- #
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    '--DIR', choices=['us_import4', 'us_import5', 'us_import6'],
+    '--DIR', choices=['us_import1', 'us_import2', 'us_import3', 'us_import4', 'us_import5', 'us_import6'],
     default='us_import4'
 )
 
@@ -782,8 +801,6 @@ if F_classifier_type == 'MLP':
         'dropout': 0.05,
         'activation': 'relu'
     }
-
-
 elif F_classifier_type == 'wide_n_deep':
     dict_clf_initilize_inputs = {}
     dict_clf_initilize_inputs['wide_inp_01_dim'] = wide_inp_01_dim
@@ -794,7 +811,6 @@ elif F_classifier_type == 'deepFM':
     dict_clf_initilize_inputs['wide_inp_01_dim'] = wide_inp_01_dim
     dict_clf_initilize_inputs['dnn_layer_dimensions'] = deepFM_dnn_layer_dimensions
     dict_clf_initilize_inputs['tune_entity_emb'] = False
-
     dict_clf_initilize_inputs = {
         'mlp_layer_dims': clf_mlp_layer_dimesnions,
         'dropout': 0.05,
@@ -802,6 +818,8 @@ elif F_classifier_type == 'deepFM':
     }
 else:
     dict_clf_initilize_inputs = None
+
+
 
 NN = SS_network(
     DEVICE,
@@ -814,5 +832,6 @@ NN = SS_network(
 )
 
 NN.to(DEVICE)
+LOGGER.info('Percentage of data labelled')
 df_target = train_utils.set_label_in_top_perc(df_target, 10, score_col, true_label_col)
 train_model(NN, df_target, normal_data_samples_df, features_F, features_G)
