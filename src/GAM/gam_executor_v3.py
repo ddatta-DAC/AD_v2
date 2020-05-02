@@ -314,6 +314,7 @@ def train_model(
 
     df_L = train_utils.extract_labelled_df(df)
     df_U = train_utils.extract_unlabelled_df(df)
+    df_L_original = df_L.copy()
     df_L = df_L.copy()
     df_L, df_L_validation = train_utils.obtain_train_validation(
         df_L
@@ -560,10 +561,11 @@ def train_model(
         clf_en1_df_U  = None
         clf_en1_features = None
         clf_en1_df_eval = None
+
         if F_classifier_type == 'MLP':
             cols = [id_col] + features_F + [label_col]
             tmp_df_copy = pd.DataFrame(df[cols],copy=True)
-            L_ids = list(df_L[id_col])
+            L_ids = list(df_L_original[id_col])
             U_ids = list(df_U[id_col])
 
             Y_F_train = (
@@ -613,7 +615,6 @@ def train_model(
 
         self_label_df = clf_en1_df_U.merge(df_U, on = id_col, how = 'inner' )
         self_label_df = self_label_df.sort_values(['score'])
-
         id_list = list(self_label_df[id_col])
 
 
@@ -705,14 +706,10 @@ def train_model(
 
             d1 = LT(_tmp[features_F].values).to(DEVICE)
             d2 = _tmp[clf_en1_features].values
-
             pred_y_probs_1 = NN(d1).cpu().data.numpy()
             pred_y_probs_2 = clf_en1.predict_proba(d2)
             pred_y_probs_1 = np.reshape(pred_y_probs_1, -1)
             pred_y_probs_2 = np.reshape(pred_y_probs_2[:,1], -1)
-
-
-
             _pred_y_probs = np.maximum(pred_y_probs_1, pred_y_probs_2)
             _pred_y_label = np.array(_pred_y_probs >= 0.5).astype(int)
             pred_y_label.extend(_pred_y_label)
