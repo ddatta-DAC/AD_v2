@@ -377,7 +377,7 @@ def train_model(
             optimizer_g.zero_grad()
             prev_loss = 0
             iter_below_tol = 0
-            log_interval_g = 2
+
 
             for epoch in range(num_epochs_g):
                 print('Epoch [g]', epoch)
@@ -430,7 +430,7 @@ def train_model(
                             iter_below_tol=iter_below_tol,
                             abs_loss_chg_tol=0.01,
                             min_num_iter=50,
-                            max_iter_below_tol=20
+                            max_iter_below_tol=10
                         )
                         prev_loss = cur_loss
                         if is_converged:
@@ -508,7 +508,7 @@ def train_model(
 
             batch_idx_f = 0
             data_L = data_L_generator.get_next()
-            log_interval_f = 3
+
 
             while data_L is not None:
                 NN.train_mode = 'f'
