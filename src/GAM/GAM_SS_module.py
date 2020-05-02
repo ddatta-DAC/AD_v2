@@ -51,7 +51,7 @@ class SS_network(nn.Module):
         self.agreement_net = gam_net(
             gam_record_input_dimension,
             list_gam_encoder_dimensions,
-            activation='selu'
+            activation='tanh'
         )
 
         if clf_type == 'wide_n_deep':

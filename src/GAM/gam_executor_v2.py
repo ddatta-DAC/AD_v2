@@ -296,9 +296,9 @@ def train_model(
     num_epochs_f = epochs_f
 
     num_proc = multiprocessing.cpu_count()
-    lambda_LL = 0.3
-    lambda_UL = 0.6
-    lambda_UU = 0.1
+    lambda_LL = 0.05
+    lambda_UL = 0.1
+    lambda_UU = 0.01
 
     df_L = train_utils.extract_labelled_df(df)
     df_U = train_utils.extract_unlabelled_df(df)
@@ -326,32 +326,32 @@ def train_model(
         g_feature_cols = serialized_feature_col_list
 
         NN.train_mode = 'g'
-        data_source_L1 = type1_Dataset(
-            df_L,
-            x_cols=features_G,
-            y_col=label_col
-        )
+        # data_source_L1 = type1_Dataset(
+        #     df_L,
+        #     x_cols=features_G,
+        #     y_col=label_col
+        # )
 
 
-
-        dataLoader_obj_L1a = DataLoader(
-            data_source_L1,
-            batch_size=batch_size_g,
-            shuffle=False,
-            pin_memory=True,
-            num_workers=num_proc,
-            sampler=RandomSampler(data_source_L1),
-            drop_last=True
-        )
-        dataLoader_obj_L1b = DataLoader(
-            data_source_L1,
-            batch_size=batch_size_g,
-            shuffle=False,
-            pin_memory=True,
-            num_workers=num_proc,
-            sampler=RandomSampler(data_source_L1),
-            drop_last=True
-        )
+        #
+        # dataLoader_obj_L1a = DataLoader(
+        #     data_source_L1,
+        #     batch_size=batch_size_g,
+        #     shuffle=False,
+        #     pin_memory=True,
+        #     num_workers=num_proc,
+        #     sampler=RandomSampler(data_source_L1),
+        #     drop_last=True
+        # )
+        # dataLoader_obj_L1b = DataLoader(
+        #     data_source_L1,
+        #     batch_size=batch_size_g,
+        #     shuffle=False,
+        #     pin_memory=True,
+        #     num_workers=num_proc,
+        #     sampler=RandomSampler(data_source_L1),
+        #     drop_last=True
+        # )
 
         params_list_g = [_ for _ in NN.graph_net.parameters()]
         params_list_g = params_list_g + ([_ for _ in NN.agreement_net.parameters()])
@@ -372,9 +372,6 @@ def train_model(
 
         final_epoch_g = False  # To check convergence
         if NN.train_mode == 'g':
-
-
-
             # ----
             # input_x1,y2 : from Dataloader ( L )
             # input x2,y2 : from Dataloader ( L )
@@ -401,13 +398,10 @@ def train_model(
                 batch_count = data_G.batch_count
                 for b_g in range(batch_count):
                     x1_y1, x2_y2 = data_G.get_next()
-
                     x1 = x1_y1[0]
                     y1 = x1_y1[1]
                     x2 = x2_y2[0]
                     y2 = x2_y2[1]
-
-
                     true_agreement = np.array(y1 == y2).astype(float)
                     true_agreement = np.reshape(true_agreement, [-1])
                     true_agreement = FT(true_agreement).to(DEVICE)
@@ -507,11 +501,11 @@ def train_model(
         # To do separate out f and g features
 
         optimizer_f.zero_grad()
-        data_source_L2 = type1_Dataset(
-            df_L,
-            x_cols=g_feature_cols,
-            y_col=label_col
-        )
+        # data_source_L2 = type1_Dataset(
+        #     df_L,
+        #     x_cols=g_feature_cols,
+        #     y_col=label_col
+        # )
 
         print('[[ --- Training Classifier ---- ]]')
         optimizer_f.zero_grad()
@@ -590,9 +584,7 @@ def train_model(
 
                 x1_F = x1_y1[0]
                 x1_G = x1_y1[1]
-                x2_F = x2_y2[0]
                 x2_G = x2_y2[1]
-                # y1 = x1_y1[2]
                 y2 = x2_y2[2]
 
                 pred_agreement, pred_y1 = NN([x1_G, x2_G, x1_F])

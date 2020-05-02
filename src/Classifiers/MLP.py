@@ -35,7 +35,7 @@ class MLP(nn.Module):
             if activation == 'relu':
                 layers.append(torch.nn.ReLU())
             elif activation == 'tanh':
-                layers.append(torch.nn.ReLU())
+                layers.append(torch.nn.Tanh())
             elif activation == 'sigmoid':
                 layers.append(torch.nn.Sigmoid())
             elif activation == 'selu':
