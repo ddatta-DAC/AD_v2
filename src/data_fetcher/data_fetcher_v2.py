@@ -300,13 +300,14 @@ def get_Stage2_data_as_DF(
 
     anomalies_NotFraud_file_name = 'anomalies_NotFraud.csv'
     anomalies_Fraud_file_name = 'anomalies_Fraud.csv'
-    normal_data_file_name =  'test_data.csv'
+    normal_data_file_name =  'test_data_v2.csv'
 
     anomalies_F_df = pd.read_csv(
         os.path.join(
             DATA_DIR, DIR, anomalies_Fraud_file_name
-        )
+        ),index_col=0
     )
+
     anomalies_F_df['anomaly'] = True
     anomalies_F_df['fraud'] = True
 
@@ -326,6 +327,17 @@ def get_Stage2_data_as_DF(
 
     normal_df['anomaly'] = False
     normal_df['fraud'] = False
+
+    res_df = normal_df.copy()
+    res_df = res_df.append(anomalies_NF_df, ignore_index=True)
+    res_df = res_df.append(anomalies_F_df, ignore_index=True)
+    res_df = res_df.reset_index(drop=True)
+    try:
+        del res_df['Unnamed: 0']
+    except:
+        pass
+    return res_df
+
 
     R2 = anomaly_ratio
     R1 = fraud_ratio
