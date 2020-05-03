@@ -793,6 +793,7 @@ def train_model(
         y_true = list(np.array(true_labels).astype(int))
 
         points = [10, 20, 30]
+
         results_print = pd.DataFrame(
             columns=['next %', 'precision', 'recall', 'f1', 'balanced_accuracy']
         )
@@ -826,8 +827,8 @@ def train_model(
         #     data_df=df_U_original,
         #     x_cols=features_F
         # )
-
-    LOGGER.info(results_print.to_string())
+        print(results_print.to_string())
+        LOGGER.info(results_print.to_string())
     return
 
 
