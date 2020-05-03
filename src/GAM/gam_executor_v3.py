@@ -339,7 +339,6 @@ def train_model(
         # that requires serialized feature ids
         # g_feature_cols = serialized_feature_col_list
         NN.train_mode = 'g'
-        
 
         params_list_g = [_ for _ in NN.graph_net.parameters()]
         params_list_g = params_list_g + ([_ for _ in NN.agreement_net.parameters()])
