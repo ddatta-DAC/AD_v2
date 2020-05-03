@@ -341,18 +341,24 @@ def train_model(
         # that requires serialized feature ids
         # g_feature_cols = serialized_feature_col_list
         NN.train_mode = 'g'
+        try:
+            params_list_g = [_ for _ in NN.graph_net.parameters()]
+            params_list_g = params_list_g + ([_ for _ in NN.agreement_net.parameters()])
+        except:
+            params_list_g = [_ for _ in NN.module.graph_net.parameters()]
+            params_list_g = params_list_g + ([_ for _ in NN.module.agreement_net.parameters()])
 
-        params_list_g = [_ for _ in NN.graph_net.parameters()]
-        params_list_g = params_list_g + ([_ for _ in NN.agreement_net.parameters()])
         print('# of parameters to be optimized for g ', len(params_list_g))
         optimizer_g = torch.optim.Adam(
             params_list_g,
             lr=0.025
         )
-
-        params_list_f = [_ for _ in NN.graph_net.parameters()]
-        params_list_f = params_list_f + [_ for _ in NN.clf_net.parameters()]
-
+        try:
+            params_list_f = [_ for _ in NN.graph_net.parameters()]
+            params_list_f = params_list_f + [_ for _ in NN.clf_net.parameters()]
+        except:
+            params_list_f = [_ for _ in NN.module.graph_net.parameters()]
+            params_list_f = params_list_f + [_ for _ in NN.module.clf_net.parameters()]
         print('# of parameters to be optimized for f ', len(params_list_f))
         optimizer_f = torch.optim.Adam(
             params_list_f,
@@ -841,8 +847,9 @@ for perc in [10,20,30] :
         dict_clf_initilize_inputs=dict_clf_initilize_inputs
     )
     if torch.cuda.device_count() > 1:
-        print("Using ", torch.cuda.device_count(), "GPUs!")
-        NN = nn.DataParallel(NN)
+        print("' >>>> Using ", torch.cuda.device_count(), "GPUs!")
+        NN = torch.nn.DataParallel(NN)
+        print(' >>> ', DEVICE)
     NN.to(DEVICE)
 
     LOGGER.info('Percentage of data labelled {} '.format(perc))
