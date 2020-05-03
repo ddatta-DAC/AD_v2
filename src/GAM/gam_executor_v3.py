@@ -794,7 +794,7 @@ def train_model(
             columns=['next %', 'precision', 'recall', 'f1', 'balanced_accuracy']
         )
         for point in points:
-            c = (len(df) * 10 )//100
+            c = (len(df) * point )//100
             _y_pred = y_pred[:c]
             _y_true = y_true[:c]
             b_acc = balanced_accuracy_score(_y_true, _y_true)
