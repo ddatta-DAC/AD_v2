@@ -1,0 +1,18 @@
+2020-05-03 10:51:47.897607
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0       0.86   0.699  0.771                1.0
+1    20.0       0.86   0.699  0.771                1.0
+2    30.0       0.86   0.699  0.771                1.0
+Percentage of data labelled 20 
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.729   0.729  0.729                1.0
+1    20.0      0.729   0.729  0.729                1.0
+2    30.0      0.729   0.729  0.729                1.0
+Percentage of data labelled 30 
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.786   0.748  0.767                1.0
+1    20.0      0.786   0.748  0.767                1.0
+2    30.0      0.786   0.748  0.767                1.0
