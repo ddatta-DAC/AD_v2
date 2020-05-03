@@ -244,10 +244,11 @@ def setup_config(_DIR):
 def get_logger():
     global Logging_Dir
     global DIR
+    global F_classifier_type
     logger = logging.getLogger('main')
     logger.setLevel(logging.INFO)
     OP_DIR = os.path.join(Logging_Dir, DIR)
-    log_file = 'results.log'
+    log_file = 'results_' +  F_classifier_type + '.log'
     if not os.path.exists(Logging_Dir):
         os.mkdir(Logging_Dir)
 
@@ -915,3 +916,5 @@ for perc in [10,20,30] :
     LOGGER.info('Percentage of data labelled {} '.format(perc))
     df_target = train_utils.set_label_in_top_perc(df_target, perc, score_col, true_label_col)
     train_model(NN, df_target, normal_data_samples_df, features_F, features_G)
+
+close_logger(LOGGER)

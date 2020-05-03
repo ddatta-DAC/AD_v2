@@ -58,23 +58,12 @@ Percentage of data labelled 10
  =========== 
 F_classifier_type 
 Percentage of data labelled 10 
-<<<<<<< HEAD
 2020-05-03 23:17:49.187652
-=======
-2020-05-03 18:56:16.491610
-2020-05-03 18:56:33.995013
  =========== 
 F_classifier_type 
 Percentage of data labelled 10 
-2020-05-03 19:17:37.179271
- =========== 
-F_classifier_type 
-Percentage of data labelled 10 
-2020-05-03 19:27:54.742538
- =========== 
-F_classifier_type 
-Percentage of data labelled 10 
-2020-05-03 19:31:19.971416
- =========== 
-F_classifier_type 
-Percentage of data labelled 10 
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.918   0.873  0.895                1.0
+1    20.0      0.891   0.805  0.846                1.0
+2    30.0      0.845   0.739  0.788                1.0
+Percentage of data labelled 20 
