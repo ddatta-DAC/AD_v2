@@ -159,7 +159,7 @@ class agreement_net_v2(nn.Module):
 
 
 def gam_loss(y_pred, y_true):
-    return F.binary_cross_entropy(y_pred, y_true)
+    return F.mse_loss(y_pred, y_true)
 
 
 # -------------------------------------------------- #
