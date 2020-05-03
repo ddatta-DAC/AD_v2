@@ -607,8 +607,38 @@ def train_model(
             clf_en1.fit(
                 X_F, Y_F_train
             )
-        else:
-            pass
+        elif F_classifier_type == 'wide_n_deep':
+            cols = [id_col] + features_F + [label_col]
+            tmp_df_copy = pd.DataFrame(df[cols], copy=True)
+            L_ids = list(df_L_original[id_col])
+            U_ids = list(df_U[id_col])
+
+            Y_F_train = (
+                tmp_df_copy.loc[
+                    tmp_df_copy[id_col].isin(L_ids)
+                ][label_col]).values
+
+            del tmp_df_copy[label_col]
+
+            X_F = tmp_df_copy.loc[
+                tmp_df_copy[id_col].isin(L_ids)
+            ]
+            del X_F[id_col]
+            X_F = X_F.values
+
+            clf_en1_df_U = tmp_df_copy.loc[
+                tmp_df_copy[id_col].isin(U_ids)
+            ]
+            # Evaluation use
+            clf_en1_df_eval = tmp_df_copy.loc[
+                tmp_df_copy[id_col].isin(list(df_U_original[id_col]))
+            ]
+
+            clf_en1_features = features_F
+            clf_en1 = RandomForestClassifier(n_estimators=200)
+            clf_en1.fit(
+                X_F, Y_F_train
+            )
 
         # ---------------------------
         # Self -labelling
