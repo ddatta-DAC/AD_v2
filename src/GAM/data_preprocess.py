@@ -155,6 +155,7 @@ def PreProcessData(
         pattern_1 = '^[A-Z]([a-z]|[A-Z])+_[0-9]+$'
         pattern_2 = '^[A-Z]([a-z]|[A-Z])+_[A-Z]([a-z]|[A-Z])+_[0-9]+$'
         pattern_3 = '_[A-Z]([a-z]|[A-Z])+$'
+
         features_G = []
         features_F = []
         non_FG = []
@@ -170,7 +171,7 @@ def PreProcessData(
             if _ not in features_G and _ not in features_F: non_FG.append(_)
         ordered_cols = features_F + features_G + non_FG
         converted_df = converted_df[ordered_cols]
-
+        # features_F = features_F + features_G
 
     elif clf_type == 'deepFM':
         if not os.path.exists(df_fpath):

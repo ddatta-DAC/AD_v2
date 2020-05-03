@@ -308,7 +308,7 @@ def train_model(
     num_epochs_g = epochs_g
     num_epochs_f = epochs_f
     results_print = None
-    num_proc = multiprocessing.cpu_count()
+    # num_proc = multiprocessing.cpu_count()
     lambda_LL = 0.05
     lambda_UL = 0.1
     lambda_UU = 0.01
@@ -317,19 +317,21 @@ def train_model(
     df_U = train_utils.extract_unlabelled_df(df)
     df_L_original = df_L.copy()
     df_L = df_L.copy()
-    df_L, df_L_validation = train_utils.obtain_train_validation(
-        df_L
-    )
+
+    # df_L, df_L_validation = train_utils.obtain_train_validation(
+    #     df_L
+    # )
+
     clf_en1 = None
 
     # Add in normal data to validation data
-    df_L_validation = df_L_validation.append(
-        normal_data_samples_df.sample(len(df_L_validation)),
-        ignore_index=True
-    )
+    # df_L_validation = df_L_validation.append(
+    #     normal_data_samples_df.sample(len(df_L_validation)),
+    #     ignore_index=True
+    # )
 
     df_U_original = df_U.copy()
-    print('>> Data set lengths :', len(df_L), len(df_L_validation), len(df_U))
+    # print('>> Data set lengths :', len(df_L), len(df_L_validation), len(df_U))
 
     current_iter_count = 0
     continue_training = True
@@ -790,7 +792,11 @@ df_target, normal_data_samples_df, features_F, features_G = data_preprocess.get_
     anomaly_col
 )
 
-wide_inp_01_dim = len(features_F) - len(features_G)
+if F_classifier_type == 'wide_n_deep':
+    wide_inp_01_dim = len(features_F) - len(features_G)
+elif F_classifier_type == 'deepFM':
+    wide_inp_01_dim = len(features_F) - len(features_G)
+
 matrix_node_emb = read_matrix_node_emb(matrix_node_emb_path)
 node_emb_dim = matrix_node_emb.shape[-1]
 num_domains = len(domain_dims)

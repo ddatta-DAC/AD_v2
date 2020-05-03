@@ -117,7 +117,8 @@ class SS_network(nn.Module):
 
         elif self.train_mode == 'f':
             x1 = input_x
-            x1 = self.graph_net(x1)
+            if self.clf_type == 'MLP':
+                x1 = self.graph_net(x1)
             y_pred = self.clf_net(x1)
             return y_pred
 
@@ -128,6 +129,7 @@ class SS_network(nn.Module):
 
             x1 = self.graph_net(x1_G)
             x2 = self.graph_net(x2_G)
+
             pred_agreement = self.agreement_net(x1, x2)
             if self.clf_type == 'MLP':
                 x1_F = self.graph_net(x1_F)

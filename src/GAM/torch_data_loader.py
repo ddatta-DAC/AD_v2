@@ -101,7 +101,7 @@ class singleDataGenerator():
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
-            sampler=RandomSampler(ds),
+            sampler= RandomSampler(ds),
             drop_last=True
         )
         return dl
