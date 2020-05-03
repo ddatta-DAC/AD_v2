@@ -767,7 +767,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    '--clf', choices=['wideNdeep', 'deepFM', 'MLP'],
+    '--clf', choices=['wide_n_deep', 'deepFM', 'MLP'],
     default='MLP'
 )
 
