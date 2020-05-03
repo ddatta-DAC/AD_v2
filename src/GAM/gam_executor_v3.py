@@ -245,6 +245,7 @@ def get_logger():
     global Logging_Dir
     global DIR
     global F_classifier_type
+
     logger = logging.getLogger('main')
     logger.setLevel(logging.INFO)
     OP_DIR = os.path.join(Logging_Dir, DIR)
@@ -256,6 +257,7 @@ def get_logger():
         os.mkdir(OP_DIR)
 
     log_file_path = os.path.join(OP_DIR, log_file)
+    print('Log file :', log_file_path)
     handler = logging.FileHandler(log_file_path)
     handler.setLevel(logging.INFO)
     logger.addHandler(handler)
