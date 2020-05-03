@@ -8,7 +8,7 @@ matrix_node_emb_file : 'mp2v_gensim_weights.npy'
 node_embedding_size : 128
 confidence_bound : 0.25
 epochs_f : 1
-epochs_g : 1
+epochs_g : 15
 clf_type : 'deepFM' # [ MLP, wide_n_deep, deepFM ]
 Logging_Dir : 'Logs'
 classifier_mlp_layers_1 : '512,256,128'
@@ -19,5 +19,5 @@ max_IC_iter : 10
 batch_size_g : 256
 batch_size_f : 256
 batch_size_r : 256
-WnD_dnn_layer_dimensions : '512,256'
-deepFM_dnn_layer_dimensions : '512,256'
+WnD_dnn_layer_dimensions : '512,128'
+deepFM_dnn_layer_dimensions : '512,128'
