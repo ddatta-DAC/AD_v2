@@ -178,8 +178,9 @@ def setup_config(_DIR):
 
     with open(config_file) as f:
         CONFIG = yaml.safe_load(f)
+    if F_classifier_type is None:
+        F_classifier_type = CONFIG['clf_type']
 
-    F_classifier_type = CONFIG['clf_type']
     DATA_SOURCE_DIR_1 = CONFIG['DATA_SOURCE_DIR_1']
     DATA_SOURCE_DIR_2 = CONFIG['DATA_SOURCE_DIR_2']
 
@@ -762,14 +763,19 @@ def train_model(
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--DIR', choices=['us_import1', 'us_import2', 'us_import3', 'us_import4', 'us_import5', 'us_import6'],
-    default='us_import4'
+    default='us_import2'
+)
+
+parser.add_argument(
+    '--clf', choices=['wideNdeep', 'deepFM', 'MLP'],
+    default='MLP'
 )
 
 args = parser.parse_args()
 DIR = args.DIR
+F_classifier_type =  args.clf
 
 setup_config(DIR)
-
 df_target, normal_data_samples_df, features_F, features_G = data_preprocess.get_data_plus_features(
     DATA_SOURCE_DIR_1,
     DATA_SOURCE_DIR_2,
