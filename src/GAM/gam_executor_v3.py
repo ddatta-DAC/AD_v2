@@ -916,3 +916,5 @@ for perc in [10,20,30] :
     LOGGER.info('Percentage of data labelled {} '.format(perc))
     df_target = train_utils.set_label_in_top_perc(df_target, perc, score_col, true_label_col)
     train_model(NN, df_target, normal_data_samples_df, features_F, features_G)
+
+close_logger(LOGGER)
