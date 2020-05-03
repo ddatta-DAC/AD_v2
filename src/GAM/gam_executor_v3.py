@@ -656,8 +656,6 @@ def train_model(
                 how = 'inner'
             )
         if F_classifier_type == 'wide_n_deep':
-            print(clf_en1_df_U.columns)
-            print(df_U.columns)
             common = set(df_U.columns).intersection(clf_en1_df_U.columns)
 
             self_label_df = clf_en1_df_U.merge(
@@ -684,7 +682,6 @@ def train_model(
         while idx < len(id_list):
             cur_ids =  id_list[idx:idx+512]
             _tmp = self_label_df.loc[self_label_df[id_col].isin(cur_ids)]
-
             d1 = LT(_tmp[features_F].values).to(DEVICE)
             d2 = _tmp[clf_en1_features].values
 
@@ -749,20 +746,34 @@ def train_model(
         NN.train(mode=False)
         NN.test_mode = True
         NN.train_mode = False
-
-        test_id_list = list(df_U_original[id_col])
-        test_df = clf_en1_df_eval.merge(df_U_original, on=id_col, how='inner')
-        test_df = test_df.sort_values(['score'])
+        test_df = None
+        test_id_list = None
+        if F_classifier_type == 'MLP' :
+            test_id_list = list(df_U_original[id_col])
+            test_df = clf_en1_df_eval.merge(df_U_original, on=id_col, how='inner')
+            test_df = test_df.sort_values(['score'])
+        elif F_classifier_type == 'wide_n_deep':
+            test_id_list = list(df_U_original[id_col])
+            common = set(df_U.columns).intersection(clf_en1_df_U.columns)
+            test_df = clf_en1_df_eval.merge(
+                df_U_original,
+                on=list(sorted(common)),
+                how='inner'
+            )
+            # ensure order is maintained
+            remaining = [_ for _ in list(df_U.columns)
+                         if _ not in features_G and _ not in features_F
+                         ]
+            col_ord = features_F + remaining
+            self_label_df = self_label_df[col_ord]
 
         true_labels = list(test_df[true_label_col])
-        print( true_labels )
+
         idx = 0
         while idx < len(test_id_list):
             cur_ids = test_id_list[idx:idx + 512]
             idx += 512
-
             _tmp = test_df.loc[test_df[id_col].isin(cur_ids)]
-
             d1 = LT(_tmp[features_F].values).to(DEVICE)
             d2 = _tmp[clf_en1_features].values
             pred_y_probs_1 = NN(d1).cpu().data.numpy()
