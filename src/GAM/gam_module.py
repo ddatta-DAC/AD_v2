@@ -152,7 +152,7 @@ class agreement_net_v2(nn.Module):
         # d = (ei -ej)^2
 
         # Predictor
-        res_pred = F.sigmoid(F.cosine_similarity(e_1, e_2, dim=1))
+        res_pred = F.relu(F.tanh(F.cosine_similarity(e_1, e_2, dim=1)))
         # This should be fed to a loss function
         # that should have inputs ( predicted agreement, agreement_indicator )
         return res_pred
