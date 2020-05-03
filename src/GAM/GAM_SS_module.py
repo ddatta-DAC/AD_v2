@@ -172,6 +172,7 @@ class SS_network(nn.Module):
 
         if self.test_mode == True:
             x1 = input_x
-            x1 = self.graph_net(x1)
+            if self.clf_type == 'MLP':
+                x1 = self.graph_net(x1)
             y_pred = self.clf_net(x1)
             return y_pred
