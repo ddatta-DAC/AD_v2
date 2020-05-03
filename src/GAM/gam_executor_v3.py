@@ -816,19 +816,22 @@ elif F_classifier_type == 'deepFM':
 else:
     dict_clf_initilize_inputs = None
 
+LOGGER.info(' =========== ')
+LOGGER.info('F_classifier_type ')
 
+for perc in [10,20,30] :
+    NN = SS_network(
+        DEVICE,
+        node_emb_dimension=node_emb_dim,
+        num_domains=num_domains,
+        matrix_pretrained_node_embeddings=matrix_node_emb,  # [Number of entities, embedding dimension]
+        list_gam_encoder_dimensions=gam_encoder_dimensions_mlp,
+        clf_type=F_classifier_type,
+        dict_clf_initilize_inputs=dict_clf_initilize_inputs
+    )
 
-NN = SS_network(
-    DEVICE,
-    node_emb_dimension=node_emb_dim,
-    num_domains=num_domains,
-    matrix_pretrained_node_embeddings=matrix_node_emb,  # [Number of entities, embedding dimension]
-    list_gam_encoder_dimensions=gam_encoder_dimensions_mlp,
-    clf_type=F_classifier_type,
-    dict_clf_initilize_inputs=dict_clf_initilize_inputs
-)
+    NN.to(DEVICE)
 
-NN.to(DEVICE)
-LOGGER.info('Percentage of data labelled')
-df_target = train_utils.set_label_in_top_perc(df_target, 10, score_col, true_label_col)
-train_model(NN, df_target, normal_data_samples_df, features_F, features_G)
+    LOGGER.info('Percentage of data labelled {} '.format(perc))
+    df_target = train_utils.set_label_in_top_perc(df_target, perc, score_col, true_label_col)
+    train_model(NN, df_target, normal_data_samples_df, features_F, features_G)
