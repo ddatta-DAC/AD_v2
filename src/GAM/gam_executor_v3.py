@@ -849,6 +849,7 @@ for perc in [10,20,30] :
     if torch.cuda.device_count() > 1:
         print("' >>>> Using ", torch.cuda.device_count(), "GPUs!")
         NN = torch.nn.DataParallel(NN)
+        DEVICE = "cuda"
         print(' >>> ', DEVICE)
     NN.to(DEVICE)
 
