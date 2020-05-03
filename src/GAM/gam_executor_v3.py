@@ -244,10 +244,11 @@ def setup_config(_DIR):
 def get_logger():
     global Logging_Dir
     global DIR
+    global F_classifier_type
     logger = logging.getLogger('main')
     logger.setLevel(logging.INFO)
     OP_DIR = os.path.join(Logging_Dir, DIR)
-    log_file = 'results.log'
+    log_file = 'results_' +  F_classifier_type + '.log'
     if not os.path.exists(Logging_Dir):
         os.mkdir(Logging_Dir)
 
