@@ -175,8 +175,8 @@ def main_process():
     # Select pairs of ports such that their count in (15,85) percentile
     # Select 20 % of such pairs
     kk = df_train.groupby(['PortOfLading', 'PortOfUnlading']).size().reset_index(name='count')
-    lb = np.percentile(list(kk['count']), 15)
-    ub = np.percentile(list(kk['count']), 85)
+    lb = np.percentile(list(kk['count']), 25)
+    ub = np.percentile(list(kk['count']), 75)
     kk_1 = kk.loc[(kk['count'] >= lb) & (kk['count'] <= ub)]
     kk_2 = kk_1.sample(frac=0.20)
     kk_2 = kk_2.reset_index(drop=True)
@@ -192,7 +192,7 @@ def main_process():
     # Now we have the list of Shippers and Consignee who do business with them are actually suspicious
     # Assumption these are companies that trade along the route described by ('PortOfLading', 'PortOfUnlading')
 
-    _frac = 0.15
+    _frac = 0.25
     candidate_Shipper = list(set(pp['ShipperPanjivaID']))
     _count1 = int(_frac * domain_dims['ShipperPanjivaID'])
     _count1 = min(_count1, len(candidate_Shipper))
@@ -229,8 +229,8 @@ def main_process():
         how='inner'
     )
 
-    a = a.loc[a['ConsigneePanjivaID'].isin(target_Consignee)]
-    a = a.loc[a['ShipperPanjivaID'].isin(target_Shipper)]
+    a1 = a.loc[a['ConsigneePanjivaID'].isin(target_Consignee)]
+    a2 = a.loc[a['ShipperPanjivaID'].isin(target_Shipper)]
 
     print(' Candidate list len', len(a))
     _fixed_set = ['ConsigneePanjivaID', 'PortOfLading', 'PortOfUnlading', 'ShipperPanjivaID']
@@ -249,10 +249,10 @@ def main_process():
     # target ShipementDestination
     # target ShipmentOrigin
     # ================================================ #
-    _frac = 0.2
+    _frac = 0.25
     hh = df_train.groupby(['HSCode']).size().reset_index(name='count')
-    lb = np.percentile(list(hh['count']), 10)
-    ub = np.percentile(list(hh['count']), 90)
+    lb = np.percentile(list(hh['count']), 25)
+    ub = np.percentile(list(hh['count']), 75)
     _count = int(_frac * len(hh))
 
     candidate_HSCode = set(
@@ -268,21 +268,27 @@ def main_process():
                 (hh['HSCode']).isin(candidate_HSCode)]
             ['HSCode']
     )
-    target_HSCode = np.random.choice(candidate_HSCode, size=_count, replace=False)
+    target_HSCode = np.random.choice(
+        candidate_HSCode,
+        size=_count,
+        replace=False
+    )
 
+    _frac = 0.20
     qq = df_train.loc[
         (df_train['ShipperPanjivaID'].isin(target_Shipper)) | (df_train['ConsigneePanjivaID'].isin(target_Consignee))]
     qq = qq.loc[qq['HSCode'].isin(target_HSCode)]
     qq_1 = qq.groupby(['ShipmentOrigin', 'ShipmentDestination']).size().reset_index(name='count')
 
-    lb = np.percentile(list(qq_1['count']), 15)
-    ub = np.percentile(list(qq_1['count']), 85)
-    _count = int(0.25 * len(qq_1))
+    lb = np.percentile(list(qq_1['count']), 25)
+    ub = np.percentile(list(qq_1['count']), 75)
+    _count = int(_frac * len(qq_1))
 
     target_ShipmentOrigin_ShipmentDestination = qq_1.loc[
         (qq_1['count'] >= lb) &
         (qq_1['count'] <= ub)
     ].sample(n=_count)
+
     del target_ShipmentOrigin_ShipmentDestination['count']
 
     a = df_train.merge(
@@ -325,35 +331,35 @@ def main_process():
     # ------ #
     # Save the dfs
 
-    intermediate_data_loc = os.path.join(DATA_DIR, 'fraud_targets')
-    if not os.path.exists(intermediate_data_loc):
-        os.mkdir(intermediate_data_loc)
-
-    tmp = pd.DataFrame(columns=['ShipperPanjivaID'])
-    tmp['ShipperPanjivaID'] = target_Shipper
-    f_name = os.path.join(intermediate_data_loc,'gen_fraud_Shipper.csv')
-    tmp.to_csv(f_name, index=False)
-
-    tmp = pd.DataFrame(columns=['ConsigneePanjivaID'])
-    tmp['ConsigneePanjivaID'] = target_Consignee
-    f_name = os.path.join(intermediate_data_loc, 'gen_fraud_Consignee.csv')
-    tmp.to_csv(f_name, index=False)
-
-    tmp = pd.DataFrame(columns=['HSCode'])
-    tmp['HSCode'] = target_HSCode
-    f_name = os.path.join(intermediate_data_loc, 'gen_fraud_HSCode.csv')
-    tmp.to_csv(f_name, index=False)
-
-    f_name = os.path.join(intermediate_data_loc, 'gen_fraud_PortOfLading_PortOfUnlading.csv')
-    target_PortOfLading_PortOfUnlading.to_csv(
-        f_name ,
-        index=False
-    )
-    f_name = os.path.join(intermediate_data_loc, 'gen_fraud_ShipmentOrigin_ShipmentDestination.csv')
-    target_ShipmentOrigin_ShipmentDestination.to_csv(
-        f_name,
-        index=False
-    )
+    # intermediate_data_loc = os.path.join(DATA_DIR, 'fraud_targets')
+    # if not os.path.exists(intermediate_data_loc):
+    #     os.mkdir(intermediate_data_loc)
+    #
+    # tmp = pd.DataFrame(columns=['ShipperPanjivaID'])
+    # tmp['ShipperPanjivaID'] = target_Shipper
+    # f_name = os.path.join(intermediate_data_loc,'gen_fraud_Shipper.csv')
+    # tmp.to_csv(f_name, index=False)
+    #
+    # tmp = pd.DataFrame(columns=['ConsigneePanjivaID'])
+    # tmp['ConsigneePanjivaID'] = target_Consignee
+    # f_name = os.path.join(intermediate_data_loc, 'gen_fraud_Consignee.csv')
+    # tmp.to_csv(f_name, index=False)
+    #
+    # tmp = pd.DataFrame(columns=['HSCode'])
+    # tmp['HSCode'] = target_HSCode
+    # f_name = os.path.join(intermediate_data_loc, 'gen_fraud_HSCode.csv')
+    # tmp.to_csv(f_name, index=False)
+    #
+    # f_name = os.path.join(intermediate_data_loc, 'gen_fraud_PortOfLading_PortOfUnlading.csv')
+    # target_PortOfLading_PortOfUnlading.to_csv(
+    #     f_name ,
+    #     index=False
+    # )
+    # f_name = os.path.join(intermediate_data_loc, 'gen_fraud_ShipmentOrigin_ShipmentDestination.csv')
+    # target_ShipmentOrigin_ShipmentDestination.to_csv(
+    #     f_name,
+    #     index=False
+    # )
 
     # -------------------------------------------------------- #
     # Generate anomalies that are not "interesting"
@@ -409,8 +415,12 @@ def main_process():
         args=(903, _fixed_set, _perturb_set, hash_ref_df)
     )
 
-    rmv_list = list(df_train.merge(target_ShipmentOrigin_ShipmentDestination, how='inner',
-                                   on=['ShipmentOrigin', 'ShipmentDestination'])[id_col])
+    rmv_list = list(
+        df_train.merge(
+            target_ShipmentOrigin_ShipmentDestination,
+            how='inner',
+            on=['ShipmentOrigin', 'ShipmentDestination']
+        )[id_col])
     a = df_test.loc[~df_test[id_col].isin(rmv_list)]
     a = a.loc[(~a['HSCode'].isin(target_HSCode))]
     a = a.sample(min(len(a), len(df_test)))
@@ -431,8 +441,6 @@ def main_process():
     for _ in _list_:
         _tmp_ = _tmp_.append(_, ignore_index=True)
 
-
-
     # ----------------------------------------------- #
     UserNonInteresting_anomalies_df = _tmp_.drop_duplicates(subset=feature_cols)
     UserNonInteresting_anomalies_df.to_csv(
@@ -448,7 +456,7 @@ def main_process():
 # ----------------------------------------------------------------------------------------- #
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
+    '--DIR', choices=['us_import1', 'us_import2', 'us_import3', 'us_import4'],
     default=None
 )
 

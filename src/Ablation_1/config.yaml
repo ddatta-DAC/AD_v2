@@ -1,0 +1,4 @@
+SOURCE_DATA_DIR_1 : './../../generated_data_v2'
+SOURCE_DATA_DIR_2 : './../../AD_system_output_v2'
+model_use_data_DIR : 'model_use_data'
+serial_mapping_df : 'Serialized_Mapping.csv'

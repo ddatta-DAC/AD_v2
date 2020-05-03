@@ -3,7 +3,7 @@ import torch.nn as nn
 from random import shuffle
 import numpy as np
 import sys
-
+import os
 sys.path.append('./..')
 sys.path.append('./../..')
 
@@ -256,5 +256,22 @@ class model:
                     msg = 'Train ::  Epoch: {} Batch {}, Loss {:4f}'.format(epoch, batch_idx, loss)
                     print(msg)
         return record_loss
+
+    def save_weights(
+            self,
+            dir,
+            file_name
+    ):
+
+        weight_vals = self.net.module.Emb.weight.detach().cpu().numpy()
+        f_path = os.path.join(dir, file_name)
+        try:
+            np.save(
+                f_path, weight_vals
+            )
+        except:
+            print('[ERROR] Could not save weights!')
+        return
+
 
 # --------------------------------------------- #

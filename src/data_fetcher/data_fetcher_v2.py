@@ -229,7 +229,6 @@ def get_testing_data_as_DF(
 ):
 
     _, test_x, test_idList = get_data_base_x(DATA_DIR, DIR)
-
     anomaly_x , anomaly_idList = get_anomaly_data_matrices(
         DATA_DIR,
         DIR,
@@ -298,15 +297,17 @@ def get_Stage2_data_as_DF(
         anomaly_ratio=0.4,
         total_size = 10000
 ):
+
     anomalies_NotFraud_file_name = 'anomalies_NotFraud.csv'
     anomalies_Fraud_file_name = 'anomalies_Fraud.csv'
-    normal_data_file_name =  'test_data.csv'
+    normal_data_file_name =  'test_data_v2.csv'
 
     anomalies_F_df = pd.read_csv(
         os.path.join(
             DATA_DIR, DIR, anomalies_Fraud_file_name
-        )
+        ),index_col=0
     )
+
     anomalies_F_df['anomaly'] = True
     anomalies_F_df['fraud'] = True
 
@@ -327,6 +328,26 @@ def get_Stage2_data_as_DF(
     normal_df['anomaly'] = False
     normal_df['fraud'] = False
 
+    res_df = normal_df.copy()
+    res_df = res_df.append(anomalies_NF_df, ignore_index=True)
+    res_df = res_df.append(anomalies_F_df, ignore_index=True)
+    res_df = res_df.reset_index(drop=True)
+    try:
+        del res_df['Unnamed: 0']
+    except:
+        pass
+    return res_df
+
+
+    R2 = anomaly_ratio
+    R1 = fraud_ratio
+
+    if R1 * R2 * total_size > len(anomalies_F_df):
+       print('[ERROR] Check data size and Ratios')
+       exit(1)
+
+    #-------------------------
+    # Adjust total size so as to keep the ratio intact but the
     # -------------
     # a = # of Fraud
     # b = # non Fraud
@@ -353,12 +374,9 @@ def get_Stage2_data_as_DF(
     res_df = pd.DataFrame( P )
     res_df = res_df.append(F, ignore_index=True)
     res_df = res_df.append(NF, ignore_index=True)
-
     return res_df
 
-
-
-
+#-------------------------------------------
 
 
 

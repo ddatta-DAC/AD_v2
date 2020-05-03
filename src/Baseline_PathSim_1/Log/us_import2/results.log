@@ -1,0 +1,344 @@
+ K = 10
+Length of data :: 2500
+Current percentage of data labelled  :: 10
+[   With Input] accuracy at Top (next)  10 % :: 0.75
+[   With Input] precision at Top (next)  10 % :: 0.0
+[Without Input] accuracy at Top (next)  10 % :: 0.25
+[Without Input] precision at Top (next)  10 % :: 1.0
+[   With Input] accuracy at Top (next)  20 % :: 0.77
+[   With Input] precision at Top (next)  20 % :: 0.0
+[Without Input] accuracy at Top (next)  20 % :: 0.23
+[Without Input] precision at Top (next)  20 % :: 1.0
+[   With Input] accuracy at Top (next)  30 % :: 0.79
+[   With Input] precision at Top (next)  30 % :: 0.0
+[Without Input] accuracy at Top (next)  30 % :: 0.21
+[Without Input] precision at Top (next)  30 % :: 1.0
+[   With Input] accuracy at Top (next)  40 % :: 0.8
+[   With Input] precision at Top (next)  40 % :: 0.0
+[Without Input] accuracy at Top (next)  40 % :: 0.2
+[Without Input] precision at Top (next)  40 % :: 1.0
+[   With Input] accuracy at Top (next)  50 % :: 0.8
+[   With Input] precision at Top (next)  50 % :: 0.0
+[Without Input] accuracy at Top (next)  50 % :: 0.2
+[Without Input] precision at Top (next)  50 % :: 1.0
+ K = 10
+Length of data :: 2500
+Current percentage of data labelled  :: 10
+[   With Input] accuracy at Top (next)  10 % :: 0.75
+[   With Input] precision at Top (next)  10 % :: 0.0
+[Without Input] accuracy at Top (next)  10 % :: 0.25
+[Without Input] precision at Top (next)  10 % :: 1.0
+[   With Input] accuracy at Top (next)  20 % :: 0.77
+[   With Input] precision at Top (next)  20 % :: 0.0
+[Without Input] accuracy at Top (next)  20 % :: 0.23
+[Without Input] precision at Top (next)  20 % :: 1.0
+[   With Input] accuracy at Top (next)  30 % :: 0.79
+[   With Input] precision at Top (next)  30 % :: 0.0
+[Without Input] accuracy at Top (next)  30 % :: 0.21
+[Without Input] precision at Top (next)  30 % :: 1.0
+[   With Input] accuracy at Top (next)  40 % :: 0.8
+[   With Input] precision at Top (next)  40 % :: 0.0
+[Without Input] accuracy at Top (next)  40 % :: 0.2
+[Without Input] precision at Top (next)  40 % :: 1.0
+[   With Input] accuracy at Top (next)  50 % :: 0.8
+[   With Input] precision at Top (next)  50 % :: 0.0
+[Without Input] accuracy at Top (next)  50 % :: 0.2
+[Without Input] precision at Top (next)  50 % :: 1.0
+ K = 10
+Length of data :: 2500
+Current percentage of data labelled  :: 10
+[   With Input] accuracy at Top (next)  10 % :: 0.75
+[   With Input] precision at Top (next)  10 % :: 0.0
+[Without Input] accuracy at Top (next)  10 % :: 0.25
+[Without Input] precision at Top (next)  10 % :: 1.0
+[   With Input] accuracy at Top (next)  20 % :: 0.77
+[   With Input] precision at Top (next)  20 % :: 0.0
+[Without Input] accuracy at Top (next)  20 % :: 0.23
+[Without Input] precision at Top (next)  20 % :: 1.0
+[   With Input] accuracy at Top (next)  30 % :: 0.79
+[   With Input] precision at Top (next)  30 % :: 0.0
+[Without Input] accuracy at Top (next)  30 % :: 0.21
+[Without Input] precision at Top (next)  30 % :: 1.0
+[   With Input] accuracy at Top (next)  40 % :: 0.8
+[   With Input] precision at Top (next)  40 % :: 0.0
+[Without Input] accuracy at Top (next)  40 % :: 0.2
+[Without Input] precision at Top (next)  40 % :: 1.0
+[   With Input] accuracy at Top (next)  50 % :: 0.8
+[   With Input] precision at Top (next)  50 % :: 0.0
+[Without Input] accuracy at Top (next)  50 % :: 0.2
+[Without Input] precision at Top (next)  50 % :: 1.0
+ K = 10
+Length of data :: 2500
+Current percentage of data labelled  :: 10
+[   With Input] accuracy at Top (next)  10 % :: 0.75
+[   With Input] precision at Top (next)  10 % :: 0.0
+[Without Input] accuracy at Top (next)  10 % :: 0.25
+[Without Input] precision at Top (next)  10 % :: 1.0
+[   With Input] accuracy at Top (next)  20 % :: 0.77
+[   With Input] precision at Top (next)  20 % :: 0.0
+[Without Input] accuracy at Top (next)  20 % :: 0.23
+[Without Input] precision at Top (next)  20 % :: 1.0
+[   With Input] accuracy at Top (next)  30 % :: 0.79
+[   With Input] precision at Top (next)  30 % :: 0.0
+[Without Input] accuracy at Top (next)  30 % :: 0.21
+[Without Input] precision at Top (next)  30 % :: 1.0
+[   With Input] accuracy at Top (next)  40 % :: 0.8
+[   With Input] precision at Top (next)  40 % :: 0.0
+[Without Input] accuracy at Top (next)  40 % :: 0.2
+[Without Input] precision at Top (next)  40 % :: 1.0
+[   With Input] accuracy at Top (next)  50 % :: 0.8
+[   With Input] precision at Top (next)  50 % :: 0.0
+[Without Input] accuracy at Top (next)  50 % :: 0.2
+[Without Input] precision at Top (next)  50 % :: 1.0
+ K = 10
+Length of data :: 2500
+Current percentage of data labelled  :: 10
+[   With Input] accuracy at Top (next)  10 % :: 0.75
+[   With Input] precision at Top (next)  10 % :: 0.0
+[Without Input] accuracy at Top (next)  10 % :: 0.25
+[Without Input] precision at Top (next)  10 % :: 1.0
+[   With Input] accuracy at Top (next)  20 % :: 0.77
+[   With Input] precision at Top (next)  20 % :: 0.0
+[Without Input] accuracy at Top (next)  20 % :: 0.23
+[Without Input] precision at Top (next)  20 % :: 1.0
+[   With Input] accuracy at Top (next)  30 % :: 0.79
+[   With Input] precision at Top (next)  30 % :: 0.0
+[Without Input] accuracy at Top (next)  30 % :: 0.21
+[Without Input] precision at Top (next)  30 % :: 1.0
+[   With Input] accuracy at Top (next)  40 % :: 0.8
+[   With Input] precision at Top (next)  40 % :: 0.0
+[Without Input] accuracy at Top (next)  40 % :: 0.2
+[Without Input] precision at Top (next)  40 % :: 1.0
+[   With Input] accuracy at Top (next)  50 % :: 0.8
+[   With Input] precision at Top (next)  50 % :: 0.0
+[Without Input] accuracy at Top (next)  50 % :: 0.2
+[Without Input] precision at Top (next)  50 % :: 1.0
+2020-04-19 16:02:52.752721
+2020-04-19 17:10:00.264702
+Length of data ::        PanjivaRecordID  Carrier  ConsigneePanjivaID  HSCode  PortOfLading  ...  ShipmentOrigin  ShipperPanjivaID  anomaly  fraud     score
+20768        123275288      318                 487     112            29  ...              30              3155    False  False  0.473879
+14404   11704002800202       91                1891     594           142  ...              51              3791     True   True  0.343018
+12559   11695806600201      285                1362     339            90  ...              16                70     True   True  0.318653
+18540        120941957      190                2466     289            56  ...              16              3647    False  False  0.418935
+8106    12089157600201      363                2989     538            89  ...              89              1195     True   True  0.264720
+...                ...      ...                 ...     ...           ...  ...             ...               ...      ...    ...       ...
+15765   12089129700201      363                1909     339           171  ...              37              1739     True   True  0.363336
+1535    12221171900902       85                1645     457           128  ...              33              3172     True  False  0.176737
+49823        125189275      147                1170     556           194  ...              37              2744    False  False  0.790211
+48960        122900627      216                2060     502            35  ...              16              3297    False  False  0.764332
+36726        121914862      472                1362     524           103  ...              89              3218    False  False  0.664822
+
+[3000 rows x 12 columns]
+ K = 10
+Length of data :: 3000
+Current percentage of data labelled  :: 10
+   next %  precision  recall  f1  balanced_accuracy
+0    10.0        0.0     0.0 NaN                0.5
+1    20.0        0.0     0.0 NaN                0.5
+2    30.0        0.0     0.0 NaN                0.5
+3    40.0        0.0     0.0 NaN                0.5
+4    50.0        0.0     0.0 NaN                0.5
+ K = 10
+Length of data :: 3000
+Current percentage of data labelled  :: 10
+   next %  precision  recall  f1  balanced_accuracy
+0    10.0        0.0     0.0 NaN                0.5
+1    20.0        0.0     0.0 NaN                0.5
+2    30.0        0.0     0.0 NaN                0.5
+3    40.0        0.0     0.0 NaN                0.5
+4    50.0        0.0     0.0 NaN                0.5
+ K = 10
+Length of data :: 3000
+Current percentage of data labelled  :: 10
+   next %  precision  recall  f1  balanced_accuracy
+0    10.0        0.0     0.0 NaN                0.5
+1    20.0        0.0     0.0 NaN                0.5
+2    30.0        0.0     0.0 NaN                0.5
+3    40.0        0.0     0.0 NaN                0.5
+4    50.0        0.0     0.0 NaN                0.5
+ K = 10
+Length of data :: 3000
+Current percentage of data labelled  :: 10
+   next %  precision  recall  f1  balanced_accuracy
+0    10.0        0.0     0.0 NaN                0.5
+1    20.0        0.0     0.0 NaN                0.5
+2    30.0        0.0     0.0 NaN                0.5
+3    40.0        0.0     0.0 NaN                0.5
+4    50.0        0.0     0.0 NaN                0.5
+ K = 10
+Length of data :: 3000
+Current percentage of data labelled  :: 10
+   next %  precision  recall  f1  balanced_accuracy
+0    10.0        0.0     0.0 NaN                0.5
+1    20.0        0.0     0.0 NaN                0.5
+2    30.0        0.0     0.0 NaN                0.5
+3    40.0        0.0     0.0 NaN                0.5
+4    50.0        0.0     0.0 NaN                0.5
+2020-04-19 19:15:03.288439
+Length of data ::        PanjivaRecordID  Carrier  ConsigneePanjivaID  HSCode  PortOfLading  ...  ShipmentOrigin  ShipperPanjivaID  anomaly  fraud     score
+6       12259196300904       84                1523     339            48  ...              16              4062     True  False  0.068667
+13      12212184700904      304                1523     339            41  ...              16              4062     True  False  0.081554
+15      11689342700102       85                2912     513           108  ...              58               639     True   True  0.083007
+45      11725667000101      184                3229     538            86  ...              63              2221     True   True  0.100069
+80      11879195000202      327                3039     339           193  ...              89               266     True   True  0.111246
+...                ...      ...                 ...     ...           ...  ...             ...               ...      ...    ...       ...
+49939        121549941       87                 747     339           138  ...              16              1489    False  False  0.804024
+49969        124001003      191                2527      16            40  ...              15              1814    False  False  0.813211
+49971        122732522      470                1527      16           147  ...              10              2818    False  False  0.815166
+49989        125066236       92                 578     339           194  ...              49               559    False  False  0.829247
+49992        124701799      191                1217     146           187  ...              16              3982    False  False  0.832847
+
+[3000 rows x 12 columns]
+ K = 20
+Length of data :: 3000
+Current percentage of data labelled  :: 10
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.875   0.504  0.639              0.721
+1    20.0      0.890   0.469  0.615              0.710
+2    30.0      0.866   0.417  0.563              0.680
+3    40.0      0.750   0.414  0.533              0.663
+4    50.0      0.646   0.412  0.503              0.654
+ K = 20
+Length of data :: 3000
+Current percentage of data labelled  :: 20
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.949   0.543  0.691              0.759
+1    20.0      0.863   0.470  0.608              0.702
+2    30.0      0.734   0.458  0.564              0.682
+3    40.0      0.610   0.455  0.521              0.672
+4    50.0      0.498   0.457  0.477              0.662
+ K = 20
+Length of data :: 3000
+Current percentage of data labelled  :: 30
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.774   0.671  0.719              0.746
+1    20.0      0.579   0.668  0.620              0.724
+2    30.0      0.454   0.673  0.542              0.724
+3    40.0      0.358   0.675  0.468              0.719
+4    50.0      0.296   0.672  0.410              0.714
+ K = 20
+Length of data :: 3000
+Current percentage of data labelled  :: 40
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.362   0.568  0.442              0.698
+1    20.0      0.252   0.585  0.352              0.708
+2    30.0      0.178   0.593  0.274              0.709
+3    40.0      0.131   0.582  0.214              0.698
+4    50.0      0.111   0.589  0.186              0.703
+ K = 20
+Length of data :: 3000
+Current percentage of data labelled  :: 50
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.083   0.111  0.095              0.537
+1    20.0      0.111   0.200  0.143              0.586
+2    30.0      0.062   0.182  0.093              0.574
+3    40.0      0.041   0.167  0.066              0.564
+4    50.0      0.031   0.167  0.053              0.562
+2020-04-19 23:37:59.635256
+Length of data :: 3000
+ K = 20
+Length of data :: 3000
+Current percentage of data labelled  :: 10
+Classifier type :: RF
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.830   0.561  0.670              0.731
+1    20.0      0.846   0.516  0.641              0.718
+2    30.0      0.791   0.460  0.581              0.677
+3    40.0      0.693   0.453  0.548              0.663
+4    50.0      0.589   0.455  0.513              0.654
+ K = 20
+Length of data :: 3000
+Current percentage of data labelled  :: 20
+Classifier type :: RF
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.917   0.638  0.752              0.794
+1    20.0      0.839   0.555  0.668              0.731
+2    30.0      0.688   0.542  0.606              0.701
+3    40.0      0.569   0.545  0.557              0.693
+4    50.0      0.477   0.546  0.509              0.687
+ K = 20
+Length of data :: 3000
+Current percentage of data labelled  :: 30
+Classifier type :: RF
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.771   0.636  0.697              0.732
+1    20.0      0.595   0.620  0.607              0.715
+2    30.0      0.464   0.622  0.532              0.711
+3    40.0      0.366   0.624  0.462              0.706
+4    50.0      0.301   0.621  0.406              0.701
+ K = 20
+Length of data :: 3000
+Current percentage of data labelled  :: 40
+Classifier type :: RF
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.390   0.682  0.496              0.749
+1    20.0      0.278   0.698  0.398              0.761
+2    30.0      0.193   0.704  0.303              0.758
+3    40.0      0.146   0.691  0.241              0.748
+4    50.0      0.116   0.679  0.198              0.739
+ K = 20
+Length of data :: 3000
+Current percentage of data labelled  :: 50
+Classifier type :: RF
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.182   0.222  0.200              0.596
+1    20.0      0.136   0.300  0.187              0.634
+2    30.0      0.073   0.273  0.115              0.615
+3    40.0      0.053   0.250  0.087              0.602
+4    50.0      0.042   0.250  0.072              0.602
+2020-04-20 00:15:44.180622
+Length of data :: 10000
+2020-04-20 00:56:56.574719
+Length of data :: 10000
+2020-04-20 14:43:20.242003
+Length of data :: 5000
+ K = 20
+Length of data :: 5000
+Current percentage of data labelled  :: 10
+Classifier type :: RF
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.966   0.633  0.765              0.808
+1    20.0      0.950   0.572  0.714              0.771
+2    30.0      0.939   0.520  0.670              0.744
+3    40.0      0.862   0.509  0.640              0.727
+4    50.0      0.753   0.509  0.607              0.713
+ K = 20
+Length of data :: 5000
+Current percentage of data labelled  :: 20
+Classifier type :: RF
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.951   0.631  0.759              0.796
+1    20.0      0.932   0.585  0.719              0.770
+2    30.0      0.805   0.569  0.667              0.740
+3    40.0      0.671   0.571  0.617              0.726
+4    50.0      0.560   0.570  0.565              0.714
+ K = 20
+Length of data :: 5000
+Current percentage of data labelled  :: 30
+Classifier type :: RF
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.724   0.879  0.794              0.786
+1    20.0      0.551   0.895  0.682              0.781
+2    30.0      0.431   0.898  0.582              0.785
+3    40.0      0.347   0.899  0.500              0.783
+4    50.0      0.293   0.895  0.441              0.782
+ K = 20
+Length of data :: 5000
+Current percentage of data labelled  :: 40
+Classifier type :: RF
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.413   0.770  0.538              0.790
+1    20.0      0.284   0.756  0.413              0.788
+2    30.0      0.196   0.753  0.312              0.779
+3    40.0      0.151   0.731  0.250              0.765
+4    50.0      0.126   0.734  0.215              0.768
+ K = 20
+Length of data :: 5000
+Current percentage of data labelled  :: 50
+Classifier type :: RF
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.190   0.333  0.242              0.649
+1    20.0      0.074   0.267  0.116              0.608
+2    30.0      0.049   0.211  0.079              0.579
+3    40.0      0.045   0.250  0.076              0.598
+4    50.0      0.043   0.273  0.074              0.609

@@ -17,6 +17,8 @@ import multiprocessing
 # ---- Global object ----- #
 NODE_OBJECT_DICT = None
 Serial_mapping_df = None
+
+
 NO_REFRESH = True
 
 # ------------------------- #
@@ -58,7 +60,7 @@ class Entity_Node:
         # -------------------
         p = [math.pow(_ / max(norm_prob), 0.75) for _ in norm_prob]
         p = [_ / sum(p) for _ in p]
-
+        print( min(p), max(p))
         # prob_dist = {e[0]: e[1] for e in enumerate(p)}
         # set up the prob distribution dictionary as { key=serialized_id  : value=prob}
 
@@ -118,6 +120,7 @@ def get_coOccMatrixkey(a, b):
 
 class RandomWalkGraph_v1:
     Serial_2_Entity_ID_dict = {}
+    Entity_2_Serial_ID_dict = {}
     def __init__(self):
         self.df_x = None
         self.MP_list = []
@@ -164,7 +167,8 @@ class RandomWalkGraph_v1:
                 for _id in range(domain_dims[_domain_name]):
                     _obj = Entity_Node(
                         domain=_domain_name,
-                        entity=_id
+                        entity=_id,
+                        serial_id = RandomWalkGraph_v1.Serial_ID_lookup(_domain_name, _id)
                     )
                     self.node_object_dict[_domain_name][_id] = _obj
 
@@ -181,7 +185,8 @@ class RandomWalkGraph_v1:
             domain_dims,
             id_col='PanjivaRecordID',
             MP_list = None,
-            save_data_dir=None,
+            save_data_dir = None,
+            random_walk_save_subdir = 'RW_Samples',
             saved_file_name='node_obj_dict.pkl'
     ):
         global NODE_OBJECT_DICT
@@ -194,15 +199,28 @@ class RandomWalkGraph_v1:
         self.id_col = id_col
         self.save_data_dir = save_data_dir
         self.saved_file_name = saved_file_name
-        _signature = ''.join(
-            ([''.join(_) for _ in MP_list])
-        )
 
-        self.signature = str(md5(str.encode(_signature)).hexdigest())
+        relations = []
+        for mp in MP_list:
+            for _1, _2 in zip(mp[:-1], mp[1:]):
+                relations.append('_+_'.join(sorted([_1, _2])))
+        relations = sorted(set(relations))
+        signature = '__'.join(relations)
+        self.signature = str(md5(str.encode(signature)).hexdigest())
         self.saved_file_name = saved_file_name.replace(
             '.',
             '_' + self.signature + '.'
         )
+
+        self.random_walk_save_dir = os.path.join(
+            self.save_data_dir,
+            random_walk_save_subdir
+        )
+
+        if not os.path.exists(self.random_walk_save_dir):
+            os.mkdir(self.random_walk_save_dir)
+
+
         Serial_mapping_df = serial_mapping_df
         RandomWalkGraph_v1.setup_Entity_ID_lookup()
 
@@ -210,6 +228,7 @@ class RandomWalkGraph_v1:
             self.save_data_dir,
             self.saved_file_name
         )
+
         # ---------------------------------------- #
         # Check if already pre-computed dictionary and transitions.
         # ---------------------------------------- #
@@ -225,7 +244,8 @@ class RandomWalkGraph_v1:
         return_value = self.get_node_obj_dict(domain_dims)
         NODE_OBJECT_DICT = self.node_object_dict
 
-        if return_value == 1 : return
+        if return_value == 1 :
+            return
 
         # ----------------------------------------- #
         # set up transition probabilities
@@ -263,17 +283,21 @@ class RandomWalkGraph_v1:
                 nbr_type=nbr_type,
                 unnorm_counts_dict=_count_dict
             )
+
             return (e_idx, obj)
 
         # ------------------
         # Binary relations as per metapaths
         # ------------------
-        relations = []
+
+
         for mp in MP_list:
             for _1, _2 in zip(mp[:-1], mp[1:]):
-                relations.append(_1 + '_+_' + _2)
-        relations = set(relations)
+                relations.append('_+_'.join(sorted([_1, _2])))
+        print(relations)
+        relations = sorted(set(relations))
         relations = [_.split('_+_') for _ in relations]
+
         print('Number of distinct relations :: ', len(relations) )
 
         for R in relations:
@@ -293,7 +317,6 @@ class RandomWalkGraph_v1:
             # i -> j  and j -> i
             # ------------------------------
             entities_i = [_ for _ in range(domain_dims[domain_i])]
-
             tmp = {idx: self.node_object_dict[domain_i][idx] for idx in entities_i}
             nbr_type = domain_j
             orientation = 'r'
@@ -337,23 +360,31 @@ class RandomWalkGraph_v1:
 
     @staticmethod
     def setup_Entity_ID_lookup():
+
         global Serial_mapping_df
         RandomWalkGraph_v1.Serial_2_Entity_ID_dict = {}
+        RandomWalkGraph_v1.Entity_2_Serial_ID_dict = {}
+
         for domain in set(Serial_mapping_df['Domain']):
+
             RandomWalkGraph_v1.Serial_2_Entity_ID_dict[domain] = {}
-            tmp = Serial_mapping_df.loc[
-                (Serial_mapping_df['Domain'] == domain)]
+            tmp = Serial_mapping_df.loc[(Serial_mapping_df['Domain'] == domain)]
             s_id_list = list(tmp['Serial_ID'])
             e_id_list = list(tmp['Entity_ID'])
             for _si, _ej in zip(s_id_list, e_id_list):
                 RandomWalkGraph_v1.Serial_2_Entity_ID_dict[domain][_si] = _ej
 
+            RandomWalkGraph_v1.Entity_2_Serial_ID_dict[domain] = {}
+            for _si, _ej in zip(s_id_list, e_id_list):
+                RandomWalkGraph_v1.Entity_2_Serial_ID_dict[domain][_ej] = _si
 
     @staticmethod
     def Entity_ID_lookup(domain, serial_id):
-        global Serial_mapping_df
         return RandomWalkGraph_v1.Serial_2_Entity_ID_dict[domain][serial_id]
 
+    @staticmethod
+    def Serial_ID_lookup(domain,entity_id):
+        return RandomWalkGraph_v1.Entity_2_Serial_ID_dict[domain][entity_id]
 
     # ----------------------
     # Takes 4 arguments:
@@ -369,17 +400,22 @@ class RandomWalkGraph_v1:
         global NODE_OBJECT_DICT
         global Serial_mapping_df
 
+        # print('In aux_rw_exec_w_ns')
+        # print(args)
 
         start_node_entity_idx = args[0]
         mp = args[1]
         rw_count = args[2]
         rw_length = args[3]
+
         num_neg_samples = args[4]
         node_object_dict = NODE_OBJECT_DICT
-
         augmented_mp = mp + mp[::-1][1:]
+
         rep_len = len(augmented_mp) - 1
         path_seq = augmented_mp + augmented_mp[1:] * (rw_length // rep_len)
+        # print('Augmented MP ', path_seq)
+
         # --------------
         # Pad it at  end
         # --------------
@@ -390,10 +426,13 @@ class RandomWalkGraph_v1:
         # Note :: ensure no cycles
         # --------------------------
         for rc in range(rw_count):
-
-            cycle_prevention_dict = {_: [] for _ in mp}
+            cycle_prevention_dict = { _: [] for _ in mp}
             cur_domain = mp[0]
-            cur_node_s_id = node_object_dict[cur_domain][start_node_entity_idx].serial_id
+            _obj = node_object_dict[cur_domain][start_node_entity_idx]
+            # print( _obj,  _obj.entity, _obj.domain )
+
+            cur_node_s_id = RandomWalkGraph_v1.Serial_ID_lookup(cur_domain, start_node_entity_idx)
+            # cur_node_s_id = node_object_dict[cur_domain][start_node_entity_idx].serial_id
             cycle_prevention_dict[cur_domain].append(cur_node_s_id)
 
             neg_samples = None
@@ -405,7 +444,7 @@ class RandomWalkGraph_v1:
                     cur_node_e_id = start_node_entity_idx
                     cur_domain = mp[0]
                     cur_node_s_id = node_object_dict[cur_domain][cur_node_e_id].serial_id
-
+                    cur_node_s_id = RandomWalkGraph_v1.Serial_ID_lookup(cur_domain, cur_node_e_id)
                 else:
                     cur_domain = path_seq[i]
                     # ------
@@ -415,6 +454,7 @@ class RandomWalkGraph_v1:
                     # ------
                     cur_node_e_id = nbr_e_id
                     cur_node_s_id = node_object_dict[cur_domain][cur_node_e_id].serial_id
+                    cur_node_s_id = RandomWalkGraph_v1.Serial_ID_lookup(cur_domain, cur_node_e_id)
 
                 cur_node_obj = node_object_dict[cur_domain][cur_node_e_id]
 
@@ -424,12 +464,19 @@ class RandomWalkGraph_v1:
                 next_nbr_domain = path_seq[i + 1]
 
                 nbr_s_id = cur_node_obj.sample_nbr(next_nbr_domain)
-                # while  nbr_s_id in cycle_prevention_dict[next_nbr_domain]:
-                #     nbr_s_id = cur_node_obj.sample_nbr(next_nbr_domain)
+                # print(next_nbr_domain, nbr_s_id)
+                num_tries = 0
+                max_tries = 10
+                while  nbr_s_id in cycle_prevention_dict[next_nbr_domain]:
+                    nbr_s_id = cur_node_obj.sample_nbr(next_nbr_domain)
+                    num_tries += 1
+                    if num_tries > max_tries: break
 
                 cycle_prevention_dict[next_nbr_domain].append(nbr_s_id)
+                cycle_prevention_dict[next_nbr_domain] = list(set( cycle_prevention_dict[next_nbr_domain]))
 
                 if nbr_s_id is None:
+                    print('Error!!')
                     return None
 
                 nbr_e_id = RandomWalkGraph_v1.Entity_ID_lookup(
@@ -493,37 +540,32 @@ class RandomWalkGraph_v1:
         else:
             MP_list = list(self.MP_list)
 
-        num_jobs = max(10, self.n_jobs)
+        num_jobs = max(8, self.n_jobs)
         print('[INFO] Meta paths ', self.MP_list)
         print('[INFO] Number of jobs ', num_jobs)
 
-        _dir = os.path.join(
-            self.save_data_dir,
-            'RW_Samples'
-        )
+        #  =================
+        # Do RW for each of the domain entities in the meta path
+        #  =================
 
-        if not os.path.exists(_dir):
-            os.mkdir(_dir)
-
-        for _MP in MP_list:
-
-            # Do RW for each of the domain entities in the meta path
+        for _MP in MP_list :
             meta_path_pattern = _MP
             print('Path :: ', meta_path_pattern)
-
             # Start the random walk from start node
             domain_t = _MP[0]
             start_nodes_idx = []
+
+
             for e_id in range(self.domain_dims[domain_t]):
                 start_nodes_idx.append(e_id)
 
             result = None
             neg_samples = []
-
             args = [
                 (n, meta_path_pattern, rw_count, rw_length, num_neg_samples)
                 for n in start_nodes_idx
             ]
+
 
             with Pool(num_jobs) as p:
                 pooled_result = p.map(
@@ -542,13 +584,13 @@ class RandomWalkGraph_v1:
 
             # Save the Random Walks as numpy array
             fname = '_'.join(_MP) + '_walks.npy'
-            fpath = os.path.join(_dir, fname)
+            fpath = os.path.join(self.random_walk_save_dir, fname)
             result = np.array(result)
             np.save(fpath, result)
 
             # ---- Save the negative samples as a numpy array ------ #
             fname = '_'.join(_MP) + '_neg_samples.npy'
-            fpath = os.path.join(_dir, fname)
+            fpath = os.path.join(self.random_walk_save_dir, fname)
             neg_samples = np.concatenate(neg_samples)
             np.save(fpath, neg_samples)
 

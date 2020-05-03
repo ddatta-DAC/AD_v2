@@ -1,3 +1,5 @@
-'KNN_k' : 5
+'KNN_k' : 20
 'model_use_data_DIR' : model_use_data
-'data_max_size' : 10
+'data_max_size' : 5000
+SOURCE_DATA_DIR_1 : './../../generated_data_v3'
+TARGET_DATA_SOURCE :  './../../AD_system_output_v3'

@@ -36,7 +36,7 @@ serial_mapping_df_file = None
 serial_mapping_df = None
 SOURCE_DATA_DIR_1 = None
 SOURCE_DATA_DIR_2 = None
-
+random_walk_save_subdir = None
 # ------------------------------------------ #
 # Set up configuration
 # ------------------------------------------ #
@@ -51,6 +51,8 @@ def set_up_config(_DIR=None):
     global SAVE_DATA_DIR
     global model_use_data_DIR
     global serial_mapping_df_file
+    global random_walk_save_subdir
+
     if _DIR is not None:
         DIR = _DIR
 
@@ -77,19 +79,13 @@ def set_up_config(_DIR=None):
         CONFIG['model_use_data_DIR'],
         DIR
     )
-
     if not os.path.exists(model_use_data_DIR):
         os.mkdir(model_use_data_DIR)
-
     id_col = CONFIG['id_col']
     mapping_df_file = 'Serialized_Mapping.csv'
     serial_mapping_df_file = os.path.join(model_use_data_DIR, mapping_df_file)
-
+    random_walk_save_subdir  = CONFIG['random_walk_save_subdir']
     return
-
-
-
-
 
 
 # ========================================================= #
@@ -116,7 +112,6 @@ def get_coOccMatrixDict(
 ):
     global model_use_data_DIR
     global id_col
-
     coOccMatrix_File = os.path.join(model_use_data_DIR, 'coOccMatrixSaved.pkl')
 
     if not os.path.exists(coOccMatrix_File):
@@ -184,8 +179,8 @@ def get_MP_list():
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    '--DIR', choices=['us_import1', 'us_import2', 'us_import3'],
-    default='us_import1'
+    '--DIR', choices=['us_import4', 'us_import5', 'us_import6'],
+    default='us_import4'
 )
 
 args = parser.parse_args()
@@ -203,11 +198,14 @@ rw_obj.initialize(
     domain_dims=domain_dims,
     id_col=id_col,
     MP_list = MP_list,
-    save_data_dir=model_use_data_DIR
+    save_data_dir=model_use_data_DIR,
+    random_walk_save_subdir=random_walk_save_subdir
 )
 
 rw_obj.generate_RandomWalks_w_neg_samples(
     rw_count=10,
-    rw_length=120,
+    rw_length=64,
     num_neg_samples=10
 )
+
+
