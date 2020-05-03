@@ -374,7 +374,6 @@ def train_model(
             iter_below_tol = 0
 
             for epoch in range(num_epochs_g):
-
                 data_G = balanced_pair_Generator_v2(
                     df=df_L,
                     x_col=features_G,
@@ -650,8 +649,29 @@ def train_model(
 
 
         # Prediction uses multiple classifiers
+        if F_classifier_type == 'MLP':
+            self_label_df = clf_en1_df_U.merge(
+                df_U,
+                on = id_col,
+                how = 'inner'
+            )
+        if F_classifier_type == 'wide_n_deep':
+            print(clf_en1_df_U.columns)
+            print(df_U.columns)
+            common = set(df_U.columns).intersection(clf_en1_df_U.columns)
 
-        self_label_df = clf_en1_df_U.merge(df_U, on = id_col, how = 'inner' )
+            self_label_df = clf_en1_df_U.merge(
+                df_U,
+                on=list(sorted(common)),
+                how='inner'
+            )
+            # ensure order is maintained
+            remaining = [ _ for _ in list(df_U.columns)
+                          if _ not in features_G and _ not in features_F
+                        ]
+            col_ord = features_F + remaining
+            self_label_df = self_label_df[col_ord]
+
         self_label_df = self_label_df.sort_values(['score'])
         id_list = list(self_label_df[id_col])
 
@@ -660,6 +680,7 @@ def train_model(
         NN.test_mode = True
         NN.train_mode = False
         idx = 0
+
         while idx < len(id_list):
             cur_ids =  id_list[idx:idx+512]
             _tmp = self_label_df.loc[self_label_df[id_col].isin(cur_ids)]
@@ -829,7 +850,10 @@ df_target, normal_data_samples_df, features_F, features_G = data_preprocess.get_
 )
 
 if F_classifier_type == 'wide_n_deep':
-    wide_inp_01_dim = len(features_F) - len(features_G)
+    wide_inp_01_dim = len(features_F)
+    # classifier takes in sparse and the dense features.
+    features_F = features_F + features_G
+
 elif F_classifier_type == 'deepFM':
     wide_inp_01_dim = len(features_F) - len(features_G)
 
