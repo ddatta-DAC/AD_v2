@@ -840,7 +840,9 @@ for perc in [10,20,30] :
         clf_type=F_classifier_type,
         dict_clf_initilize_inputs=dict_clf_initilize_inputs
     )
-
+    if torch.cuda.device_count() > 1:
+        print("Using ", torch.cuda.device_count(), "GPUs!")
+        NN = nn.DataParallel(NN)
     NN.to(DEVICE)
 
     LOGGER.info('Percentage of data labelled {} '.format(perc))
