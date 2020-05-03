@@ -1,0 +1,71 @@
+2020-05-03 02:29:34.998516
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
+2020-05-03 02:33:58.987249
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
+2020-05-03 02:36:28.265716
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.455     1.0  0.626                1.0
+1    20.0      0.455     1.0  0.626                1.0
+2    30.0      0.455     1.0  0.626                1.0
+Percentage of data labelled 20 
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.906   0.886  0.896                1.0
+1    20.0      0.906   0.886  0.896                1.0
+2    30.0      0.906   0.886  0.896                1.0
+Percentage of data labelled 30 
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.847   0.907  0.876                1.0
+1    20.0      0.847   0.907  0.876                1.0
+2    30.0      0.847   0.907  0.876                1.0
+2020-05-03 14:06:21.804351
+2020-05-03 14:08:16.326290
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
+2020-05-03 15:31:40.195520
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
+2020-05-03 16:48:35.554933
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
+2020-05-03 16:59:27.876014
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
+2020-05-03 17:10:16.239868
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
+2020-05-03 17:14:58.936942
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
+2020-05-03 17:24:42.343872
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
+2020-05-03 17:33:25.191951
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
+2020-05-03 17:40:22.968018
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
+2020-05-03 17:42:51.468220
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
+2020-05-03 17:46:35.481334
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
