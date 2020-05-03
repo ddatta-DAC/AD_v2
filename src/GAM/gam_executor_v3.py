@@ -846,12 +846,6 @@ for perc in [10,20,30] :
         clf_type=F_classifier_type,
         dict_clf_initilize_inputs=dict_clf_initilize_inputs
     )
-    if torch.cuda.device_count() > 1:
-        print("' >>>> Using ", torch.cuda.device_count(), "GPUs!")
-        NN = torch.nn.DataParallel(NN)
-        DEVICE = "cuda"
-        print(' >>> ', DEVICE)
-    NN.to(DEVICE)
 
     LOGGER.info('Percentage of data labelled {} '.format(perc))
     df_target = train_utils.set_label_in_top_perc(df_target, perc, score_col, true_label_col)
