@@ -4,3 +4,11 @@
  =========== 
 F_classifier_type 
 Percentage of data labelled 10 
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.956   0.773  0.855                1.0
+1    20.0      0.947   0.709  0.811                1.0
+2    30.0      0.928   0.669  0.777                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.960   0.764  0.851                1.0
+1    20.0      0.950   0.699  0.806                1.0
+2    30.0      0.933   0.656  0.771                1.0
