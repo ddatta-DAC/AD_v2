@@ -1,0 +1,124 @@
+2020-05-03 23:49:06.698540
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.873   0.590  0.704                1.0
+1    20.0      0.859   0.538  0.661                1.0
+2    30.0      0.831   0.499  0.623                1.0
+Percentage of data labelled 20 
+2020-05-03 23:52:17.420515
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.918   0.608  0.732                1.0
+1    20.0      0.875   0.529  0.660                1.0
+2    30.0      0.853   0.511  0.639                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.922   0.694  0.792                1.0
+1    20.0      0.894   0.605  0.722                1.0
+2    30.0      0.872   0.578  0.695                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.940   0.635  0.758                1.0
+1    20.0      0.915   0.565  0.699                1.0
+2    30.0      0.890   0.544  0.675                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.865   0.662  0.750                1.0
+1    20.0      0.850   0.582  0.691                1.0
+2    30.0      0.846   0.543  0.661                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.855   0.640  0.732                1.0
+1    20.0      0.840   0.561  0.673                1.0
+2    30.0      0.825   0.536  0.649                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.901   0.653  0.757                1.0
+1    20.0      0.868   0.578  0.694                1.0
+2    30.0      0.847   0.547  0.664                1.0
+Percentage of data labelled 20 
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.868   0.646  0.740                1.0
+1    20.0      0.832   0.626  0.715                1.0
+2    30.0      0.691   0.607  0.646                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.858   0.618  0.719                1.0
+1    20.0      0.832   0.607  0.702                1.0
+2    30.0      0.686   0.593  0.636                1.0
+2020-05-03 23:54:49.779088
+ =========== 
+F_classifier_type 
+Percentage of data labelled 10 
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.852   0.622  0.719                1.0
+1    20.0      0.842   0.561  0.673                1.0
+2    30.0      0.825   0.536  0.649                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.904   0.640  0.749                1.0
+1    20.0      0.883   0.584  0.703                1.0
+2    30.0      0.855   0.559  0.676                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.942   0.586  0.722                1.0
+1    20.0      0.911   0.517  0.660                1.0
+2    30.0      0.871   0.466  0.607                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.926   0.563  0.700                1.0
+1    20.0      0.892   0.502  0.642                1.0
+2    30.0      0.869   0.475  0.615                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.924   0.550  0.689                1.0
+1    20.0      0.896   0.468  0.615                1.0
+2    30.0      0.857   0.429  0.571                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.816   0.640  0.717                1.0
+1    20.0      0.800   0.555  0.655                1.0
+2    30.0      0.800   0.526  0.635                1.0
+Percentage of data labelled 20 
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.853   0.661  0.745                1.0
+1    20.0      0.828   0.664  0.737                1.0
+2    30.0      0.687   0.652  0.669                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.859   0.626  0.724                1.0
+1    20.0      0.834   0.617  0.709                1.0
+2    30.0      0.691   0.595  0.639                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.844   0.661  0.742                1.0
+1    20.0      0.812   0.640  0.716                1.0
+2    30.0      0.692   0.626  0.658                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.860   0.677  0.758                1.0
+1    20.0      0.816   0.668  0.735                1.0
+2    30.0      0.673   0.649  0.661                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.876   0.638  0.738                1.0
+1    20.0      0.830   0.607  0.701                1.0
+2    30.0      0.683   0.590  0.633                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.884   0.602  0.717                1.0
+1    20.0      0.837   0.601  0.700                1.0
+2    30.0      0.698   0.586  0.637                1.0
+Percentage of data labelled 30 
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.795   0.786  0.790                1.0
+1    20.0      0.619   0.785  0.692                1.0
+2    30.0      0.482   0.784  0.597                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.780   0.774  0.777                1.0
+1    20.0      0.584   0.766  0.663                1.0
+2    30.0      0.461   0.762  0.575                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.791   0.810  0.800                1.0
+1    20.0      0.612   0.798  0.693                1.0
+2    30.0      0.485   0.793  0.602                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.773   0.798  0.785                1.0
+1    20.0      0.594   0.779  0.674                1.0
+2    30.0      0.453   0.777  0.572                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.800   0.810  0.805                1.0
+1    20.0      0.607   0.788  0.686                1.0
+2    30.0      0.469   0.787  0.588                1.0
+   next %  precision  recall     f1  balanced_accuracy
+0    10.0      0.802   0.821  0.812                1.0
+1    20.0      0.620   0.807  0.701                1.0
+2    30.0      0.472   0.802  0.594                1.0
