@@ -339,7 +339,7 @@ def train_model(
     current_iter_count = 0
     continue_training = True
 
-    while continue_training:
+    while continue_training or current_iter_count > max_IC_iter:
         # GAM gets inputs as embeddings, which are obtained through the graph embeddings
         # that requires serialized feature ids
         # g_feature_cols = serialized_feature_col_list
