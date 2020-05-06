@@ -193,8 +193,27 @@ def PreProcessData(
             keep_entity_ids=True,
             domain_list=domain_list
         )
+
         # Serilaized ids fetch the embeddings
-        features_G = features_1
+        import re
+        pattern_1 = '^[A-Z]([a-z]|[A-Z])+_[0-9]+$'
+        pattern_3 = '_[A-Z]([a-z]|[A-Z])+$'
+
+        features_G = []
+        features_F = []
+        non_FG = []
+        cols = list(converted_df.columns)
+        for c in cols:
+            if re.search(pattern_1, c) :
+                features_F.append(c)
+        for c in cols:
+            if re.search(pattern_3, c):
+                features_G.append(c)
+
+        for _ in cols:
+            if _ not in features_G and _ not in features_F: non_FG.append(_)
+        ordered_cols = features_F + features_G + non_FG
+        converted_df = converted_df[ordered_cols]
 
     elif clf_type == 'MLP':
         converted_df, features_1 = convert_to_serial_IDs(

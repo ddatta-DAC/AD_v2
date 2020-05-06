@@ -610,7 +610,7 @@ def train_model(
             clf_en1.fit(
                 X_F, Y_F_train
             )
-        elif F_classifier_type == 'wide_n_deep':
+        elif F_classifier_type == 'wide_n_deep' or F_classifier_type == 'deepFM':
             cols = [id_col] + features_F + [label_col]
             tmp_df_copy = pd.DataFrame(df[cols], copy=True)
             L_ids = list(df_L_original[id_col])
@@ -657,7 +657,7 @@ def train_model(
                 on=id_col,
                 how='inner'
             )
-        if F_classifier_type == 'wide_n_deep':
+        elif F_classifier_type == 'wide_n_deep' or F_classifier_type =='deepFM':
             common = set(df_U.columns).intersection(clf_en1_df_U.columns)
 
             self_label_df = clf_en1_df_U.merge(
@@ -752,7 +752,7 @@ def train_model(
             test_id_list = list(df_U_original[id_col])
             test_df = clf_en1_df_eval.merge(df_U_original, on=id_col, how='inner')
             test_df = test_df.sort_values(['score'])
-        elif F_classifier_type == 'wide_n_deep':
+        elif F_classifier_type == 'wide_n_deep' or F_classifier_type == 'deepFM':
             test_id_list = list(df_U_original[id_col])
             common = set(df_U.columns).intersection(clf_en1_df_U.columns)
             test_df = clf_en1_df_eval.merge(
@@ -867,7 +867,8 @@ if F_classifier_type == 'wide_n_deep':
     features_F = features_F + features_G
 
 elif F_classifier_type == 'deepFM':
-    wide_inp_01_dim = len(features_F) - len(features_G)
+    wide_inp_01_dim = len(features_F)
+    features_F = features_F + features_G
 
 matrix_node_emb = read_matrix_node_emb(matrix_node_emb_path)
 node_emb_dim = matrix_node_emb.shape[-1]
