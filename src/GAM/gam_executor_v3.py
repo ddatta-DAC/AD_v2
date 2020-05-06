@@ -19,6 +19,7 @@ from sklearn.metrics import precision_score
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.metrics import f1_score
+
 sys.path.append('./../..')
 sys.path.append('./..')
 from time import time
@@ -83,7 +84,7 @@ try:
     from . import data_preprocess
     from .torch_data_loader import pairDataGenerator_v1
     from .torch_data_loader import singleDataGenerator
-    from .torch_data_loader import  balanced_pair_Generator_v2
+    from .torch_data_loader import balanced_pair_Generator_v2
     from .torch_data_loader import pairDataGenerator_v2
     from .src.Classifiers import wide_n_deep_model as clf_WIDE_N_DEEP
     from .src.Classifiers import deepFM  as clf_DEEP_FM
@@ -143,6 +144,7 @@ F_classifier_type = None
 WnD_dnn_layer_dimensions = None
 deepFM_dnn_layer_dimensions = None
 LOGGER = None
+
 
 def setup_config(_DIR):
     global CONFIG
@@ -249,7 +251,7 @@ def get_logger():
     logger = logging.getLogger('main')
     logger.setLevel(logging.INFO)
     OP_DIR = os.path.join(Logging_Dir, DIR)
-    log_file = 'results_' +  F_classifier_type + '.log'
+    log_file = 'results_' + F_classifier_type + '.log'
     if not os.path.exists(Logging_Dir):
         os.mkdir(Logging_Dir)
 
@@ -496,7 +498,6 @@ def train_model(
             batch_idx_f = 0
             data_L = data_L_generator.get_next()
 
-
             while data_L is not None:
                 NN.train_mode = 'f'
 
@@ -568,13 +569,13 @@ def train_model(
                 if batch_idx_f % log_interval_f == 0:
                     print('Batch[f] {} :: Loss {}'.format(batch_idx_f, loss_total))
 
-        clf_en1_df_U  = None
+        clf_en1_df_U = None
         clf_en1_features = None
         clf_en1_df_eval = None
 
         if F_classifier_type == 'MLP':
             cols = [id_col] + features_F + [label_col]
-            tmp_df_copy = pd.DataFrame(df[cols],copy=True)
+            tmp_df_copy = pd.DataFrame(df[cols], copy=True)
             L_ids = list(df_L_original[id_col])
             U_ids = list(df_U[id_col])
 
@@ -585,11 +586,11 @@ def train_model(
 
             del tmp_df_copy[label_col]
             for fg in features_F:
-                tmp_df_copy = pd.get_dummies(tmp_df_copy, columns= [fg] )
+                tmp_df_copy = pd.get_dummies(tmp_df_copy, columns=[fg])
 
             X_F = tmp_df_copy.loc[
-                    tmp_df_copy[id_col].isin(L_ids)
-                ]
+                tmp_df_copy[id_col].isin(L_ids)
+            ]
             del X_F[id_col]
             X_F = X_F.values
 
@@ -649,14 +650,12 @@ def train_model(
         pred_y_label = []
         pred_y_probs = []
 
-
-
         # Prediction uses multiple classifiers
         if F_classifier_type == 'MLP':
             self_label_df = clf_en1_df_U.merge(
                 df_U,
-                on = id_col,
-                how = 'inner'
+                on=id_col,
+                how='inner'
             )
         if F_classifier_type == 'wide_n_deep':
             common = set(df_U.columns).intersection(clf_en1_df_U.columns)
@@ -667,15 +666,14 @@ def train_model(
                 how='inner'
             )
             # ensure order is maintained
-            remaining = [ _ for _ in list(df_U.columns)
-                          if _ not in features_G and _ not in features_F
-                        ]
+            remaining = [_ for _ in list(df_U.columns)
+                         if _ not in features_G and _ not in features_F
+                         ]
             col_ord = features_F + remaining
             self_label_df = self_label_df[col_ord]
 
         self_label_df = self_label_df.sort_values(['score'])
         id_list = list(self_label_df[id_col])
-
 
         NN.train(mode=False)
         NN.test_mode = True
@@ -683,7 +681,7 @@ def train_model(
         idx = 0
 
         while idx < len(id_list):
-            cur_ids =  id_list[idx:idx+512]
+            cur_ids = id_list[idx:idx + 512]
             _tmp = self_label_df.loc[self_label_df[id_col].isin(cur_ids)]
             d1 = LT(_tmp[features_F].values).to(DEVICE)
             d2 = _tmp[clf_en1_features].values
@@ -691,7 +689,7 @@ def train_model(
             pred_y_probs_1 = NN(d1).cpu().data.numpy()
             pred_y_probs_2 = clf_en1.predict_proba(d2)
             pred_y_probs_1 = np.reshape(pred_y_probs_1, -1)
-            pred_y_probs_2 = np.reshape(pred_y_probs_2[:,1], -1)
+            pred_y_probs_2 = np.reshape(pred_y_probs_2[:, 1], -1)
 
             _pred_y_probs = np.maximum(
                 pred_y_probs_1,
@@ -704,7 +702,6 @@ def train_model(
         NN.train(mode=True)
         NN.test_mode = False
         pred_y_probs = np.array(pred_y_probs)
-
 
         # ----------------
         # Find the top-k most confident label
@@ -751,7 +748,7 @@ def train_model(
         NN.train_mode = False
         test_df = None
         test_id_list = None
-        if F_classifier_type == 'MLP' :
+        if F_classifier_type == 'MLP':
             test_id_list = list(df_U_original[id_col])
             test_df = clf_en1_df_eval.merge(df_U_original, on=id_col, how='inner')
             test_df = test_df.sort_values(['score'])
@@ -782,7 +779,7 @@ def train_model(
             pred_y_probs_1 = NN(d1).cpu().data.numpy()
             pred_y_probs_2 = clf_en1.predict_proba(d2)
             pred_y_probs_1 = np.reshape(pred_y_probs_1, -1)
-            pred_y_probs_2 = np.reshape(pred_y_probs_2[:,1], -1)
+            pred_y_probs_2 = np.reshape(pred_y_probs_2[:, 1], -1)
             _pred_y_probs = np.maximum(pred_y_probs_1, pred_y_probs_2)
             _pred_y_label = np.array(_pred_y_probs >= 0.5).astype(int)
             pred_y_label.extend(_pred_y_label)
@@ -798,7 +795,7 @@ def train_model(
             columns=['next %', 'precision', 'recall', 'f1', 'balanced_accuracy']
         )
         for point in points:
-            c = (len(df) * point )//100
+            c = (len(df) * point) // 100
             _y_pred = y_pred[:c]
             _y_true = y_true[:c]
             b_acc = balanced_accuracy_score(_y_true, _y_true)
@@ -809,7 +806,7 @@ def train_model(
             print('Precision ', precision)
             print('Recall ', recall)
 
-            print('f1 ', f1 )
+            print('f1 ', f1)
             print('Balanced Accuracy ', b_acc)
             entry_dict = {
                 'next %': point,
@@ -846,7 +843,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 DIR = args.DIR
-F_classifier_type =  args.clf
+F_classifier_type = args.clf
 
 setup_config(DIR)
 df_target, normal_data_samples_df, features_F, features_G = data_preprocess.get_data_plus_features(
@@ -890,22 +887,21 @@ elif F_classifier_type == 'wide_n_deep':
     dict_clf_initilize_inputs['deep_FC_layer_dims'] = WnD_dnn_layer_dimensions
     dict_clf_initilize_inputs['tune_entity_emb'] = False
 elif F_classifier_type == 'deepFM':
-    dict_clf_initilize_inputs = {}
-    dict_clf_initilize_inputs['wide_inp_01_dim'] = wide_inp_01_dim
-    dict_clf_initilize_inputs['dnn_layer_dimensions'] = deepFM_dnn_layer_dimensions
-    dict_clf_initilize_inputs['tune_entity_emb'] = False
     dict_clf_initilize_inputs = {
-        'mlp_layer_dims': clf_mlp_layer_dimesnions,
         'dropout': 0.05,
-        'activation': 'relu'
+        'activation': 'relu',
+        'wide_inp_01_dim': wide_inp_01_dim,
+        'dnn_layer_dimensions': deepFM_dnn_layer_dimensions,
+        'tune_entity_emb': False
     }
+
 else:
     dict_clf_initilize_inputs = None
 
 LOGGER.info(' =========== ')
 LOGGER.info('F_classifier_type ')
 
-for perc in [10,20,30] :
+for perc in [10, 20, 30]:
     NN = SS_network(
         DEVICE,
         node_emb_dimension=node_emb_dim,
